@@ -1,0 +1,39 @@
+{
+  "interpretations": [
+    {
+      "request": {
+        "blocks": [
+          {"block_id": "00000000-0000-0000-0000-000000000001", "label": "Bruit", "meaning": "NOISE"},
+          {"block_id": "00000000-0000-0000-0000-000000000002", "label": "Stop", "meaning": "STOP"},
+          {"block_id": "00000000-0000-0000-0000-000000000003", "label": "Partir", "meaning": "LEAVE"}
+        ],
+        "language": "fr"
+      },
+      "response": {
+        "status": "proposal",
+        "candidates": [
+          {"intent": "LEAVE_DUE_TO_NOISE", "text": "Le bruit me gêne et je veux partir.", "confidence": 0.78}
+        ]
+      }
+    },
+    {
+      "request": {
+        "blocks": [{"block_id": "00000000-0000-0000-0000-000000000004", "label": "Inconnu", "meaning": "UNKNOWN"}],
+        "language": "fr"
+      },
+      "response": {"status": "not_understood", "candidates": []}
+    }
+  ],
+  "simplifications": [
+    {
+      "request": {"text": "Le bruit me gêne et je veux partir.", "allowed_meanings": ["NOISE", "LEAVE"], "language": "fr"},
+      "response": {"status": "proposal", "text": "Le bruit me gêne. Je veux partir."}
+    }
+  ],
+  "representations": [
+    {
+      "request": {"meaning": "Le bruit me gêne et je veux partir.", "constraints": ["Fond simple"], "language": "fr"},
+      "response": {"status": "proposal", "label": "Sortir du bruit", "visual_description": "Une personne quitte un lieu bruyant.", "spoken_text": "Le bruit me gêne et je veux partir."}
+    }
+  ]
+}
