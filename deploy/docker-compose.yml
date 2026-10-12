@@ -1,0 +1,73 @@
+name: pictoflow-dev
+
+services:
+  postgres:
+    image: postgres:18-bookworm
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pictoflow}
+      POSTGRES_DB: ${POSTGRES_DB:-pictoflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Generate a local .env with deploy/init_env.py first}
+    volumes:
+      # PostgreSQL 18 stores PGDATA below this version-independent mount point.
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  redis:
+    image: redis:8-bookworm
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  backend:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    environment:
+      PICTOFLOW_ENVIRONMENT: development
+      PICTOFLOW_APP_NAME: ${PICTOFLOW_APP_NAME:-PictoFlow}
+      PICTOFLOW_DEBUG: ${PICTOFLOW_DEBUG:-false}
+      PICTOFLOW_AI_PROVIDER: ${PICTOFLOW_AI_PROVIDER:-disabled}
+      PICTOFLOW_PROVIDER_BASE_URL: ${PICTOFLOW_PROVIDER_BASE_URL:-}
+      PICTOFLOW_PROVIDER_MODEL: ${PICTOFLOW_PROVIDER_MODEL:-}
+      PICTOFLOW_PROVIDER_API_KEY: ${PICTOFLOW_PROVIDER_API_KEY:-}
+      PICTOFLOW_PROVIDER_TIMEOUT_SECONDS: ${PICTOFLOW_PROVIDER_TIMEOUT_SECONDS:-30}
+      PICTOFLOW_PRISM_CAPABILITIES: '${PICTOFLOW_PRISM_CAPABILITIES:-["interpret","simplify"]}'
+      PICTOFLOW_CONFIDENCE_REFUSAL: ${PICTOFLOW_CONFIDENCE_REFUSAL:-0.40}
+      PICTOFLOW_CONFIDENCE_CONFIRMATION: ${PICTOFLOW_CONFIDENCE_CONFIRMATION:-0.65}
+      PICTOFLOW_CONFIDENCE_DIRECT: ${PICTOFLOW_CONFIDENCE_DIRECT:-0.90}
+      PICTOFLOW_GAP_MINIMUM_OCCURRENCES: ${PICTOFLOW_GAP_MINIMUM_OCCURRENCES:-5}
+      PICTOFLOW_GAP_MINIMUM_VALIDATED: ${PICTOFLOW_GAP_MINIMUM_VALIDATED:-4}
+      PICTOFLOW_OBSERVABILITY_ENABLED: ${PICTOFLOW_OBSERVABILITY_ENABLED:-false}
+      PICTOFLOW_REDIS_URL: redis://redis:6379/0
+      PICTOFLOW_REDIS_TIMEOUT_SECONDS: ${PICTOFLOW_REDIS_TIMEOUT_SECONDS:-0.5}
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-pictoflow}
+      POSTGRES_DB: ${POSTGRES_DB:-pictoflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Generate a local .env with deploy/init_env.py first}
+    ports:
+      - "127.0.0.1:${PICTOFLOW_BACKEND_PORT:-8000}:8000"
+    volumes:
+      - ../backend:/workspace/backend
+    command: ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "app"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import json, urllib.request; r = urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2); assert r.status == 200 and json.load(r) == {'status': 'healthy'}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+
+volumes:
+  postgres_data:

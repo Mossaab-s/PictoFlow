@@ -522,10 +522,6 @@ Candidate metrics:
 
 These remain intentionally undecided:
 
-- programming language;
-- frontend framework;
-- database technology;
-- graph storage technology;
 - embedding model;
 - LLM provider;
 - pictogram generation provider;
@@ -537,3 +533,9 @@ These remain intentionally undecided:
 - production hosting architecture.
 
 They must not be silently decided in implementation issues without an explicit project decision.
+
+The V1 implementation stack has been decided in [ARCHITECTURE.md](ARCHITECTURE.md)
+and the accepted [ADRs](ADR/): Python/FastAPI, Pydantic, SQLAlchemy/Alembic,
+PostgreSQL, Redis and Next.js/TypeScript for administration. A dedicated graph
+database is deferred; external AI providers, including PRISM, remain optional.
+The framework for the future end-user communication interface remains open.

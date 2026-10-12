@@ -1,0 +1,222 @@
+"""Persistent sequences, proposal memory and explicit human promotion."""
+
+from dataclasses import dataclass
+from uuid import UUID
+
+from app.application.pcl_repository import PCLUnits
+from app.application.transient import JsonObject, TransientKind, TransientStore
+from app.domain.pcl.confidence import ConfidenceDecision, ConfidencePolicy, HandlingState
+from app.domain.pcl.entities import (
+    CommunicationBlock,
+    CommunicationSequence,
+    Interpretation,
+    InterpretationStatus,
+    ProposalStatus,
+    SemanticRelation,
+    SequenceStatus,
+    TargetType,
+    ValidationEvent,
+)
+from app.domain.pcl.invariants import DomainInvariantError, identifier
+from app.domain.pcl.sequences import edit_sequence
+from app.domain.pcl.validation import apply_interpretation_feedback
+
+
+@dataclass(frozen=True)
+class PersonalMemory:
+    interpretations: tuple[Interpretation, ...]
+    relations: tuple[SemanticRelation, ...]
+    blocks: tuple[CommunicationBlock, ...]
+    sequences: tuple[CommunicationSequence, ...] = ()
+
+
+class CommunicationService:
+    def __init__(self, units: PCLUnits, policy: ConfidencePolicy | None = None):
+        self.units = units
+        self.policy = policy or ConfidencePolicy()
+
+    def start(self, profile_id: UUID, session_id: UUID, context_id: UUID | None = None):
+        sequence = CommunicationSequence(
+            profile_id=profile_id, session_id=session_id, context_id=context_id
+        )
+        with self.units() as store:
+            store.add(profile_id, sequence)
+            store.audit(profile_id, "sequence_started", None, sequence, "human")
+        return sequence
+
+    def select(
+        self, profile_id: UUID, sequence_id: UUID, action: str, block_id: UUID | None = None
+    ):
+        with self.units() as store:
+            previous = store.get(profile_id, CommunicationSequence, sequence_id)
+            if action == "append":
+                block = store.get(profile_id, CommunicationBlock, block_id)
+                if block.status != ProposalStatus.VALIDATED:
+                    raise DomainInvariantError("Only validated blocks can be selected")
+            current = edit_sequence(previous, action, block_id)
+            store.save(profile_id, current)
+            store.audit(profile_id, f"sequence_{action}", previous, current, "human")
+        return current
+
+    def history(self, profile_id: UUID):
+        with self.units() as store:
+            return tuple(
+                item
+                for item in store.list(profile_id, CommunicationSequence)
+                if item.status == SequenceStatus.COMPLETED
+            )
+
+    def propose(
+        self,
+        profile_id: UUID,
+        sequence_id: UUID,
+        candidates: tuple[Interpretation, ...],
+        *,
+        source: str,
+    ) -> ConfidenceDecision:
+        identifier(profile_id, "profile_id")
+        identifier(sequence_id, "sequence_id")
+        if any(
+            item.profile_id != profile_id or item.sequence_id != sequence_id for item in candidates
+        ):
+            raise DomainInvariantError("Proposals must belong to this profile and sequence")
+        decision = self.policy.decide(candidates)
+        with self.units() as store:
+            sequence = store.get(profile_id, CommunicationSequence, sequence_id)
+            if sequence.status != SequenceStatus.COMPLETED:
+                raise DomainInvariantError("Interpretation requires a completed sequence")
+            selected = decision.candidates
+            if decision.state == HandlingState.NOT_UNDERSTOOD:
+                selected = (
+                    Interpretation(
+                        profile_id=profile_id,
+                        sequence_id=sequence_id,
+                        text="",
+                        confidence=0.0,
+                        source=source,
+                        status=InterpretationStatus.NOT_UNDERSTOOD,
+                    ),
+                )
+            for item in selected:
+                if item.source != source:
+                    raise DomainInvariantError("Proposal source does not match provenance")
+                store.add(profile_id, item)
+                store.audit(
+                    profile_id, f"interpretation_{decision.state.value}", None, item, source
+                )
+        return decision
+
+    def validate(self, event: ValidationEvent) -> Interpretation:
+        if type(event) is not ValidationEvent or event.target_type != TargetType.INTERPRETATION:
+            raise DomainInvariantError("Typed human interpretation feedback is required")
+        with self.units() as store:
+            previous = store.get(event.profile_id, Interpretation, event.target_id)
+            history = store.feedback_history(event.profile_id, event.target_id)
+            if history and event.created_at < history[-1].created_at:
+                raise DomainInvariantError("Feedback must follow previous decisions")
+            sequence = store.get(event.profile_id, CommunicationSequence, previous.sequence_id)
+            if sequence.status != SequenceStatus.COMPLETED:
+                raise DomainInvariantError("Only completed communication can be validated")
+            # Selecting one hypothesis prevents contradictory accepted meanings per event.
+            current = apply_interpretation_feedback(previous, event)
+            if current.validated_text is not None:
+                for other in store.list(event.profile_id, Interpretation):
+                    if (
+                        other.sequence_id == current.sequence_id
+                        and other.id != current.id
+                        and other.validated_text is not None
+                    ):
+                        raise DomainInvariantError("Reject the previous accepted hypothesis first")
+            store.save(event.profile_id, current)
+            store.feedback(event)
+            store.audit(
+                event.profile_id,
+                f"interpretation_{event.action.value}",
+                previous,
+                current,
+                f"human:{event.actor_role.value}",
+            )
+        return current
+
+    def memory(self, profile_id: UUID, *, validated: bool) -> PersonalMemory:
+        if type(validated) is not bool:
+            raise DomainInvariantError("Memory partition must be explicit")
+        with self.units() as store:
+            interpretations = tuple(
+                i
+                for i in store.list(profile_id, Interpretation)
+                if (
+                    i.validated_text is not None
+                    if validated
+                    else i.status == InterpretationStatus.PROPOSED
+                )
+            )
+            sequence_ids = {item.sequence_id for item in interpretations}
+            return PersonalMemory(
+                interpretations=interpretations,
+                sequences=tuple(
+                    s
+                    for s in store.list(profile_id, CommunicationSequence)
+                    if s.id in sequence_ids and s.status == SequenceStatus.COMPLETED
+                ),
+                relations=tuple(
+                    r
+                    for r in store.list(profile_id, SemanticRelation)
+                    if r.status == ("validated" if validated else "proposed")
+                ),
+                blocks=tuple(
+                    b
+                    for b in store.list(profile_id, CommunicationBlock)
+                    if b.status == ("validated" if validated else "proposed")
+                ),
+            )
+
+    def purge(self, profile_id: UUID) -> None:
+        with self.units() as store:
+            store.purge(profile_id)
+
+    async def erase(self, profile_id: UUID, transient: TransientStore) -> None:
+        """Clear configured transient storage first; never claim success on an outage."""
+        identifier(profile_id, "profile_id")
+        with self.units() as store:
+            # Establish profile ownership/existence before clearing any namespace.
+            store.list(profile_id, CommunicationSequence)
+            await transient.delete_profile(profile_id)
+            store.purge(profile_id)
+
+
+class InteractionMemory:
+    """Declared transient context/session only; no promotion path to semantic state."""
+
+    def __init__(self, store: TransientStore):
+        self.store = store
+
+    async def put(
+        self,
+        profile_id: UUID,
+        kind: TransientKind,
+        reference: UUID,
+        value: JsonObject,
+        *,
+        ttl_seconds: int,
+    ):
+        self._kind(kind)
+        identifier(reference, "reference")
+        await self.store.put(profile_id, kind, str(reference), value, ttl_seconds=ttl_seconds)
+
+    async def get(self, profile_id: UUID, kind: TransientKind, reference: UUID):
+        self._kind(kind)
+        identifier(reference, "reference")
+        return await self.store.get(profile_id, kind, str(reference))
+
+    async def clear(self, profile_id: UUID, kind: TransientKind, reference: UUID):
+        self._kind(kind)
+        identifier(reference, "reference")
+        return await self.store.delete(profile_id, kind, str(reference))
+
+    @staticmethod
+    def _kind(kind):
+        if kind not in (TransientKind.SESSION, TransientKind.CONTEXT):
+            raise DomainInvariantError(
+                "Interaction memory only accepts session or declared context"
+            )

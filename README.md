@@ -441,7 +441,10 @@ The first implementation should cover:
 - AI provider abstraction;
 - deterministic no-provider end-to-end test.
 
-No specific framework, database or LLM provider is currently mandated.
+The V1 stack is defined in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and the
+accepted [architecture decisions](docs/ADR/): Python/FastAPI, Pydantic,
+SQLAlchemy/Alembic, PostgreSQL, Redis and Next.js/TypeScript administration.
+AI providers remain optional and replaceable.
 
 ---
 
@@ -526,22 +529,26 @@ The current functional baseline is documented in:
 
 **[docs/FUNCTIONAL_SPECIFICATION.md](docs/FUNCTIONAL_SPECIFICATION.md)**
 
-The specification intentionally leaves undecided:
-- programming language;
-- frontend framework;
-- database;
-- graph storage;
-- embeddings;
-- AI provider;
-- hosting architecture.
-
-These decisions should be made explicitly rather than hidden inside implementation work.
+The technical implementation baseline is defined separately in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Embeddings, final end-user UI,
+symbol library and production hosting remain open decisions. PostgreSQL is
+the V1 persistent store; a dedicated graph database is deferred. No external
+AI provider is required.
 
 ---
 
 # 20. Development roadmap
 
-The current GitHub issues define the initial development sequence:
+Start with the technical foundation in this order:
+
+**#14 → #15 → #16 → #18 → #19 → #22**.
+
+Profile isolation (#24) is required from the first repositories and cache keys.
+Define the PCL-001 and REP-013 domain contracts before finalizing the DB-015
+persistence mappings. AI-018/AI-019 implement the concrete contracts and local
+providers covered by the broader AI-011 ownership requirements.
+
+Then continue with the functional roadmap:
 
 1. **PCL Core**
 2. **Personal Semantic Space**
@@ -584,13 +591,41 @@ The project should be built **with the people concerned, not only for them**.
 
 # 22. Project status
 
-**Early research / architecture phase**
+**Early development / research phase**
+
+The FastAPI bootstrap (#14) provides health endpoints, environment configuration
+and domain boundary tests. PostgreSQL persistence (#15) adds profile-scoped
+repositories, initial PCL mappings and an Alembic migration. See
+[backend/README.md](backend/README.md) for local setup, migrations and verification,
+and [docs/PERSISTENCE.md](docs/PERSISTENCE.md) for storage boundaries. Optional Redis
+transient storage (#16) now provides profile-scoped keys, mandatory TTLs and
+explicit disabled/unavailable behavior; see
+[docs/TRANSIENT_STORAGE.md](docs/TRANSIENT_STORAGE.md).
+The optional AI boundary (#18) now defines bounded Pydantic contracts and an
+async provider protocol; see [docs/AI_CONTRACTS.md](docs/AI_CONTRACTS.md).
+Local providers (#19) now support deterministic fixture-based testing and an
+explicit disabled mode, with request/response revalidation; see
+[docs/LOCAL_PROVIDERS.md](docs/LOCAL_PROVIDERS.md).
+The local Compose setup (#22) is available in
+[deploy/docker-compose.yml](deploy/docker-compose.yml), with startup, migration,
+test and verification instructions in [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md).
+PCL-001 supplies the independent domain core and explicit interpretation feedback;
+see [docs/PCL_CORE.md](docs/PCL_CORE.md). SEM-002 adds personal semantic operations,
+validated neighbour queries and atomic PostgreSQL history;
+see [docs/SEMANTIC_SPACE.md](docs/SEMANTIC_SPACE.md).
+The complete local prototype now includes memory, sequence lifecycle, human
+feedback, confidence/refusal, Semantic Gaps, controlled blocks, keyboard projection,
+audit, representations, optional HTTP providers and the initial administration.
+See [docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md) for the acceptance
+map, verification and a disposable demo. A LAN test instance is deployed on
+[10.0.0.121:3000](http://10.0.0.121:3000). Server deployment and backup commands
+are documented in [docs/SERVER_DEPLOYMENT.md](docs/SERVER_DEPLOYMENT.md).
 
 Current priorities:
 - validate the semantic model;
 - challenge the concept with AAC professionals and users;
-- implement the PCL core;
-- build a deterministic prototype;
+- validate the integrated prototype with realistic communication scenarios;
+- refine the end-user interface and accessibility through user feedback;
 - measure communication efficiency before expanding the AI layer.
 
 ---

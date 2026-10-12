@@ -1,0 +1,17 @@
+name: Local Compose stack
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Verify local stack, migration and both AI modes
+        run: python deploy/smoke_test.py

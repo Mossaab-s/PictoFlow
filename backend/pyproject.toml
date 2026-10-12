@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pictoflow-backend"
+version = "0.1.0"
+description = "PictoFlow API and independent Personal Communication Layer"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.143,<1.0",
+    "pydantic>=2.10,<3.0",
+    "pydantic-settings>=2.6,<3.0",
+    "uvicorn>=0.32,<1.0",
+    "sqlalchemy>=2.0.36,<2.1",
+    "alembic>=1.14,<2.0",
+    "psycopg[binary]>=3.2,<4.0",
+    "redis>=8.1,<9.0",
+    "httpx2>=2.13,<3.0",
+    "opentelemetry-api>=1.45,<2.0",
+    "opentelemetry-sdk>=1.45,<2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3,<10.0",
+    "ruff>=0.9,<1.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.setuptools.package-data]
+"app.ai.fixtures" = ["*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers --strict-config"
+markers = [
+    "postgres: integration tests requiring a disposable PostgreSQL database",
+    "redis: integration tests requiring a Redis test server",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

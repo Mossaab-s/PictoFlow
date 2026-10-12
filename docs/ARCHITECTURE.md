@@ -102,6 +102,7 @@ The Admin UI never reads PostgreSQL directly.
 
 ### Deployment
 - Docker Compose for V1.
+- local development setup: [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md).
 
 ### Observability
 - OpenTelemetry compatible instrumentation.
@@ -213,10 +214,13 @@ Recommended key patterns:
 ```
 pcl:session:{profile_id}:{session_id}
 pcl:provider-health:{provider_id}
-pcl:cache:semantic:{hash}
+pcl:cache:semantic:{profile_id}:{hash}
 ```
 
 TTL must be used for transient data where appropriate.
+Personal cache keys must always include profile scope, including hashed lookups.
+See [TRANSIENT_STORAGE.md](TRANSIENT_STORAGE.md) for the CACHE-016 adapter contract
+and explicit no-Redis/unavailable behavior.
 
 ---
 
@@ -253,6 +257,9 @@ class AIProvider(Protocol):
 Provider output is always a proposal.
 
 A provider must never mutate PCL repositories directly.
+The implemented protocol lives in `backend/app/ai/protocol.py`; its Pydantic
+models and bounded input/output rules are documented in
+[AI_CONTRACTS.md](AI_CONTRACTS.md).
 
 ---
 

@@ -1,0 +1,26 @@
+# Python environments and generated files
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+
+# Local configuration (keep examples tracked)
+.env
+.env.*
+!.env.example
+
+# Editors
+.idea/
+.vscode/
+
+# Portable local test tools and disposable database clusters
+.local/
+node_modules/
+.next/
+*.tsbuildinfo

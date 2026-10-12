@@ -1,0 +1,106 @@
+name: pictoflow-server
+
+x-backend: &backend
+  image: pictoflow-backend:${PICTOFLOW_RELEASE:-local}
+  build:
+    context: ..
+    dockerfile: backend/Dockerfile.server
+  environment: &backend-environment
+    PICTOFLOW_ENVIRONMENT: production
+    PICTOFLOW_DEBUG: "false"
+    PICTOFLOW_REDIS_URL: redis://redis:6379/0
+    POSTGRES_HOST: postgres
+    POSTGRES_USER: pictoflow
+    POSTGRES_DB: pictoflow
+    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Create the server env file first}
+  init: true
+  security_opt: ["no-new-privileges:true"]
+  logging:
+    driver: json-file
+    options: {max-size: "10m", max-file: "3"}
+
+services:
+  postgres:
+    image: postgres:18-bookworm
+    environment:
+      POSTGRES_USER: pictoflow
+      POSTGRES_DB: pictoflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Create the server env file first}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+  redis:
+    image: redis:8-bookworm
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+  migrate:
+    <<: *backend
+    command: ["python", "-m", "alembic", "upgrade", "head"]
+    depends_on:
+      postgres: {condition: service_healthy}
+    restart: "no"
+
+  backend:
+    <<: *backend
+    environment:
+      <<: *backend-environment
+      PICTOFLOW_AI_PROVIDER: ${PICTOFLOW_AI_PROVIDER:-disabled}
+      PICTOFLOW_PROVIDER_BASE_URL: ${PICTOFLOW_PROVIDER_BASE_URL:-}
+      PICTOFLOW_PROVIDER_MODEL: ${PICTOFLOW_PROVIDER_MODEL:-}
+      PICTOFLOW_PROVIDER_API_KEY: ${PICTOFLOW_PROVIDER_API_KEY:-}
+      PICTOFLOW_PROVIDER_TIMEOUT_SECONDS: ${PICTOFLOW_PROVIDER_TIMEOUT_SECONDS:-30}
+      PICTOFLOW_PRISM_CAPABILITIES: '${PICTOFLOW_PRISM_CAPABILITIES:-["interpret","simplify"]}'
+    restart: unless-stopped
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; assert urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).status == 200"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+
+  admin:
+    image: pictoflow-admin:${PICTOFLOW_RELEASE:-local}
+    build:
+      context: ../admin
+    environment:
+      PICTOFLOW_API_BASE_URL: http://backend:8000/api/v1
+    ports:
+      - "${PICTOFLOW_BIND_ADDRESS:-127.0.0.1}:${PICTOFLOW_ADMIN_PORT:-3000}:3000"
+    init: true
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+    depends_on:
+      backend: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/pictoflow/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+volumes:
+  postgres_data:
