@@ -1,0 +1,56 @@
+import Link from "next/link";
+import { sections, type Section } from "@/lib/api";
+import type { HumanRole } from "@/lib/keyboard";
+
+export function ProfileNavigation({
+  profileId,
+  section,
+}: {
+  profileId: string;
+  section: Section;
+}) {
+  return (
+    <>
+      <header className="topbar">
+        <Link href="/admin/profiles">Profils</Link>
+        <span>Espace personnel · {profileId.slice(0, 8)}</span>
+      </header>
+      <nav className="tabs profile-tabs" aria-label="Sections du profil">
+        {Object.entries(sections).map(([value, title]) => (
+          <Link
+            key={value}
+            aria-current={value === section ? "page" : undefined}
+            href={`/admin/profiles/${profileId}/${value}`}
+          >
+            {title}
+          </Link>
+        ))}
+      </nav>
+    </>
+  );
+}
+
+export function HumanRoleSelector({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: HumanRole;
+  onChange: (value: HumanRole) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <label className="role-selector">
+      Je valide en tant que
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value as HumanRole)}
+        disabled={disabled}
+      >
+        <option value="user">Personne utilisatrice</option>
+        <option value="caregiver">Aidant ou proche</option>
+        <option value="professional">Professionnel</option>
+      </select>
+    </label>
+  );
+}

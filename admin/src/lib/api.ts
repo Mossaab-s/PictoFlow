@@ -26,6 +26,7 @@ export const sections = {
   representations: "Représentations",
   "semantic-space": "Espace sémantique",
   keyboard: "Clavier",
+  communication: "Communiquer",
   memory: "Mémoire",
   suggestions: "Suggestions",
   audit: "Historique",

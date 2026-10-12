@@ -46,6 +46,8 @@ def test_http_communication_and_correction_are_profile_scoped(api, monkeypatch):
     assert api.post(base + "/blocks/" + block["id"] + "/feedback", json=feedback).status_code == 200
     sequence = api.post(base + "/sequences", json={"session_id": str(uuid4())}).json()
     path = base + "/sequences/" + sequence["id"]
+    assert api.get(path).json()["status"] == "in_progress"
+    assert api.get(foreign + "/sequences/" + sequence["id"]).status_code == 404
     assert (
         api.post(
             path + "/selection", json={"action": "append", "block_id": block["id"]}
@@ -53,10 +55,14 @@ def test_http_communication_and_correction_are_profile_scoped(api, monkeypatch):
         == 200
     )
     assert api.post(path + "/selection", json={"action": "complete"}).status_code == 200
+    assert api.get(path).json()["block_ids"] == [block["id"]]
     decision = api.post(path + "/interpret", json={}).json()
     assert decision["state"] == "multiple_hypotheses"
     assert ("interpretation.result", {"result_state": "multiple_hypotheses"}) in signals
     interpretation = decision["candidates"][0]
+    reference = "/interpretations/" + interpretation["id"]
+    assert api.get(base + reference).json()["status"] == "proposed"
+    assert api.get(foreign + reference).status_code == 404
     assert api.get(base + "/memory").json()["interpretations"] == []
     endpoint = "/interpretations/" + interpretation["id"] + "/feedback"
     assert api.post(foreign + endpoint, json=feedback).status_code == 404
@@ -65,11 +71,14 @@ def test_http_communication_and_correction_are_profile_scoped(api, monkeypatch):
         json={"action": "correct", "actor_role": "user", "corrected_value": "Le bruit me gêne."},
     ).json()
     assert corrected["text"] == "Bruit" and corrected["corrected_text"] == "Le bruit me gêne."
+    assert api.get(base + reference).json()["corrected_text"] == "Le bruit me gêne."
     assert len(api.get(base + "/memory").json()["interpretations"]) == 1
     assert api.get(foreign + "/memory").json()["interpretations"] == []
     assert api.get(base + "/audit").json()[-1]["event_type"] == "interpretation_correct"
     assert api.delete(base + "/memory").status_code == 204
     assert api.get(base + "/concepts").json() == []
+    assert api.get(path).status_code == 404
+    assert api.get(base + reference).status_code == 404
     assert api.get(foreign + "/audit").json() == []
 
 

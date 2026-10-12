@@ -1,9 +1,15 @@
 # PictoFlow administration (ADMIN-017)
 
+The profile's **Clavier** page creates and validates text communication blocks
+and edits their position/label. **Communiquer** selects ordered blocks, completes
+a sequence and presents explicit interpretation feedback. See the
+[keyboard user guide](../docs/KEYBOARD_USER_GUIDE.md).
+
 Next.js 16 + TypeScript. Run from this directory with Node.js 22:
 
 ```powershell
 npm ci
+npm test
 npm run dev
 ```
 
