@@ -28,9 +28,11 @@ réels ; les contrôles Ruff, la compilation Next.js et TypeScript passent aussi
 La création d'un concept depuis l'administration a été vérifiée dans le navigateur,
 sur le profil fictif de la base temporaire.
 
-Cette livraison est proposée en pull request sur GitHub. Les issues restent
-ouvertes jusqu'à revue et fusion. Les workflows backend, administration et
-Compose exécutent les contrôles sur la branche publiée.
+Le socle V1 est fusionné dans `main` via la PR #25, avec contrôles GitHub verts.
+La livraison suivante ajoute un éditeur de touches textuelles et un écran de
+communication avec reprise et validation explicite ; voir le
+[guide utilisateur](KEYBOARD_USER_GUIDE.md). Elle reste à fusionner et déployer.
+Les issues restent ouvertes pour suivre la revue et les prochaines étapes.
 
 ## Lire et essayer
 
@@ -39,6 +41,7 @@ Compose exécutent les contrôles sur la branche publiée.
 - [Providers HTTP optionnels](HTTP_PROVIDERS.md)
 - [API et observabilité](API_OBSERVABILITY.md)
 - [Administration](../admin/README.md)
+- [Créer son clavier et communiquer](KEYBOARD_USER_GUIDE.md)
 - [Développement local et Compose](LOCAL_DEVELOPMENT.md)
 - [Déploiement et sauvegardes sur serveur](SERVER_DEPLOYMENT.md)
 

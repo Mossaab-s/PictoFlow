@@ -10,8 +10,8 @@ operation accepts a bare object UUID without profile scope.
 | `/relations` | List/propose; confidence; human feedback; corrected replacement |
 | `/representations` | List/create/update; human feedback; archive |
 | `/blocks` | List/propose; human feedback; representation selection |
-| `/sequences` | Start; selection/undo/clear/complete/cancel; completed history; interpretation |
-| `/interpretations` | List; explicit confirm/correct/reject feedback |
+| `/sequences` | Start; scoped read by ID; selection/undo/clear/complete/cancel; completed history; interpretation |
+| `/interpretations` | List; scoped read by ID; explicit confirm/correct/reject feedback |
 | `/memory` | Separate validated/proposal reads; explicit DELETE erasure |
 | `/suggestions` | List/detect gaps; human approval/rejection; proposed block creation |
 | `/keyboard` | Read projection; explicit manual position/stability changes |

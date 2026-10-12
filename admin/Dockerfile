@@ -4,7 +4,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-RUN npm run format:check && npm run build && npm run typecheck
+RUN npm run format:check && npm test && npm run build && npm run typecheck
 
 FROM node:22-bookworm-slim AS runtime
 WORKDIR /app

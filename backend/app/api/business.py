@@ -342,6 +342,12 @@ def sequences(request: Request, profile_id: UUID):
     return communication(request).history(profile_id)
 
 
+@router.get("/profiles/{profile_id}/sequences/{sequence_id}", response_model=CommunicationSequence)
+def get_sequence(request: Request, profile_id: UUID, sequence_id: UUID):
+    with units(request)() as store:
+        return store.get(profile_id, CommunicationSequence, sequence_id)
+
+
 @router.post(
     "/profiles/{profile_id}/sequences", status_code=201, response_model=CommunicationSequence
 )
@@ -375,6 +381,14 @@ async def interpret(
 @router.get("/profiles/{profile_id}/interpretations", response_model=tuple[Interpretation, ...])
 def interpretations(request: Request, profile_id: UUID):
     return listing(request, profile_id, Interpretation)
+
+
+@router.get(
+    "/profiles/{profile_id}/interpretations/{interpretation_id}", response_model=Interpretation
+)
+def get_interpretation(request: Request, profile_id: UUID, interpretation_id: UUID):
+    with units(request)() as store:
+        return store.get(profile_id, Interpretation, interpretation_id)
 
 
 @router.post(
