@@ -91,8 +91,47 @@ inference about the person's intended meaning. Invalid provider output fails
 explicitly instead of falling back into guessed knowledge.
 
 The compatible adapter puts application rules in a system message and the
-bounded request/schema in a user message. This supplies the user turn required
+bounded request in a user message. In strict mode the output schema is sent only
+through `response_format`, avoiding duplicate technical instructions in the user
+turn. JSON Object Mode and PRISM still include the schema with the request.
+This supplies the user turn required
 by endpoints such as Groq while keeping request content explicitly treated as data.
+
+## Message formulation prompts
+
+Each operation has its own instructions, following common proposal-only and
+data-not-instructions rules. Interpretation describes communication using words
+or pictograms: express a short first-person message, preserve useful selected
+words, order of meaning, repetition and negation, and avoid invented possession,
+past events, actors, objects or causes. Explicitly selected emotions may be
+expressed; association hints alone do not justify inventing an emotion or adding
+an unselected word. Simple requests and standalone Yes/No/Stop do not require
+inventing a narrative. Examples illustrate these rules, without becoming context
+for the current message. Ambiguity may produce several proposals or refusal.
+
+The scoped request builder sends readable concept labels in `meaning` and in
+validated `semantic_hints`. Canonical keys such as `USER_...` remain unchanged in
+PostgreSQL and are not exposed as semantic vocabulary. Block UUIDs still identify
+the selected touches. A corrected touch label and its personal concept label can
+differ; both are preserved. Proposed, rejected and foreign-profile relations
+remain excluded. Only the bounded selected vocabulary and relevant validated
+hints are sent, not the profile's complete memory.
+
+The prompt lives in `backend/app/ai/providers/http.py`. Its interpretation
+examples include Boire → « Je voudrais boire. », Maman + Boire + Eau →
+« Maman, je voudrais boire de l'eau. », Manger + Oui → « Je voudrais manger,
+oui. », Non + Manger → « Je ne veux pas manger. », and Content →
+« Je suis content. ». A context such as
+« sans préférence personnelle réelle » should not be inserted into a synthetic
+formulation test: it can conflict with expressing a request. Synthetic test data
+should be marked outside the model request, rather than by denying its content.
+
+Strict JSON validates structure, not fidelity to the person's intended meaning.
+The model's confidence remains a proposal score; confirmations and corrections
+remain explicit human actions. Real comparisons use synthetic requests in a
+separate process and do not write results into the PCL or change the running
+provider configuration. Small comparisons are illustrative, not an accuracy
+guarantee.
 
 Changing provider configuration or closing its HTTP client does not migrate,
 rewrite or erase PCL objects. Tests use mocked endpoints for all operations,

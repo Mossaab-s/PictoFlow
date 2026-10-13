@@ -16,6 +16,7 @@ from app.domain.pcl.entities import (
     SemanticRelation,
     TargetType,
     ValidationAction,
+    ValidationEvent,
 )
 from app.domain.pcl.gaps import SemanticGapCandidate
 from app.domain.pcl.invariants import DomainInvariantError
@@ -153,6 +154,58 @@ def test_incomplete_and_foreign_ai_requests_do_not_disclose_profile_data(communi
         interpreter.request(b, sequence.id)
     request = interpreter.request(a, sequence.id)
     assert [block.block_id for block in request.blocks] == [block.id for block in blocks]
+
+
+def test_provider_request_uses_readable_scoped_meanings_and_only_validated_hints(communication):
+    from app.ai.manager import ProviderManager
+    from app.ai.providers.disabled import DisabledProvider
+    from app.application.interpretation import InterpretationService
+
+    service, a, b, blocks = communication
+    semantic = SemanticSpace(PostgresSemanticUnits(service.units.factory))
+    source = semantic.create_concept(a, "USER_OPAQUE_DRINK", "Boire de l'eau")
+    target = semantic.create_concept(a, "USER_OPAQUE_WATER", "Eau")
+    foreign_source = semantic.create_concept(b, "USER_OPAQUE_DRINK", "FOREIGN_PRIVATE_SOURCE")
+    foreign_target = semantic.create_concept(b, "USER_OPAQUE_WATER", "FOREIGN_PRIVATE_TARGET")
+    block_service = BlockService(service.units)
+    block = block_service.create(a, source.id, "Boire")
+    block = block_service.validate(a, block.id, action="confirm", actor_role="user")
+    validated = semantic.create_relation(a, source.id, target.id, "associated_with", 0.8)
+    semantic.confirm_relation(a, validated.id, actor_role="caregiver")
+    semantic.create_relation(a, source.id, blocks[1].concept_id, "associated_with", 0.99)
+    rejected = semantic.create_relation(a, source.id, blocks[2].concept_id, "associated_with", 0.9)
+    semantic.record_feedback(
+        ValidationEvent(
+            profile_id=a,
+            target_type=TargetType.SEMANTIC_RELATION,
+            target_id=rejected.id,
+            action=ValidationAction.REJECT,
+            actor_role="user",
+        )
+    )
+    foreign = semantic.create_relation(
+        b, foreign_source.id, foreign_target.id, "associated_with", 0.9
+    )
+    semantic.confirm_relation(b, foreign.id, actor_role="user")
+    sequence = completed(service, a, (block, block))
+    interpreter = InterpretationService(service.units, service, ProviderManager(DisabledProvider()))
+    before = service.memory(a, validated=True)
+    request = interpreter.request(a, sequence.id, declared_context=("À la maison",))
+    assert [item.label for item in request.blocks] == ["Boire", "Boire"]
+    assert [item.meaning for item in request.blocks] == ["Boire de l'eau", "Boire de l'eau"]
+    assert [item.block_id for item in request.blocks] == [block.id, block.id]
+    assert request.declared_context == ("À la maison",) and request.language == "fr"
+    assert len(request.semantic_hints) == 1
+    hint = request.semantic_hints[0]
+    assert (hint.source_meaning, hint.target_meaning, hint.relation_type, hint.confidence) == (
+        "Boire de l'eau",
+        "Eau",
+        "associated_with",
+        0.8,
+    )
+    assert "USER_OPAQUE" not in request.model_dump_json()
+    assert "FOREIGN_PRIVATE" not in request.model_dump_json()
+    assert service.memory(a, validated=True) == before
     assert "profile_id" not in request.model_dump_json()
     unfinished = service.start(a, uuid4())
     with pytest.raises(DomainInvariantError):
