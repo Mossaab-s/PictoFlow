@@ -58,7 +58,7 @@ class InterpretationService:
                 meaning = block.canonical_intent
                 if block.concept_id:
                     concept = store.get(profile_id, Concept, block.concept_id)
-                    meaning = concept.canonical_key
+                    meaning = concept.label
                     concepts.add(concept.id)
                 selected.append(
                     SelectedBlock(block_id=block.id, label=block.label, meaning=meaning)
@@ -71,8 +71,8 @@ class InterpretationService:
                 target = store.get(profile_id, Concept, relation.target_concept_id)
                 hints.append(
                     SemanticHint(
-                        source_meaning=source.canonical_key,
-                        target_meaning=target.canonical_key,
+                        source_meaning=source.label,
+                        target_meaning=target.label,
                         relation_type=relation.relation_type,
                         confidence=relation.confidence,
                     )

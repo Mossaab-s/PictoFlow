@@ -9,12 +9,12 @@ from app.ai.contracts import Key, ProviderMetadata
 from app.ai.errors import ProviderConfigurationError, ProviderPayloadError
 from app.ai.providers.http import (
     OPERATIONS,
-    PROPOSAL_INSTRUCTIONS,
     RESPONSES,
     HTTPProvider,
     instruction,
     parse,
     proposal_schema,
+    system_instruction,
 )
 
 
@@ -73,11 +73,15 @@ class OpenAICompatibleProvider(HTTPProvider):
                 "model": self._model,
                 "stream": False,
                 "messages": [
-                    {"role": "system", "content": PROPOSAL_INSTRUCTIONS},
+                    {"role": "system", "content": system_instruction(operation)},
                     {
                         "role": "user",
                         "content": instruction(
-                            operation, request, include_preamble=False, schema=schema
+                            operation,
+                            request,
+                            include_preamble=False,
+                            schema=schema,
+                            include_schema=self._response_format != "json_schema",
                         ),
                     },
                 ],

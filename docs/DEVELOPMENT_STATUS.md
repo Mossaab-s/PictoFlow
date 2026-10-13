@@ -23,17 +23,17 @@ La compilation Next.js, TypeScript et les contrôles de format sont exécutables
 avec les commandes documentées.
 
 Le socle, l'éditeur, les pictogrammes et la correction des propositions Groq
-sont fusionnés dans `main` via les **PR #25 à #28**, avec contrôles GitHub verts.
-Ils sont déployés sur le serveur dans la livraison **`20261013-02`**, commit
-`26089d3`. Le provider utilise les réponses structurées strictes ; deux appels
+sont fusionnés dans `main` via les **PR #25 à #29**, avec contrôles GitHub verts.
+Ils sont déployés sur le serveur dans la livraison **`20261013-03`**, commit
+`d685f79`. Le provider utilise les réponses structurées strictes ; deux appels
 réels sur des données fictives produisent des propositions françaises valides.
 Le déploiement conserve la base et les repères existants.
 
-La prochaine livraison simplifie la création : un formulaire prépare le mot,
+La PR #29 simplifie la création : un formulaire prépare le mot,
 son sens personnel et son dessin dans une seule transaction. La validation
 reste explicite. La bibliothèque passe de 14 à **28 dessins**, avec recherche
 par mot ou synonyme et catégories ; voir le [guide utilisateur](KEYBOARD_USER_GUIDE.md).
-Cette évolution reste à fusionner et déployer.
+Cette évolution est déployée, avec sauvegarde et vérification des données conservées.
 
 Sa vérification locale passe **356 tests backend**, avec PostgreSQL et Redis
 temporaires, et **12 tests frontend**, plus Ruff, Prettier, TypeScript et la
@@ -42,6 +42,17 @@ TypeScript. Le parcours navigateur vérifie les recherches, le choix conservé
 malgré les filtres, la création et validation de Téléphone et Manger, le choix
 d'un sens existant et la reprise du message illustré après rechargement.
 Les issues restent ouvertes pour suivre la revue et les prochaines étapes.
+
+La livraison préparée améliore les prompts de formulation : instructions propres
+à chaque opération, exemples de communication, sens et liens PCL lisibles,
+et absence de schéma dupliqué dans le message utilisateur en mode strict.
+Elle passe **359 tests backend** avec PostgreSQL et Redis. Les tests supplémentaires
+vérifient les sens lisibles, l'exclusion des liens non validés ou d'un autre profil,
+et la séparation entre instructions système et contexte déclaré. Une comparaison
+Groq sur des données fictives améliore demandes et négation ; la formulation des
+émotions explicitement choisies est également vérifiée. Ces essais ne modifient
+ni le PCL ni le provider installé. Voir les [prompts et leur portée](HTTP_PROVIDERS.md#message-formulation-prompts).
+Cette amélioration reste à fusionner et déployer.
 
 ## Lire et essayer
 
