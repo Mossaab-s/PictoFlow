@@ -24,7 +24,7 @@ from app.domain.pcl.entities import (
 )
 from app.domain.pcl.gaps import SemanticGapCandidate
 from app.domain.pcl.invariants import identifier
-from app.domain.pcl.keyboard import KeyboardPosition
+from app.domain.pcl.keyboard import KeyboardGroup, KeyboardPosition
 from app.infrastructure.postgres.database import transaction
 from app.infrastructure.postgres.models import (
     AuditRow,
@@ -32,6 +32,7 @@ from app.infrastructure.postgres.models import (
     ConceptRow,
     GapRow,
     InterpretationRow,
+    KeyboardGroupRow,
     KeyboardPositionRow,
     PhotoAssetRow,
     ProfileRow,
@@ -44,6 +45,7 @@ from app.infrastructure.postgres.models import (
 from app.infrastructure.postgres.repositories import to_domain, to_values
 
 MAPPINGS = {
+    KeyboardGroup: KeyboardGroupRow,
     PhotoAsset: PhotoAssetRow,
     SemanticGapCandidate: GapRow,
     KeyboardPosition: KeyboardPositionRow,
@@ -267,6 +269,7 @@ class PostgresPCLRepository:
             KeyboardPositionRow,
             AuditRow,
             ValidationRow,
+            KeyboardGroupRow,
             SequenceItemRow,
             InterpretationRow,
             SequenceRow,

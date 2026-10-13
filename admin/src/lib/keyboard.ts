@@ -23,7 +23,9 @@ export type Position = {
   zone: Zone;
   position: number;
   locked: boolean;
+  group_id?: string | null;
 };
+export type KeyboardGroup = { id: string; profile_id: string; label: string };
 export type Representation = {
   id: string;
   profile_id: string;
@@ -160,12 +162,20 @@ export function occupied(
   blockId: string,
   zone: Zone,
   position: number,
+  groupId: string | null = null,
 ) {
   return positions.some(
     (slot) =>
       slot.block_id !== blockId &&
       slot.zone === zone &&
+      (slot.group_id ?? null) === groupId &&
       slot.position === position,
+  );
+}
+
+export function pageTiles(tiles: Tile[], groupId: string | null): Tile[] {
+  return tiles.filter(
+    (tile) => tile.zone === "stable" || (tile.group_id ?? null) === groupId,
   );
 }
 

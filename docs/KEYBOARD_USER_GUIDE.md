@@ -53,6 +53,13 @@ existant. Le choix du dessin ne fusionne jamais deux sens d'après leurs mots.
 
 ## Composer et vérifier un message
 
+**Les pages de mon clavier** permet de créer et renommer Personnes, Besoins ou
+vos propres pages. Dans les réglages d'une touche validée, choisir **Page** et
+**Place**, puis enregistrer. Les touches sans page restent dans **Accueil**.
+Les repères stables restent visibles sur chaque page. On peut changer de page
+pendant la composition sans perdre les mots déjà choisis. Voir
+[le guide des pages](KEYBOARD_PAGES.md).
+
 **Photo personnelle** permet aussi d'importer une image fixe JPEG, PNG ou WebP
 de 5 Mo maximum. Vérifiez son aperçu et son mot, créez la touche puis validez-la.
 Sur une touche existante, **Choisir une photo pour…** puis **Valider la photo de…**

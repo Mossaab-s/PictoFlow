@@ -1,7 +1,13 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
-import type { Block, Concept, Position, Representation } from "@/lib/keyboard";
+import type {
+  Block,
+  Concept,
+  Position,
+  Representation,
+  KeyboardGroup,
+} from "@/lib/keyboard";
 
 export function useProfileKeyboard(profileId: string) {
   const [data, setData] = useState<{
@@ -9,7 +15,14 @@ export function useProfileKeyboard(profileId: string) {
     blocks: Block[];
     positions: Position[];
     representations: Representation[];
-  }>({ concepts: [], blocks: [], positions: [], representations: [] });
+    groups: KeyboardGroup[];
+  }>({
+    concepts: [],
+    blocks: [],
+    positions: [],
+    representations: [],
+    groups: [],
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const controller = useRef<AbortController | null>(null);
@@ -20,16 +33,20 @@ export function useProfileKeyboard(profileId: string) {
     controller.current = request;
     try {
       const base = `profiles/${profileId}`;
-      const [concepts, blocks, positions, representations] = await Promise.all([
-        api<Concept[]>(`${base}/concepts`, { signal: request.signal }),
-        api<Block[]>(`${base}/blocks`, { signal: request.signal }),
-        api<Position[]>(`${base}/keyboard`, { signal: request.signal }),
-        api<Representation[]>(`${base}/representations`, {
-          signal: request.signal,
-        }),
-      ]);
+      const [concepts, blocks, positions, representations, groups] =
+        await Promise.all([
+          api<Concept[]>(`${base}/concepts`, { signal: request.signal }),
+          api<Block[]>(`${base}/blocks`, { signal: request.signal }),
+          api<Position[]>(`${base}/keyboard`, { signal: request.signal }),
+          api<Representation[]>(`${base}/representations`, {
+            signal: request.signal,
+          }),
+          api<KeyboardGroup[]>(`${base}/keyboard-groups`, {
+            signal: request.signal,
+          }),
+        ]);
       if (!request.signal.aborted && alive.current)
-        setData({ concepts, blocks, positions, representations });
+        setData({ concepts, blocks, positions, representations, groups });
     } catch (error) {
       if (!request.signal.aborted && alive.current)
         setError(

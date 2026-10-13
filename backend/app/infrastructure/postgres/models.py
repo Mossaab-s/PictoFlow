@@ -253,20 +253,43 @@ class GapRow(Scoped, Base):
     )
 
 
+class KeyboardGroupRow(Scoped, Timestamps, Base):
+    __tablename__ = "keyboard_group"
+    label: Mapped[str] = mapped_column(sa.Text)
+    __table_args__ = (
+        sa.UniqueConstraint("profile_id", "id"),
+        sa.UniqueConstraint("profile_id", "label", name="uq_keyboard_group_profile_label"),
+        sa.CheckConstraint(
+            "label = trim(label) AND length(label) BETWEEN 1 AND 80 AND lower(label) != 'accueil'",
+            name="bounded_label",
+        ),
+    )
+
+
 class KeyboardPositionRow(Scoped, Base):
     __tablename__ = "keyboard_position"
     block_id: Mapped[UUID] = mapped_column(sa.Uuid)
     zone: Mapped[str]
     position: Mapped[int]
     locked: Mapped[bool]
+    group_id: Mapped[UUID | None] = mapped_column(sa.Uuid)
     __table_args__ = (
         sa.UniqueConstraint("profile_id", "id"),
         sa.UniqueConstraint("profile_id", "block_id", name="uq_keyboard_profile_block"),
-        sa.UniqueConstraint("profile_id", "zone", "position", name="uq_keyboard_profile_position"),
+        sa.UniqueConstraint(
+            "profile_id",
+            "group_id",
+            "zone",
+            "position",
+            name="uq_keyboard_profile_position",
+            postgresql_nulls_not_distinct=True,
+        ),
+        scoped_fk("group_id", "keyboard_group"),
         scoped_fk("block_id", "communication_block"),
         states("zone", ("stable", "personal", "adaptive")),
         sa.CheckConstraint("position >= 0", name="position_nonnegative"),
         sa.CheckConstraint("locked = (zone = 'stable')", name="stable_locked"),
+        sa.CheckConstraint("zone != 'stable' OR group_id IS NULL", name="stable_global"),
     )
 
 
@@ -278,6 +301,7 @@ EVENT_TARGETS = (
     "communication_sequence",
     "interpretation",
     "semantic_gap_candidate",
+    "keyboard_group",
 )
 
 
@@ -293,6 +317,7 @@ class EventTarget:
     communication_sequence_id: Mapped[UUID | None] = mapped_column(sa.Uuid)
     interpretation_id: Mapped[UUID | None] = mapped_column(sa.Uuid)
     semantic_gap_candidate_id: Mapped[UUID | None] = mapped_column(sa.Uuid)
+    keyboard_group_id: Mapped[UUID | None] = mapped_column(sa.Uuid)
 
     @declared_attr.directive
     def __table_args__(cls) -> tuple:

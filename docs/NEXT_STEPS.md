@@ -7,7 +7,7 @@ suivant passe par une PR, puis par un déploiement après fusion.
 
 ## 1. Photos personnelles
 
-La livraison en préparation implémente le parcours décrit dans
+La PR #31, fusionnée et déployée, implémente le parcours décrit dans
 [PERSONAL_PHOTOS.md](PERSONAL_PHOTOS.md), avec stockage PostgreSQL atomique et
 suppression contrôlée. Elle permet de choisir une photo de Maman, Papa, d'un objet ou d'un lieu familier,
 avec aperçu, mot et validation. Stocker les fichiers de façon persistante et
@@ -25,6 +25,11 @@ noms personnalisables et navigation simple. Distinguer ces groupes personnels
 des catégories de recherche de la bibliothèque. Tout déplacement d'une touche
 reste explicite et conserve ses repères stables. Prévoir une vue de préparation
 et une vue de communication facile à utiliser au quotidien.
+
+La livraison en préparation implémente les pages personnelles, le renommage,
+le placement explicite et la navigation pendant un message ; voir
+[KEYBOARD_PAGES.md](KEYBOARD_PAGES.md). Les repères stables restent communs.
+Le réordonnancement, la suppression et les pages imbriquées restent à cadrer.
 
 ## 3. Accessibilité et essais d'usage
 
