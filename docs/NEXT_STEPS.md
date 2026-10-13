@@ -26,12 +26,17 @@ des catégories de recherche de la bibliothèque. Tout déplacement d'une touche
 reste explicite et conserve ses repères stables. Prévoir une vue de préparation
 et une vue de communication facile à utiliser au quotidien.
 
-La livraison en préparation implémente les pages personnelles, le renommage,
+La PR #32, fusionnée et déployée, implémente les pages personnelles, le renommage,
 le placement explicite et la navigation pendant un message ; voir
 [KEYBOARD_PAGES.md](KEYBOARD_PAGES.md). Les repères stables restent communs.
 Le réordonnancement, la suppression et les pages imbriquées restent à cadrer.
 
 ## 3. Accessibilité et essais d'usage
+
+La livraison en préparation ajoute un écran de communication dédié, sans les
+menus d'administration, et trois tailles de touches personnelles. Les repères
+stables conservent leur grille. La reprise du message fonctionne entre les deux
+vues ; voir [COMMUNICATION_DISPLAY.md](COMMUNICATION_DISPLAY.md).
 
 Vérifier les parcours sur tablette et au clavier, les lecteurs d'écran, les
 contrastes, la taille des cibles, la fatigue et les erreurs de sélection. Adapter
