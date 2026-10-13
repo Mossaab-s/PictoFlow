@@ -1,6 +1,7 @@
 """Human-controlled gap approval, block activation and representation replacement."""
 
 from dataclasses import replace
+from typing import Literal
 from uuid import UUID, uuid5
 
 from app.application.pcl_repository import PCLUnits
@@ -23,7 +24,7 @@ from app.domain.pcl.entities import (
 )
 from app.domain.pcl.gaps import GapPolicy, GapStatus, SemanticGapCandidate
 from app.domain.pcl.invariants import DomainInvariantError
-from app.domain.pcl.keyboard import KeyboardPosition, KeyboardZone, project_keyboard
+from app.domain.pcl.keyboard import KeyboardGroup, KeyboardPosition, KeyboardZone, project_keyboard
 from app.domain.pcl.pictograms import PICTOGRAM_SOURCE, PictogramKey, pictogram_reference
 
 
@@ -454,6 +455,7 @@ class BlockService:
         position: int,
         *,
         actor_role: HumanRole,
+        group_id: UUID | None | Literal["unchanged"] = "unchanged",
     ):
         zone = KeyboardZone(zone)
         # All manual positioning/stability changes require an explicit human decision.
@@ -466,6 +468,12 @@ class BlockService:
         )
         with self.units() as store:
             previous = store.get(profile_id, CommunicationBlock, block_id)
+            placements = store.list(profile_id, KeyboardPosition)
+            existing = next((p for p in placements if p.block_id == block_id), None)
+            if group_id == "unchanged":
+                group_id = existing.group_id if existing and zone != KeyboardZone.STABLE else None
+            if group_id is not None:
+                store.get(profile_id, KeyboardGroup, group_id)
             if previous.status != ProposalStatus.VALIDATED:
                 raise DomainInvariantError("Only validated blocks may be positioned")
             if previous.origin == BlockOrigin.PCL_SUGGESTION and zone == KeyboardZone.STABLE:
@@ -477,14 +485,13 @@ class BlockService:
                 else BlockStability.ADAPTIVE,
                 updated_at=utc_now(),
             )
-            placements = store.list(profile_id, KeyboardPosition)
-            existing = next((p for p in placements if p.block_id == block_id), None)
             placement = KeyboardPosition(
                 profile_id=profile_id,
                 block_id=block_id,
                 zone=zone,
                 position=position,
                 locked=zone == KeyboardZone.STABLE,
+                group_id=group_id,
                 **({"id": existing.id} if existing else {}),
             )
             store.save(profile_id, current)
@@ -501,6 +508,7 @@ class BlockService:
                         "zone": existing.zone.value,
                         "position": existing.position,
                         "locked": existing.locked,
+                        "group_id": str(existing.group_id) if existing.group_id else None,
                     }
                     if existing
                     else None
@@ -509,6 +517,7 @@ class BlockService:
                     "zone": placement.zone.value,
                     "position": placement.position,
                     "locked": placement.locked,
+                    "group_id": str(group_id) if group_id else None,
                 },
             )
         return placement

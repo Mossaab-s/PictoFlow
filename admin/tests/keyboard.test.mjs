@@ -7,6 +7,7 @@ import {
   keyboardPage,
   newIdentity,
   occupied,
+  pageTiles,
   parseDraft,
 } from "../src/lib/keyboard.ts";
 import {
@@ -32,6 +33,26 @@ const position = {
   locked: true,
 };
 const tile = { ...position, block };
+
+test("keyboard pages retain global anchors and isolate personal slots", () => {
+  const first = {
+    ...tile,
+    zone: "personal",
+    group_id: "people",
+    block_id: "mother",
+  };
+  const second = { ...first, group_id: "needs", block_id: "drink" };
+  assert.deepEqual(pageTiles([tile, first, second], "people"), [tile, first]);
+  assert.deepEqual(pageTiles([tile, first, second], null), [tile]);
+  assert.equal(
+    occupied([first], "drink", "personal", first.position, "needs"),
+    false,
+  );
+  assert.equal(
+    occupied([first], "drink", "personal", first.position, "people"),
+    true,
+  );
+});
 
 test("HTTP LAN identity generation needs no secure-context randomUUID method", () => {
   const id = newIdentity({ getRandomValues: (bytes) => bytes.fill(255) });

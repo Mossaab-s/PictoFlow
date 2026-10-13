@@ -411,6 +411,8 @@ export default function CommunicationScreen({
         {!data.loading &&
           (tiles.length ? (
             <KeyboardGrid
+              profileId={profileId}
+              groups={data.groups}
               tiles={tiles}
               onSelect={(tile) => perform(() => select(tile))}
               disabled={pending || Boolean(completed) || chosen.length >= 32}

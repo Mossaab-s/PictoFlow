@@ -11,6 +11,7 @@ from app.application.audit import AuditService
 from app.application.blocks import BlockService, RepresentationService
 from app.application.communication import CommunicationService, PersonalMemory
 from app.application.interpretation import InterpretationService
+from app.application.keyboard_groups import KeyboardGroupService
 from app.application.semantic_space import SemanticSpace
 from app.application.validation import RelationCorrectionService
 from app.domain.pcl.audit import SemanticAuditEvent
@@ -31,7 +32,7 @@ from app.domain.pcl.entities import (
     ValidationEvent,
 )
 from app.domain.pcl.gaps import GapPolicy, SemanticGapCandidate
-from app.domain.pcl.keyboard import KeyboardPosition, KeyboardZone
+from app.domain.pcl.keyboard import KeyboardGroup, KeyboardPosition, KeyboardZone
 from app.domain.pcl.pictograms import PictogramKey
 from app.infrastructure.postgres.models import ProfileRow
 from app.infrastructure.postgres.repositories import PostgresProfileRepository, to_domain
@@ -124,6 +125,12 @@ class GapDecisionBody(Body):
 class PositionBody(Body):
     zone: KeyboardZone
     position: int = Field(ge=0, strict=True)
+    actor_role: HumanRole
+    group_id: UUID | None = None
+
+
+class KeyboardGroupBody(Body):
+    label: str = Field(min_length=1, max_length=80)
     actor_role: HumanRole
 
 
@@ -490,10 +497,36 @@ def keyboard(request: Request, profile_id: UUID):
     return blocks(request).keyboard(profile_id)
 
 
+@router.get("/profiles/{profile_id}/keyboard-groups", response_model=tuple[KeyboardGroup, ...])
+def keyboard_groups(request: Request, profile_id: UUID):
+    return listing(request, profile_id, KeyboardGroup)
+
+
+@router.post(
+    "/profiles/{profile_id}/keyboard-groups", status_code=201, response_model=KeyboardGroup
+)
+def create_keyboard_group(request: Request, profile_id: UUID, body: KeyboardGroupBody):
+    return KeyboardGroupService(units(request)).create(profile_id, body.label, body.actor_role)
+
+
+@router.patch("/profiles/{profile_id}/keyboard-groups/{group_id}", response_model=KeyboardGroup)
+def rename_keyboard_group(
+    request: Request, profile_id: UUID, group_id: UUID, body: KeyboardGroupBody
+):
+    return KeyboardGroupService(units(request)).rename(
+        profile_id, group_id, body.label, body.actor_role
+    )
+
+
 @router.put("/profiles/{profile_id}/keyboard/{block_id}", response_model=KeyboardPosition)
 def position(request: Request, profile_id: UUID, block_id: UUID, body: PositionBody):
     return blocks(request).place(
-        profile_id, block_id, body.zone, body.position, actor_role=body.actor_role
+        profile_id,
+        block_id,
+        body.zone,
+        body.position,
+        actor_role=body.actor_role,
+        **({"group_id": body.group_id} if "group_id" in body.model_fields_set else {}),
     )
 
 

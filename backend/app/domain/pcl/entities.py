@@ -93,6 +93,7 @@ class TargetType(StrEnum):
     COMMUNICATION_SEQUENCE = "communication_sequence"
     INTERPRETATION = "interpretation"
     SEMANTIC_GAP_CANDIDATE = "semantic_gap_candidate"
+    KEYBOARD_GROUP = "keyboard_group"
 
 
 @dataclass(frozen=True, kw_only=True, slots=True)

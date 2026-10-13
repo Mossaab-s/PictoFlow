@@ -13,6 +13,7 @@ import {
   type Position,
   type Representation,
   type Zone,
+  type KeyboardGroup,
 } from "@/lib/keyboard";
 import KeyboardGrid from "./keyboard-grid";
 import { HumanRoleSelector, ProfileNavigation } from "./profile-navigation";
@@ -36,6 +37,7 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
   const [pictogramKey, setPictogramKey] = useState<PictogramKey | null>(null);
   const [visualMode, setVisualMode] = useState<"drawing" | "photo">("drawing");
   const [photo, setPhoto] = useState<File | null>(null);
+  const [groupLabel, setGroupLabel] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const gate = useRef(false);
@@ -53,7 +55,7 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
     } catch (error) {
       data.setError(
         error instanceof APIError && error.status === 409
-          ? "Cette place ou ce sens est déjà utilisé. Choisissez une autre place ou rechargez le clavier."
+          ? "Ce nom, cette place ou ce sens est déjà utilisé. Modifiez votre choix ou rechargez le clavier."
           : error instanceof Error
             ? error.message
             : "Action impossible.",
@@ -151,14 +153,51 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
     });
     setNotice("La photo a été supprimée. L’historique du choix est conservé.");
   }
-  async function place(block: Block, zone: Zone, position: number) {
-    if (occupied(data.positions, block.id, zone, position))
+  async function place(
+    block: Block,
+    zone: Zone,
+    position: number,
+    groupId: string | null,
+  ) {
+    if (occupied(data.positions, block.id, zone, position, groupId))
       throw new Error("Cette place est occupée par une autre touche.");
     await api(`${base}/keyboard/${block.id}`, {
       method: "PUT",
-      body: JSON.stringify({ zone, position, actor_role: role }),
+      body: JSON.stringify({
+        zone,
+        position,
+        group_id: groupId,
+        actor_role: role,
+      }),
     });
     setNotice("La position de la touche a été enregistrée.");
+  }
+  async function createGroup() {
+    if (groupLabel.trim().toLowerCase() === "accueil")
+      throw new Error(
+        "Accueil est déjà la page des touches sans groupe. Choisissez un autre nom.",
+      );
+    await api(`${base}/keyboard-groups`, {
+      method: "POST",
+      body: JSON.stringify({ label: groupLabel.trim(), actor_role: role }),
+    });
+    setGroupLabel("");
+    setNotice(
+      "La page a été créée. Choisissez-la dans la place des touches à y ajouter.",
+    );
+  }
+  async function renameGroup(group: KeyboardGroup, label: string) {
+    if (label.trim().toLowerCase() === "accueil")
+      throw new Error(
+        "Accueil est déjà la page des touches sans groupe. Choisissez un autre nom.",
+      );
+    await api(`${base}/keyboard-groups/${group.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ label: label.trim(), actor_role: role }),
+    });
+    setNotice(
+      "Le nom de la page a été enregistré. Les touches gardent leur place.",
+    );
   }
   const proposed = data.blocks.filter((block) => block.status === "proposed");
   const validated = data.blocks.filter((block) => block.status === "validated");
@@ -342,6 +381,44 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
                 </form>
               </section>
             </div>
+            <section className="review-section">
+              <h2>Les pages de mon clavier</h2>
+              <p>
+                Créez vos pages, par exemple Personnes ou Besoins. Les repères
+                stables restent visibles sur chaque page. Les touches sans page
+                sont dans Accueil.
+              </p>
+              <form
+                className="inline-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void perform(createGroup);
+                }}
+              >
+                <label>
+                  Nom de la nouvelle page
+                  <input
+                    value={groupLabel}
+                    onChange={(event) => setGroupLabel(event.target.value)}
+                    maxLength={80}
+                    required
+                    disabled={busy}
+                    placeholder="Personnes"
+                  />
+                </label>
+                <button disabled={busy || !groupLabel.trim()}>
+                  Créer la page
+                </button>
+              </form>
+              {data.groups.map((group) => (
+                <GroupName
+                  key={group.id}
+                  group={group}
+                  busy={busy}
+                  rename={(label) => perform(() => renameGroup(group, label))}
+                />
+              ))}
+            </section>
             {proposed.length > 0 && (
               <section className="review-section">
                 <h2>2. Vérifier les nouvelles touches</h2>
@@ -423,6 +500,8 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
               <h2>Aperçu du clavier</h2>
               {validated.length ? (
                 <KeyboardGrid
+                  profileId={profileId}
+                  groups={data.groups}
                   tiles={joinKeyboard(
                     profileId,
                     data.blocks,
@@ -464,9 +543,10 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
                       position={data.positions.find(
                         (position) => position.block_id === block.id,
                       )}
+                      groups={data.groups}
                       busy={busy}
-                      place={(zone, position) =>
-                        perform(() => place(block, zone, position))
+                      place={(zone, position, groupId) =>
+                        perform(() => place(block, zone, position, groupId))
                       }
                       correct={(value) =>
                         perform(() => feedback(block.id, "correct", value))
@@ -557,22 +637,29 @@ function BlockControls({
   representation,
   selectPictogram,
   selectPhoto,
+  groups,
 }: {
   block: Block;
   concept: string;
   position?: Position;
   busy: boolean;
-  place: (zone: Zone, position: number) => Promise<void>;
+  place: (
+    zone: Zone,
+    position: number,
+    groupId: string | null,
+  ) => Promise<void>;
   correct: (label: string) => Promise<void>;
   representation?: Representation;
   selectPictogram: (key: PictogramKey) => Promise<void>;
   selectPhoto: (file: File, requestId: string) => Promise<void>;
+  groups: KeyboardGroup[];
 }) {
   const [zone, setZone] = useState<Zone | null>(null);
   const [slot, setSlot] = useState<number | null>(null);
   const [label, setLabel] = useState<string | null>(null);
   const [drawing, setDrawing] = useState<PictogramKey | null>(null);
   const [photo, setPhoto] = useState<File | null>(null);
+  const [groupId, setGroupId] = useState<string | null>(null);
   const photoRequest = useRef(newIdentity());
   const currentDrawing =
     representation?.source === pictogramSource
@@ -655,6 +742,9 @@ function BlockControls({
           void place(
             zone ?? position?.zone ?? "personal",
             (slot ?? (position?.position ?? 0) + 1) - 1,
+            (zone ?? position?.zone) === "stable"
+              ? null
+              : (groupId ?? position?.group_id ?? "") || null,
           );
         }}
       >
@@ -675,6 +765,29 @@ function BlockControls({
                   }
                 >
                   {zones[value]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Page
+            <select
+              value={
+                (zone ?? position?.zone) === "stable"
+                  ? ""
+                  : (groupId ?? position?.group_id ?? "")
+              }
+              disabled={busy || (zone ?? position?.zone) === "stable"}
+              onChange={(event) => setGroupId(event.target.value)}
+            >
+              <option value="">
+                {(zone ?? position?.zone) === "stable"
+                  ? "Toutes les pages (repère stable)"
+                  : "Accueil"}
+              </option>
+              {groups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.label}
                 </option>
               ))}
             </select>
@@ -724,6 +837,48 @@ function BlockControls({
         <p>Le sens personnel de la touche est conservé.</p>
       </details>
     </section>
+  );
+}
+
+function GroupName({
+  group,
+  busy,
+  rename,
+}: {
+  group: KeyboardGroup;
+  busy: boolean;
+  rename: (label: string) => Promise<void>;
+}) {
+  const [label, setLabel] = useState<string | null>(null);
+  return (
+    <form
+      className="inline-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void rename(label ?? group.label);
+      }}
+    >
+      <label>
+        Nom de la page « {group.label} »
+        <input
+          value={label ?? group.label}
+          onChange={(event) => setLabel(event.target.value)}
+          required
+          maxLength={80}
+          disabled={busy}
+        />
+      </label>
+      <button
+        className="secondary"
+        disabled={
+          busy ||
+          !(label ?? group.label).trim() ||
+          (label ?? group.label).trim() === group.label
+        }
+      >
+        Renommer cette page
+      </button>
+    </form>
   );
 }
 
