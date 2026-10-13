@@ -1,6 +1,6 @@
 # Créer un clavier et communiquer
 
-Une touche affiche un **grand dessin au-dessus du mot**. Depuis un profil,
+Une touche affiche un **grand dessin ou une photo au-dessus du mot**. Depuis un profil,
 ouvrir **Clavier** pour préparer le vocabulaire ou **Communiquer** pour composer
 un message. Le serveur doit être mis à jour avec cette livraison pour afficher
 ces nouveaux écrans.
@@ -52,6 +52,13 @@ rechargement relit les touches ; aucune écriture n'est rejouée automatiquement
 existant. Le choix du dessin ne fusionne jamais deux sens d'après leurs mots.
 
 ## Composer et vérifier un message
+
+**Photo personnelle** permet aussi d'importer une image fixe JPEG, PNG ou WebP
+de 5 Mo maximum. Vérifiez son aperçu et son mot, créez la touche puis validez-la.
+Sur une touche existante, **Choisir une photo pour…** puis **Valider la photo de…**
+conserve son sens et sa place. La photo s'affiche dans le clavier et dans le message.
+Les anciennes photos inutilisées peuvent être supprimées depuis **Photos conservées**.
+Voir [le parcours et la conservation des photos](PERSONAL_PHOTOS.md).
 
 1. Ouvrir **Communiquer** et sélectionner les touches dans l'ordre souhaité.
    Le dessin et le mot apparaissent aussi dans le message composé.
@@ -114,6 +121,6 @@ rechargement. Les tests backend couvrent le retour à l'état initial d'une
 création interrompue, les tentatives répétées et l'isolation des profils.
 
 L'accessibilité et les interactions doivent encore être testées avec les personnes
-concernées. L'import de photos ou de banques externes de pictogrammes, la
+concernées. L'import de banques externes de pictogrammes, la
 personnalisation des dessins et le fonctionnement complet hors connexion
 restent des étapes ultérieures.

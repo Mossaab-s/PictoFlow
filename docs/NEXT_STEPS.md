@@ -1,12 +1,15 @@
 # Suite du développement après la bibliothèque de dessins
 
 La livraison courante ajoute 28 dessins recherchables et la création d'une
-touche personnelle en un formulaire, suivie de sa validation. Chaque incrément
+touche personnelle en un formulaire, suivie de sa validation. Le prompt de
+formulation est déployé via la PR #30. Chaque incrément
 suivant passe par une PR, puis par un déploiement après fusion.
 
 ## 1. Photos personnelles
 
-Permettre de choisir une photo de Maman, Papa, d'un objet ou d'un lieu familier,
+La livraison en préparation implémente le parcours décrit dans
+[PERSONAL_PHOTOS.md](PERSONAL_PHOTOS.md), avec stockage PostgreSQL atomique et
+suppression contrôlée. Elle permet de choisir une photo de Maman, Papa, d'un objet ou d'un lieu familier,
 avec aperçu, mot et validation. Stocker les fichiers de façon persistante et
 les servir uniquement dans le profil concerné, avec leur provenance et des
 limites de format/taille. Prévoir leur sauvegarde et leur suppression contrôlée.

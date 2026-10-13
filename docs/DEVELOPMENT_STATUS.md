@@ -23,9 +23,9 @@ La compilation Next.js, TypeScript et les contrôles de format sont exécutables
 avec les commandes documentées.
 
 Le socle, l'éditeur, les pictogrammes et la correction des propositions Groq
-sont fusionnés dans `main` via les **PR #25 à #29**, avec contrôles GitHub verts.
-Ils sont déployés sur le serveur dans la livraison **`20261013-03`**, commit
-`d685f79`. Le provider utilise les réponses structurées strictes ; deux appels
+sont fusionnés dans `main` via les **PR #25 à #30**, avec contrôles GitHub verts.
+Ils sont déployés sur le serveur dans la livraison **`20261013-04`**, commit
+`debb340`. Le provider utilise les réponses structurées strictes ; les appels
 réels sur des données fictives produisent des propositions françaises valides.
 Le déploiement conserve la base et les repères existants.
 
@@ -43,7 +43,8 @@ malgré les filtres, la création et validation de Téléphone et Manger, le cho
 d'un sens existant et la reprise du message illustré après rechargement.
 Les issues restent ouvertes pour suivre la revue et les prochaines étapes.
 
-La livraison préparée améliore les prompts de formulation : instructions propres
+La PR #30, fusionnée et déployée dans la livraison **`20261013-04`**, commit
+`debb340`, améliore les prompts de formulation : instructions propres
 à chaque opération, exemples de communication, sens et liens PCL lisibles,
 et absence de schéma dupliqué dans le message utilisateur en mode strict.
 Elle passe **359 tests backend** avec PostgreSQL et Redis. Les tests supplémentaires
@@ -52,7 +53,24 @@ et la séparation entre instructions système et contexte déclaré. Une compara
 Groq sur des données fictives améliore demandes et négation ; la formulation des
 émotions explicitement choisies est également vérifiée. Ces essais ne modifient
 ni le PCL ni le provider installé. Voir les [prompts et leur portée](HTTP_PROVIDERS.md#message-formulation-prompts).
-Cette amélioration reste à fusionner et déployer.
+Les trois contrôles sur le provider réellement installé donnent « Maman, je
+voudrais boire de l’eau. », « Je ne veux pas manger. » et « Je suis content. ».
+Les données du PCL et les paramètres du provider sont conservés.
+
+La livraison suivante ajoute les **photos personnelles** : import avec aperçu,
+création d'une touche à valider, remplacement explicite, affichage dans le message
+et suppression des anciennes photos inutilisées. Les pixels réduits et leur
+représentation sont conservés atomiquement dans PostgreSQL. Les sauvegardes
+existantes couvrent aussi les photos ; aucun stockage Redis ni fichier public
+n'est ajouté. Voir [PERSONAL_PHOTOS.md](PERSONAL_PHOTOS.md). Cette évolution
+reste à fusionner et déployer après sa PR.
+
+Cette évolution passe **378 tests backend** avec PostgreSQL et Redis, **15 tests
+frontend**, Ruff, Prettier, TypeScript et la compilation Next.js. Le navigateur
+vérifie l'import, l'aperçu, la validation, la position stable, le remplacement et
+la reprise d'un message avec photo. Une sauvegarde complète de la démonstration
+est restaurée dans une autre base jetable : les comptages des 14 tables et les
+empreintes des deux photos sont identiques.
 
 ## Lire et essayer
 

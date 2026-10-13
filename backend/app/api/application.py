@@ -13,7 +13,9 @@ from app.ai.errors import ProviderError, ProviderUnavailableError, ProviderUnsup
 from app.ai.manager import create_provider
 from app.api.business import router as business_router
 from app.api.health import router as health_router
+from app.api.photos import router as photo_router
 from app.api.router import router as api_router
+from app.application.photos import PhotoPayloadError
 from app.application.semantic_space import SemanticNotFoundError
 from app.application.transient import TransientStoreUnavailable
 from app.config import Settings
@@ -56,6 +58,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(health_router)
     application.include_router(api_router)
     application.include_router(business_router)
+    application.include_router(photo_router)
 
     # Errors contain only technical classes. Never echo request values or driver diagnostics.
     def handler(status: int, message: str):
@@ -71,6 +74,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     for error_type, status, message in (
         (RequestValidationError, 422, "Invalid request"),
         (ValidationError, 422, "Invalid value"),
+        (PhotoPayloadError, 422, "Invalid photo; use a static JPEG, PNG or WebP under 5 MiB"),
         (DomainInvariantError, 400, "Invalid PCL transition"),
         (SemanticNotFoundError, 404, "Object not found in this profile"),
         (IntegrityError, 409, "Conflicting persistent state"),

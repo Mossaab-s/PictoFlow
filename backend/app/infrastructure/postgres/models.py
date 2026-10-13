@@ -100,6 +100,24 @@ class RepresentationRow(Scoped, Timestamps, Base):
     )
 
 
+class PhotoAssetRow(Scoped, Base):
+    __tablename__ = "photo_asset"
+    content: Mapped[bytes] = mapped_column(sa.LargeBinary)
+    digest: Mapped[str] = mapped_column(sa.String(64))
+    width: Mapped[int]
+    height: Mapped[int]
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True))
+    __table_args__ = (
+        sa.UniqueConstraint("profile_id", "id"),
+        scoped_fk("id", "representation"),
+        sa.CheckConstraint("octet_length(content) BETWEEN 1 AND 2097152", name="bounded_content"),
+        sa.CheckConstraint(
+            "width BETWEEN 1 AND 1024 AND height BETWEEN 1 AND 1024", name="bounded_dimensions"
+        ),
+        sa.CheckConstraint("digest ~ '^[0-9a-f]{64}$'", name="valid_digest"),
+    )
+
+
 class BlockRow(Scoped, Timestamps, Base):
     __tablename__ = "communication_block"
     concept_id: Mapped[UUID | None] = mapped_column(sa.Uuid)

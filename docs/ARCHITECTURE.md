@@ -85,6 +85,8 @@ The Admin UI never reads PostgreSQL directly.
 
 ### Persistent storage
 - PostgreSQL
+- Bounded personal photo pixels are stored alongside their representation in
+  PostgreSQL for V1; see [ADR-007](ADR/ADR-007-personal-photo-storage.md).
 
 ### Cache / transient state
 - Redis

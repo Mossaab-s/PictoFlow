@@ -128,6 +128,14 @@ Conserver les sauvegardes et `.env.server` lors des mises à jour. Ne pas utilis
 persistante. Un retour à une ancienne image ne restaure pas une ancienne base ;
 une migration incompatible exige une restauration de sauvegarde coordonnée.
 
+Les photos personnelles de la migration `0005_personal_photos` sont stockées
+dans PostgreSQL avec leurs représentations. Une sauvegarde complète inclut leurs
+pixels ; aucun répertoire média séparé n'est à transférer. Faire les essais de
+restauration sur une instance isolée et vérifier la lecture d'une photo connue.
+Le downgrade de cette migration refuse une table contenant des photos ; ne pas
+effacer ces données pour faciliter un retour applicatif. Voir
+[PERSONAL_PHOTOS.md](PERSONAL_PHOTOS.md) pour leur suppression contrôlée.
+
 ## Validation des conteneurs
 
 Le smoke test utilise un projet Docker distinct, une base jetable et un port

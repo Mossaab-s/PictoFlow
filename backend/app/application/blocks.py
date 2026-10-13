@@ -521,6 +521,8 @@ class RepresentationService:
     def create(self, representation: Representation):
         if representation.status != ProposalStatus.PROPOSED:
             raise DomainInvariantError("New representations must be proposals")
+        if representation.source == "personal-photo":
+            raise DomainInvariantError("Personal photos require the managed upload workflow")
         with self.units() as store:
             store.get(representation.profile_id, Concept, representation.concept_id)
             store.add(representation.profile_id, representation)
@@ -544,6 +546,10 @@ class RepresentationService:
             )
         with self.units() as store:
             previous = store.get(profile_id, Representation, representation_id)
+            if previous.source == "personal-photo" and "asset_reference" in changes:
+                raise DomainInvariantError(
+                    "Personal photo pixels are immutable; upload a replacement"
+                )
             current = replace(previous, **changes, updated_at=utc_now())
             store.save(profile_id, current)
             store.audit(profile_id, "representation_updated", previous, current, "human")

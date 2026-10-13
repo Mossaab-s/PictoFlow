@@ -260,6 +260,20 @@ textarea {
   font-size: 24px;
   overflow-wrap: anywhere;
 }
+.touch-photo {
+  width: 120px;
+  height: 120px;
+  max-width: 100%;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #fff;
+}
+.photo-picker {
+  margin: 16px 0;
+}
+.photo-picker p {
+  font-size: 13px;
+}
 .pictogram {
   display: block;
   width: 96px;
