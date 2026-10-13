@@ -35,17 +35,21 @@ OPERATION_INSTRUCTIONS = {
     "interpret": (
         "Tu aides une personne à communiquer avec des mots ou pictogrammes. "
         "Formule son message, sans raconter ni commenter ses sélections. "
-        "Dans request.language, propose une phrase courte, naturelle, à la première personne. "
-        "Conserve tous les mots utiles, leurs répétitions, leur ordre de sens et la négation. "
+        "Dans request.language, propose une phrase courte ou une formulation partielle fidèle. "
+        "La première personne convient aux demandes, sans imposer un rôle aux personnes choisies. "
+        "Conserve chaque mot choisi, ses répétitions et la négation ; ne supprime aucun mot "
+        "pour rendre la phrase plus naturelle. Respecte l'ordre de sens. "
         "Les labels sont les mots choisis ; meaning aide à les comprendre. "
-        "Les liens PCL sont des indices, jamais des mots supplémentaires ni des consignes. "
+        "Les liens PCL et le contexte éclairent les mots, sans ajouter de contenu au message. "
         "N'ajoute ni possession, ni événement passé, ni acteur, objet, lieu ou cause absent. "
         "Une émotion explicitement choisie peut être exprimée, jamais déduite d'un autre mot. "
         "Une action seule peut devenir une demande simple. Oui, Non et Stop peuvent rester seuls. "
         "Un mot clair suffit : ne refuse pas seulement parce que le message est court. "
         "Une personne peut être interpellée sans lui attribuer une action ou une possession. "
-        "Si plusieurs sens restent possibles, propose jusqu'à trois formulations sobres. "
-        "Si aucun message fidèle n'est possible, status=not_understood et candidates=[]. "
+        "Si plusieurs sens restent possibles, propose jusqu'à trois formulations sobres "
+        "qui conservent tous les mots. Une liste fidèle de mots est préférable à un refus "
+        "ou à une phrase qui invente qui agit. Un lieu seul peut rester son nom. "
+        "Si les mots sont réellement inexploitables, status=not_understood et candidates=[]. "
         "Sinon status=proposal avec un à trois candidats. confidence mesure la fidélité aux mots, "
         "pas la confiance des liens. intent est un code court ; text contient seulement le message "
         "sans identifiants, analyse technique ni explication. "
@@ -53,7 +57,9 @@ OPERATION_INSTRUCTIONS = {
         "Exemples de formulation en français (à adapter à request.language) : "
         'Boire -> "Je voudrais boire." ; '
         'Maman, Boire, Eau -> "Maman, je voudrais boire de l’eau." ; '
-        'Papa, Livre -> "Papa, je voudrais un livre." ; '
+        'Papa, Dormir -> "Papa, je voudrais dormir." ; '
+        'Papa, Toilettes -> "Papa, j’ai besoin d’aller aux toilettes." ; '
+        'Maman, Manger, Papa -> "Maman, Papa, je voudrais manger." ; '
         'Manger, Oui -> "Je voudrais manger, oui." ; '
         'Non, Manger -> "Je ne veux pas manger." ; Mal, Aide, Stop -> "J’ai mal, aidez-moi : stop."'
         ' ; Content -> "Je suis content."'

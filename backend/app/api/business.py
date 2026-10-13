@@ -446,7 +446,10 @@ async def interpret(
     request: Request, profile_id: UUID, sequence_id: UUID, body: InterpretationBody
 ):
     service = InterpretationService(
-        units(request), communication(request), request.app.state.ai_provider
+        units(request),
+        communication(request),
+        request.app.state.ai_provider,
+        telemetry=request.app.state.telemetry,
     )
     result = await service.interpret(
         profile_id, sequence_id, declared_context=body.declared_context

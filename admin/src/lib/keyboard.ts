@@ -60,6 +60,7 @@ export type Sequence = {
   status: "in_progress" | "completed" | "cancelled";
 };
 export type Interpretation = {
+  source: string;
   id: string;
   profile_id: string;
   sequence_id: string;

@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     provider_model: str | None = None
     provider_response_format: Literal["json_object", "json_schema"] = "json_object"
     provider_timeout_seconds: float = Field(default=30.0, gt=0, le=120, allow_inf_nan=False)
+    provider_temperature: float | None = Field(default=0.2, ge=0, le=2, allow_inf_nan=False)
     prism_capabilities: tuple[Literal["interpret", "simplify", "suggest_representation"], ...] = (
         "interpret",
         "simplify",
@@ -52,4 +53,9 @@ class Settings(BaseSettings):
     @field_validator("database_url", "redis_url", mode="before")
     @classmethod
     def empty_optional_url(cls, value):
+        return None if value == "" else value
+
+    @field_validator("provider_temperature", mode="before")
+    @classmethod
+    def empty_temperature(cls, value):
         return None if value == "" else value

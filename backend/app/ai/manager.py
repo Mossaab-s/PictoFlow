@@ -121,6 +121,7 @@ def create_provider(settings: Settings, telemetry=None) -> ProviderManager:
                 settings.provider_base_url,
                 settings.provider_model,
                 response_format=settings.provider_response_format,
+                temperature=settings.provider_temperature,
                 **options,
             )
         else:

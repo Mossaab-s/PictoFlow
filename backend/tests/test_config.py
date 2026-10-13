@@ -35,3 +35,13 @@ def test_strict_compatible_response_format_is_explicit(monkeypatch):
     assert Settings(_env_file=None).provider_response_format == "json_schema"
     with pytest.raises(ValidationError):
         Settings(provider_response_format="text", _env_file=None)
+
+
+def test_temperature_is_bounded_and_can_be_omitted(monkeypatch):
+    monkeypatch.delenv("PICTOFLOW_PROVIDER_TEMPERATURE", raising=False)
+    assert Settings(_env_file=None).provider_temperature == 0.2
+    monkeypatch.setenv("PICTOFLOW_PROVIDER_TEMPERATURE", "")
+    assert Settings(_env_file=None).provider_temperature is None
+    for value in (-0.01, 2.01, float("nan"), float("inf")):
+        with pytest.raises(ValidationError):
+            Settings(provider_temperature=value, _env_file=None)

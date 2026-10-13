@@ -55,6 +55,18 @@ def test_hypotheses_are_bounded_ranked_and_custom_thresholds_apply():
         ConfidencePolicy().decide((items[0], replace(items[1], profile_id=uuid4())))
 
 
+@pytest.mark.parametrize("best_score", [0.7, 1.0])
+def test_high_confidence_does_not_hide_other_eligible_hypotheses(best_score):
+    profile, sequence = uuid4(), uuid4()
+    items = tuple(
+        Interpretation(
+            profile_id=profile, sequence_id=sequence, text=str(i), confidence=score, source="fake"
+        )
+        for i, score in enumerate((best_score, 0.6, 0.4, 0.39))
+    )
+    assert ConfidencePolicy().decide(items).candidates == items[:3]
+
+
 def test_order_repetition_undo_clear_completion_and_terminal_state():
     sequence = CommunicationSequence(profile_id=uuid4(), session_id=uuid4())
     a, b = uuid4(), uuid4()

@@ -153,3 +153,18 @@ ordering, confidence boundaries, malformed candidates, refusal consistency,
 attempted validation/activation, optional vendor metadata, metadata limits and
 nested-instance revalidation. The isolated domain import test still runs with
 third-party packages disabled.
+
+## Phrase generation safeguards
+
+The compatible provider sends `temperature=0.2` for interpretation by default.
+`PICTOFLOW_PROVIDER_TEMPERATURE` accepts finite values from 0 to 2; an empty value
+omits the parameter for endpoints that do not support it. Other operations and
+the PRISM adapter do not send this parameter. Both Compose stacks propagate it.
+
+JSON Schema guarantees structure, not message fidelity. The application filters
+French candidates using conservative word coverage and preserves original labels
+with source `pcl` if no usable candidate remains, including structured refusals
+and payload errors. Several useful candidates remain available even when the
+model assigns a high score to one. Neither the score nor these checks promote a
+proposal into validated personal knowledge. Unknown paraphrases can be rejected;
+human review remains necessary for grammar, meaning, roles and ambiguity.

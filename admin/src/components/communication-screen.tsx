@@ -577,6 +577,12 @@ function InterpretationCard({
             : "Proposition à vérifier"}
       </span>
       <p className="proposed-phrase">{text}</p>
+      {candidate.source === "pcl" && !candidate.corrected_text && (
+        <p className="notice">
+          Vos mots sont présentés tels quels. Vous pouvez les lire ou les
+          reformuler pour préciser votre message.
+        </p>
+      )}
       {candidate.corrected_text && (
         <details>
           <summary>Voir la proposition d'origine</summary>
