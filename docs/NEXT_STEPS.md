@@ -33,7 +33,7 @@ Le réordonnancement, la suppression et les pages imbriquées restent à cadrer.
 
 ## 3. Accessibilité et essais d'usage
 
-La livraison en préparation ajoute un écran de communication dédié, sans les
+La PR #33, fusionnée, ajoute un écran de communication dédié, sans les
 menus d'administration, et trois tailles de touches personnelles. Les repères
 stables conservent leur grille. La reprise du message fonctionne entre les deux
 vues ; voir [COMMUNICATION_DISPLAY.md](COMMUNICATION_DISPLAY.md).
@@ -47,8 +47,12 @@ action choisie et utilisable sans proposition IA.
 
 ## 4. Profils et reprise sans connexion
 
-Donner des noms aux profils, préparer les droits d'accès et les sauvegardes,
-puis définir le fonctionnement hors connexion. Commencer par lire un clavier
+La livraison en préparation ajoute les noms personnels des profils, leur
+renommage, la recherche et la protection contre l'écrasement d'un changement
+récent ; voir [PROFILE_NAMES.md](PROFILE_NAMES.md).
+
+Préparer les droits d'accès et les sauvegardes, puis définir le fonctionnement
+hors connexion. Commencer par lire un clavier
 déjà validé et composer des mots ; définir séparément la synchronisation et les
 conflits avant d'autoriser des modifications hors connexion. PostgreSQL demeure
 la source de vérité et une proposition IA reste soumise à validation humaine.

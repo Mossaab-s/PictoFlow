@@ -62,7 +62,15 @@ class ProfileRow(Timestamps, Base):
     __tablename__ = "user_communication_profile"
     id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
     version: Mapped[int] = mapped_column(default=1)
-    __table_args__ = (sa.CheckConstraint("version >= 1", name="positive_version"),)
+    display_name: Mapped[str | None] = mapped_column(sa.String(80))
+    __table_args__ = (
+        sa.CheckConstraint("version >= 1", name="positive_version"),
+        sa.CheckConstraint(
+            "display_name IS NULL OR (display_name = trim(display_name) "
+            "AND length(display_name) BETWEEN 1 AND 80)",
+            name="bounded_display_name",
+        ),
+    )
 
 
 class ConceptRow(Scoped, Timestamps, Base):

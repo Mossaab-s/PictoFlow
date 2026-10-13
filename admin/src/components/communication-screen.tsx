@@ -18,6 +18,7 @@ import KeyboardGrid from "./keyboard-grid";
 import { HumanRoleSelector, ProfileNavigation } from "./profile-navigation";
 import { useProfileKeyboard } from "./use-profile-keyboard";
 import { TouchContent } from "./pictogram";
+import ProfileIdentity from "./profile-identity";
 import { useLocalSpeech } from "./use-local-speech";
 import DisplaySettings from "./display-settings";
 import { useDisplaySettings } from "./use-display-settings";
@@ -317,6 +318,9 @@ export default function CommunicationScreen({
               {standalone ? "PICTOFLOW · MES MOTS" : "MON MESSAGE, MES MOTS"}
             </div>
             <h1>Je communique</h1>
+            <p className="communication-profile">
+              <ProfileIdentity profileId={profileId} />
+            </p>
             <p>
               Choisissez vos touches dans l'ordre. Votre message peut rester tel
               quel ou recevoir une proposition de phrase.

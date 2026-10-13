@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, Row, sections, Section } from "@/lib/api";
+import ProfileIdentity from "./profile-identity";
 
 export default function ProfileSection({
   profileId,
@@ -64,7 +65,7 @@ export default function ProfileSection({
     <>
       <header className="topbar">
         <Link href="/admin/profiles">Profils</Link>
-        <span>Profil · {profileId.slice(0, 8)}</span>
+        <ProfileIdentity profileId={profileId} />
       </header>
       <section className="page">
         <div className="eyebrow">ESPACE PERSONNEL</div>

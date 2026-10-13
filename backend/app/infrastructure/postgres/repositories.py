@@ -1,11 +1,12 @@
 """Adapters return domain values and leave transaction commits to the caller."""
 
-from dataclasses import fields
+from dataclasses import fields, replace
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.application.repositories import ProfileVersionConflict
 from app.domain.pcl.entities import Concept, Representation, UserCommunicationProfile, utc_now
 from app.infrastructure.postgres.models import ConceptRow, ProfileRow, RepresentationRow
 
@@ -29,6 +30,30 @@ class PostgresProfileRepository:
     def get_by_id(self, profile_id: UUID) -> UserCommunicationProfile | None:
         row = self.session.scalar(select(ProfileRow).where(ProfileRow.id == profile_id))
         return to_domain(UserCommunicationProfile, row) if row is not None else None
+
+    def rename(
+        self, profile_id: UUID, display_name: str | None, expected_version: int
+    ) -> UserCommunicationProfile | None:
+        row = self.session.scalar(
+            select(ProfileRow)
+            .where(ProfileRow.id == profile_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        if row is None:
+            return None
+        if row.version != expected_version:
+            raise ProfileVersionConflict("Profile version changed")
+        previous = to_domain(UserCommunicationProfile, row)
+        current = replace(previous, display_name=display_name)
+        if current.display_name == previous.display_name:
+            return previous
+        current = replace(current, version=previous.version + 1, updated_at=utc_now())
+        row.display_name = current.display_name
+        row.version = current.version
+        row.updated_at = current.updated_at
+        self.session.flush()
+        return current
 
 
 class PostgresConceptRepository:

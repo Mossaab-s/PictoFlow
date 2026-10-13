@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { sections, type Section } from "@/lib/api";
 import type { HumanRole } from "@/lib/keyboard";
+import ProfileIdentity from "./profile-identity";
 
 export function ProfileNavigation({
   profileId,
@@ -13,7 +14,7 @@ export function ProfileNavigation({
     <>
       <header className="topbar">
         <Link href="/admin/profiles">Profils</Link>
-        <span>Espace personnel · {profileId.slice(0, 8)}</span>
+        <ProfileIdentity profileId={profileId} />
       </header>
       <nav className="tabs profile-tabs" aria-label="Sections du profil">
         {Object.entries(sections).map(([value, title]) => (

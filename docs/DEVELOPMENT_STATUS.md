@@ -91,7 +91,7 @@ frontend**, Ruff, Prettier, TypeScript et la compilation Next.js. Le parcours
 navigateur vérifie création, renommage, deux cases 1 sur des pages distinctes,
 repères stables communs, composition entre pages et reprise du message.
 
-La livraison en préparation ajoute l'**espace de communication dédié** et les
+La PR #33, fusionnée, ajoute l'**espace de communication dédié** et les
 **tailles de touches personnelles**, sans migration ni modification des API.
 Les repères stables gardent leur grille et leur pagination. Un message peut
 être repris entre la préparation, la vue Communiquer et l'écran dédié. Le choix
@@ -99,6 +99,17 @@ de taille reste dans le navigateur, séparé par profil et sans contenu personne
 Voir [COMMUNICATION_DISPLAY.md](COMMUNICATION_DISPLAY.md). Les **19 tests frontend**,
 Prettier, TypeScript et la compilation Next.js passent. Le navigateur est vérifié
 sur une base PostgreSQL jetable, avec reprise et deux largeurs d'écran.
+
+La livraison en préparation ajoute les **noms des profils**, la création avec
+nom facultatif, le renommage, la lecture ciblée et la recherche. Les en-têtes
+affichent le nom choisi, avec un libellé stable pour les anciens profils sans
+nom. Les identifiants et le contenu PCL restent conservés. Une version périmée
+ne peut pas écraser un changement récent. La migration additive conserve les
+profils existants et refuse une descente qui supprimerait des noms personnels.
+Voir [PROFILE_NAMES.md](PROFILE_NAMES.md). La version passe **415 tests backend**
+avec PostgreSQL/Redis, dont les contrôles de migration, rollback et absence de
+noms dans les requêtes IA et la télémétrie. Les **21 tests frontend**, la compilation
+et le parcours navigateur sont vérifiés avant ouverture de la PR.
 
 ## Lire et essayer
 
