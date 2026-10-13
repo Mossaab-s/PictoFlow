@@ -206,6 +206,9 @@ def test_downgrade_refuses_to_discard_personal_keyboard_organization(api, postgr
 
     base = profile(api)
     page = group(api, base, "Personnes")
-    with pytest.raises(RuntimeError, match="Explicitly erase profile memory"):
+    with (
+        pytest.raises(RuntimeError, match="Explicitly erase profile memory"),
+        postgres_connection.begin_nested(),
+    ):
         command.downgrade(migration_config(postgres_connection), "0005_personal_photos")
     assert api.get(base + "/keyboard-groups").json()[0]["id"] == page["id"]

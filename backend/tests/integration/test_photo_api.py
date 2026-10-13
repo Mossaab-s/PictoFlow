@@ -243,7 +243,10 @@ def test_downgrade_refuses_to_discard_stored_photo_pixels(api, postgres_connecti
 
     base = profile(api)
     block = api.post(base + "/blocks/photo", json=photo_body()).json()
-    with pytest.raises(RuntimeError, match="Remove personal photos explicitly"):
+    with (
+        pytest.raises(RuntimeError, match="Remove personal photos explicitly"),
+        postgres_connection.begin_nested(),
+    ):
         command.downgrade(migration_config(postgres_connection), "0004_gap_blocks_keyboard")
     assert api.get(media(base, block)).status_code == 200 and count_photos(api) == 1
 

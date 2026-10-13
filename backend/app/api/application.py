@@ -16,6 +16,7 @@ from app.api.health import router as health_router
 from app.api.photos import router as photo_router
 from app.api.router import router as api_router
 from app.application.photos import PhotoPayloadError
+from app.application.repositories import ProfileVersionConflict
 from app.application.semantic_space import SemanticNotFoundError
 from app.application.transient import TransientStoreUnavailable
 from app.config import Settings
@@ -78,6 +79,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         (DomainInvariantError, 400, "Invalid PCL transition"),
         (SemanticNotFoundError, 404, "Object not found in this profile"),
         (IntegrityError, 409, "Conflicting persistent state"),
+        (ProfileVersionConflict, 409, "Profile changed; reload before renaming"),
         (SQLAlchemyError, 503, "Persistent storage unavailable"),
         (TransientStoreUnavailable, 503, "Transient storage unavailable"),
         (ProviderUnsupportedCapability, 501, "Provider capability unavailable"),

@@ -53,6 +53,10 @@ existant. Le choix du dessin ne fusionne jamais deux sens d'après leurs mots.
 
 ## Composer et vérifier un message
 
+Depuis **Profils**, vous pouvez donner un prénom ou un surnom à chaque personne
+et retrouver son espace par la recherche. **Renommer le profil** conserve son
+clavier et ses messages ; voir [les noms des profils](PROFILE_NAMES.md).
+
 **Ouvrir la communication** mène à un écran dédié au message et au clavier,
 sans les menus d'administration. **Retour à la préparation** retrouve l'éditeur.
 Dans **Réglages d’affichage**, choisir Classique, Grandes touches ou Très grandes

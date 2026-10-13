@@ -6,10 +6,18 @@ from uuid import UUID
 from app.domain.pcl.entities import Concept, Representation, UserCommunicationProfile
 
 
+class ProfileVersionConflict(ValueError):
+    """The profile has changed since the caller loaded its identity."""
+
+
 class ProfileRepository(Protocol):
     def add(self, profile: UserCommunicationProfile) -> None: ...
 
     def get_by_id(self, profile_id: UUID) -> UserCommunicationProfile | None: ...
+
+    def rename(
+        self, profile_id: UUID, display_name: str | None, expected_version: int
+    ) -> UserCommunicationProfile | None: ...
 
 
 class ConceptRepository(Protocol):

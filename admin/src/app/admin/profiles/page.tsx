@@ -1,7 +1,8 @@
 "use client";
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { api, Profile } from "@/lib/api";
+import { useEffect, useRef, useState } from "react";
+import { api, type Profile } from "@/lib/api";
+import { matchingProfiles, profileTitle } from "@/lib/profiles";
+import ProfileCard from "@/components/profile-card";
 
 export default function Profiles() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -9,34 +10,70 @@ export default function Profiles() {
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
   const [healthy, setHealthy] = useState(false);
+  const [name, setName] = useState("");
+  const [query, setQuery] = useState("");
+  const [notice, setNotice] = useState("");
+  const gate = useRef(false);
+  const pending = useRef<AbortController | null>(null);
   async function load() {
+    pending.current?.abort();
+    const request = new AbortController();
+    pending.current = request;
     setLoading(true);
     setError("");
     try {
-      await api("health");
-      setHealthy(true);
-      setProfiles(await api<Profile[]>("profiles"));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Chargement impossible.");
+      const [, values] = await Promise.all([
+        api("health", { signal: request.signal }),
+        api<Profile[]>("profiles", { signal: request.signal }),
+      ]);
+      if (!request.signal.aborted) {
+        setHealthy(true);
+        setProfiles(values);
+      }
+    } catch (error) {
+      if (!request.signal.aborted) {
+        setHealthy(false);
+        setError(
+          error instanceof Error ? error.message : "Chargement impossible.",
+        );
+      }
     } finally {
-      setLoading(false);
+      if (!request.signal.aborted) setLoading(false);
     }
   }
   useEffect(() => {
     void load();
+    return () => pending.current?.abort();
   }, []);
   async function create() {
+    if (gate.current) return;
+    gate.current = true;
     setCreating(true);
     setError("");
+    setNotice("");
     try {
-      const profile = await api<Profile>("profiles", { method: "POST" });
-      setProfiles((p) => [...p, profile]);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Création impossible.");
+      const profile = await api<Profile>("profiles", {
+        method: "POST",
+        body: JSON.stringify({ display_name: name.trim() || null }),
+      });
+      setProfiles((previous) => [...previous, profile]);
+      setName("");
+      setQuery("");
+      setNotice(`${profileTitle(profile)} a été créé.`);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Création impossible.");
     } finally {
+      gate.current = false;
       setCreating(false);
     }
   }
+  function update(profile: Profile) {
+    setQuery("");
+    setProfiles((previous) =>
+      previous.map((item) => (item.id === profile.id ? profile : item)),
+    );
+  }
+  const visible = matchingProfiles(profiles, query);
   return (
     <>
       <header className="topbar">
@@ -51,49 +88,87 @@ export default function Profiles() {
             <div className="eyebrow">COMMUNICATION PERSONNELLE</div>
             <h1>Un espace pour chaque personne.</h1>
             <p>
-              Gérez le vocabulaire, les propositions et la mémoire validée de
-              chaque profil.
+              Retrouvez chaque personne par son nom, puis préparez son clavier
+              ou ouvrez sa communication.
             </p>
           </div>
-          <button onClick={create} disabled={creating}>
-            {creating ? "Création…" : "+ Nouveau profil"}
-          </button>
         </div>
+        <section className="panel profile-create">
+          <h2>Créer un profil</h2>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void create();
+            }}
+          >
+            <label>
+              Nom du profil, facultatif
+              <input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                maxLength={80}
+                disabled={creating || loading}
+                placeholder="Un prénom ou un surnom"
+                autoComplete="off"
+              />
+            </label>
+            <button disabled={creating || loading}>
+              {creating ? "Création…" : "+ Nouveau profil"}
+            </button>
+          </form>
+        </section>
         {error && (
           <div className="error" role="alert">
             {error}{" "}
-            <button className="secondary" onClick={load}>
-              Réessayer
+            <button className="secondary" onClick={load} disabled={creating}>
+              Recharger les profils
             </button>
           </div>
+        )}
+        {notice && (
+          <p className="notice" role="status">
+            {notice}
+          </p>
         )}
         {loading ? (
           <p role="status">Chargement des profils…</p>
         ) : (
           <>
-            <div className="section-label">
-              PROFILS <span>{profiles.length}</span>
+            {profiles.length > 0 && (
+              <label className="profile-search">
+                Rechercher un profil
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Nom ou identifiant"
+                  autoComplete="off"
+                />
+              </label>
+            )}
+            <div className="section-label" role="status">
+              PROFILS{" "}
+              <span>
+                {visible.length} / {profiles.length}
+              </span>
             </div>
             <div className="profile-grid">
-              {profiles.map((profile, index) => (
-                <Link
-                  className="profile-card"
-                  href={`/admin/profiles/${profile.id}/concepts`}
+              {visible.map((profile) => (
+                <ProfileCard
                   key={profile.id}
-                >
-                  <div className="avatar">
-                    {String(index + 1).padStart(2, "0")}
-                  </div>
-                  <span className="tag">Personnel</span>
-                  <h2>Profil {index + 1}</h2>
-                  <p className="identifier">{profile.id}</p>
-                  <div className="card-footer">
-                    <span>Version {profile.version}</span>
-                    <strong>Ouvrir l’espace →</strong>
-                  </div>
-                </Link>
+                  profile={profile}
+                  onUpdate={update}
+                />
               ))}
             </div>
+            {profiles.length > 0 && !visible.length && (
+              <div className="empty">
+                <h2>Aucun profil ne correspond</h2>
+                <button className="secondary" onClick={() => setQuery("")}>
+                  Afficher tous les profils
+                </button>
+              </div>
+            )}
             {!profiles.length && !error && (
               <div className="empty">
                 <h2>Votre premier espace de communication</h2>

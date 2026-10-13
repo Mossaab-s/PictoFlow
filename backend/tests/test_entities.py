@@ -36,3 +36,18 @@ def test_generated_representation_starts_as_proposal():
 def test_invalid_profile_version_is_rejected():
     with pytest.raises(ValueError):
         UserCommunicationProfile(version=0)
+
+
+@pytest.mark.parametrize("name", ["", " \t\n", "a" * 81, 42])
+def test_profile_name_rejects_empty_unbounded_or_nontext_values(name):
+    with pytest.raises(ValueError):
+        UserCommunicationProfile(display_name=name)
+
+
+def test_profile_names_are_optional_normalized_metadata_not_identity():
+    unnamed = UserCommunicationProfile()
+    first = UserCommunicationProfile(display_name="  Élodie (démo)  ")
+    second = UserCommunicationProfile(display_name="Élodie (démo)")
+    assert unnamed.display_name is None
+    assert first.display_name == second.display_name == "Élodie (démo)"
+    assert first.id != second.id

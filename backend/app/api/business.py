@@ -1,9 +1,10 @@
 """REST adapter with profile scope in every personal operation."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 from sqlalchemy import select
 
 from app.ai.contracts import ProviderHealth
@@ -43,6 +44,18 @@ router = APIRouter(prefix="/api/v1", tags=["PCL"])
 
 class Body(BaseModel):
     model_config = ConfigDict(extra="forbid", hide_input_in_errors=True, allow_inf_nan=False)
+
+
+ProfileName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)]
+
+
+class ProfileCreateBody(Body):
+    display_name: ProfileName | None = None
+
+
+class ProfileRenameBody(Body):
+    display_name: ProfileName | None
+    expected_version: int = Field(ge=1, strict=True)
 
 
 class ConceptBody(Body):
@@ -203,11 +216,31 @@ def list_profiles(request: Request):
 
 
 @router.post("/profiles", status_code=201, response_model=UserCommunicationProfile)
-def create_profile(request: Request):
-    profile = UserCommunicationProfile()
+def create_profile(request: Request, body: ProfileCreateBody | None = None):
+    profile = UserCommunicationProfile(display_name=body.display_name if body else None)
     with units(request).factory.begin() as session:
         PostgresProfileRepository(session).add(profile)
     return profile
+
+
+@router.get("/profiles/{profile_id}", response_model=UserCommunicationProfile)
+def read_profile(request: Request, profile_id: UUID):
+    with units(request).factory.begin() as session:
+        profile = PostgresProfileRepository(session).get_by_id(profile_id)
+        if profile is None:
+            raise HTTPException(404, "Profile not found")
+        return profile
+
+
+@router.patch("/profiles/{profile_id}", response_model=UserCommunicationProfile)
+def rename_profile(request: Request, profile_id: UUID, body: ProfileRenameBody):
+    with units(request).factory.begin() as session:
+        profile = PostgresProfileRepository(session).rename(
+            profile_id, body.display_name, body.expected_version
+        )
+        if profile is None:
+            raise HTTPException(404, "Profile not found")
+        return profile
 
 
 @router.get("/profiles/{profile_id}/concepts", response_model=tuple[Concept, ...])

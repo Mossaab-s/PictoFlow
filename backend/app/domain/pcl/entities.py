@@ -102,10 +102,17 @@ class UserCommunicationProfile:
     created_at: datetime = field(default_factory=utc_now)
     updated_at: datetime = field(default_factory=utc_now)
     version: int = 1
+    display_name: str | None = None
 
     def __post_init__(self) -> None:
         check.identity_and_dates(self)
         check.count(self.version, "version", minimum=1)
+        if self.display_name is not None:
+            check.text(self.display_name, "display_name")
+            name = self.display_name.strip()
+            if len(name) > 80:
+                raise check.DomainInvariantError("display_name must be at most 80 characters")
+            object.__setattr__(self, "display_name", name)
 
 
 @dataclass(frozen=True, kw_only=True, slots=True)

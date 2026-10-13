@@ -21,7 +21,12 @@ export async function api<T>(path: string, options?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export type Profile = { id: string; version: number; created_at: string };
+export type Profile = {
+  id: string;
+  version: number;
+  created_at: string;
+  display_name?: string | null;
+};
 export type Row = Record<string, unknown>;
 export const sections = {
   concepts: "Concepts",
