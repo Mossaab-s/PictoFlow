@@ -2,12 +2,17 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   draftReference,
+  blockRepresentation,
   joinKeyboard,
   keyboardPage,
   newIdentity,
   occupied,
   parseDraft,
 } from "../src/lib/keyboard.ts";
+import {
+  pictogramFromReference,
+  pictogramReference,
+} from "../src/lib/pictograms.ts";
 
 const profile = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const blockId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
@@ -119,4 +124,67 @@ test("malformed cached drafts cannot redirect requests or introduce unbounded ca
     ),
     null,
   );
+});
+
+test("only the selected, validated representation of the same profile and concept appears", () => {
+  const visualBlock = {
+    ...block,
+    concept_id: "concept",
+    representation_id: "visual",
+    visual_reference: "https://untrusted.invalid/a.svg",
+  };
+  const visual = {
+    id: "visual",
+    profile_id: profile,
+    concept_id: "concept",
+    status: "validated",
+    source: "pictoflow-builtin-v1",
+    type: "pictogram",
+    asset_reference: pictogramReference("toilets"),
+  };
+  const joined = joinKeyboard(profile, [visualBlock], [position], [visual]);
+  assert.equal(joined[0].representation, visual);
+  for (const invalid of [
+    { ...visual, profile_id: "other" },
+    { ...visual, concept_id: "different" },
+    { ...visual, id: "other" },
+    { ...visual, status: "proposed" },
+    { ...visual, status: "rejected" },
+    { ...visual, status: "archived" },
+  ]) {
+    assert.equal(
+      joinKeyboard(profile, [visualBlock], [position], [invalid])[0]
+        .representation,
+      undefined,
+    );
+  }
+  assert.equal(
+    blockRepresentation(
+      profile,
+      visualBlock,
+      [{ ...visual, status: "proposed" }],
+      true,
+    )?.id,
+    "visual",
+  );
+  assert.equal(
+    blockRepresentation("other", visualBlock, [visual], true),
+    undefined,
+  );
+});
+
+test("visual references select local drawings without inferring one from the word or loading a URL", () => {
+  assert.equal(
+    pictogramFromReference(pictogramReference("toilets"))?.key,
+    "toilets",
+  );
+  assert.equal(pictogramFromReference("Toilettes"), undefined);
+  for (const unsafe of [
+    "https://example.com/photo.svg",
+    "data:image/svg+xml,script",
+    "pictoflow:pictogram:v1:../sun",
+    "pictoflow:pictogram:v2:sun",
+    null,
+  ])
+    assert.equal(pictogramFromReference(unsafe), undefined);
 });

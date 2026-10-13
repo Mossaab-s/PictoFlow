@@ -9,7 +9,8 @@ operation accepts a bare object UUID without profile scope.
 | `/concepts` | List/create; rename by concept UUID |
 | `/relations` | List/propose; confidence; human feedback; corrected replacement |
 | `/representations` | List/create/update; human feedback; archive |
-| `/blocks` | List/propose; human feedback; representation selection |
+| `/blocks` | List/propose with optional bundled pictogram; human feedback; representation selection |
+| `/blocks/{block_id}/pictogram` | PUT: explicit human choice of a bundled drawing for a validated touch |
 | `/sequences` | Start; scoped read by ID; selection/undo/clear/complete/cancel; completed history; interpretation |
 | `/interpretations` | List; scoped read by ID; explicit confirm/correct/reject feedback |
 | `/memory` | Separate validated/proposal reads; explicit DELETE erasure |
@@ -26,6 +27,17 @@ transaction, with the human correction and its derived rejection/confirmation
 facts preserved.
 
 Without a database, liveness remains available and business routes return 503.
+Creating a block accepts optional `pictogram_key` from the bundled catalogue.
+Both the block and its concept-scoped representation start as proposals in one
+transaction. Block feedback requires `confirm_representation: true` to confirm
+the drawing together with the word; without that explicit choice an unvalidated
+visual cannot be activated. The dedicated pictogram PUT requires `actor_role`,
+records representation and block validation/audit facts atomically, and retains
+the block's concept, label, stability and keyboard position. Repeating the same
+current drawing is a no-op. Previous representations and audit are retained.
+Bundled asset references are versioned `pictoflow:pictogram:v1:{key}` identifiers.
+No schema migration is required; the existing Representation model is reused.
+
 `/api/v1/readiness` reports process health, observed Redis availability and whether
 database configuration exists; it does not assert continuous database readiness.
 All validation/provider/database errors return redacted, static messages.

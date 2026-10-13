@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { keyboardPage, zones, type Tile, type Zone } from "@/lib/keyboard";
+import { TouchContent } from "./pictogram";
 
 export default function KeyboardGrid({
   tiles,
@@ -68,7 +69,10 @@ function ZoneGrid({
                   {tile.position + 1}
                   {tile.locked ? " · repère fixe" : ""}
                 </span>
-                <strong>{tile.block.label}</strong>
+                <TouchContent
+                  label={tile.block.label}
+                  representation={tile.representation}
+                />
               </button>
             ) : (
               <div
@@ -79,7 +83,10 @@ function ZoneGrid({
                   {tile.position + 1}
                   {tile.locked ? " · repère fixe" : ""}
                 </span>
-                <strong>{tile.block.label}</strong>
+                <TouchContent
+                  label={tile.block.label}
+                  representation={tile.representation}
+                />
               </div>
             )
           ) : (

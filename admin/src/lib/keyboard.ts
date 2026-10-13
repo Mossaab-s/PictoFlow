@@ -10,6 +10,7 @@ export type Block = {
   id: string;
   profile_id: string;
   concept_id: string | null;
+  representation_id?: string | null;
   canonical_intent: string | null;
   label: string;
   status: "proposed" | "validated" | "rejected";
@@ -23,7 +24,33 @@ export type Position = {
   position: number;
   locked: boolean;
 };
-export type Tile = Position & { block: Block };
+export type Representation = {
+  id: string;
+  profile_id: string;
+  concept_id: string;
+  type: string;
+  source: string;
+  asset_reference: string | null;
+  status: "proposed" | "validated" | "rejected" | "archived";
+};
+export type Tile = Position & { block: Block; representation?: Representation };
+
+export function blockRepresentation(
+  profileId: string,
+  block: Block,
+  representations: Representation[],
+  proposed = false,
+) {
+  if (block.profile_id !== profileId) return undefined;
+  return representations.find(
+    (visual) =>
+      visual.id === block.representation_id &&
+      visual.profile_id === profileId &&
+      visual.concept_id === block.concept_id &&
+      (visual.status === "validated" ||
+        (proposed && visual.status === "proposed")),
+  );
+}
 export type Sequence = {
   id: string;
   profile_id: string;
@@ -76,6 +103,7 @@ export function joinKeyboard(
   profileId: string,
   blocks: Block[],
   positions: Position[],
+  representations: Representation[] = [],
 ): Tile[] {
   const known = new Map(
     blocks
@@ -90,7 +118,19 @@ export function joinKeyboard(
       (position) =>
         position.profile_id === profileId && known.has(position.block_id),
     )
-    .map((position) => ({ ...position, block: known.get(position.block_id)! }));
+    .map((position) => {
+      const block = known.get(position.block_id)!;
+      const representation = blockRepresentation(
+        profileId,
+        block,
+        representations,
+      );
+      return {
+        ...position,
+        block,
+        ...(representation ? { representation } : {}),
+      };
+    });
 }
 
 export function keyboardPage(

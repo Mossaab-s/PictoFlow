@@ -1,6 +1,6 @@
 # Créer un clavier et communiquer
 
-Cette première interface utilise des **touches textuelles**. Depuis un profil,
+Une touche affiche un **grand dessin au-dessus du mot**. Depuis un profil,
 ouvrir **Clavier** pour préparer le vocabulaire ou **Communiquer** pour composer
 un message. Le serveur doit être mis à jour avec cette livraison pour afficher
 ces nouveaux écrans.
@@ -10,9 +10,10 @@ ces nouveaux écrans.
 1. Ouvrir un profil, puis l'onglet **Clavier**.
 2. Ajouter un sens personnel, par exemple « Boire », ou choisir un concept
    existant dans le formulaire de création de touche.
-3. Choisir le texte affiché et cliquer sur **Créer la touche à vérifier**.
-4. Vérifier le sens et le libellé, choisir le rôle de la personne qui valide,
-   puis **Valider la touche** ou **Écarter cette touche**.
+3. Choisir le texte affiché et un dessin dans la bibliothèque, vérifier l'aperçu,
+   puis cliquer sur **Créer la touche à vérifier**.
+4. Vérifier le sens, le dessin et le mot, choisir le rôle de la personne qui valide,
+   puis **Valider le dessin et le mot** ou **Écarter cette touche**.
 5. La touche validée apparaît dans le clavier. Pour fixer sa place, choisir une
    zone et un numéro, puis **Enregistrer la place**.
 
@@ -20,6 +21,19 @@ Les places commencent à 1 dans l'interface. Une place occupée est refusée san
 déplacer une autre touche. Les **repères stables** conservent leurs cases libres.
 Les grandes grilles sont paginées. Les nouvelles suggestions PCL ne peuvent
 pas être promues en repères stables dans ce parcours V1.
+
+La bibliothèque comprend Toilettes, Jouet, Livre, Maman, Papa, Stop, Oui, Non,
+Aimer, Voiture, Chat, Soleil, Boire et Dormir. Ce sont des dessins vectoriels
+intégrés à l'application ; aucune image externe n'est chargée. Le choix du
+dessin appartient à la personne qui prépare et valide la touche. Le mot seul
+ne déclenche aucune association automatique à un dessin.
+
+**Ajouter un dessin** permet de compléter une ancienne touche textuelle.
+**Modifier le dessin** propose un aperçu et exige **Valider le nouveau dessin**.
+Le mot, le concept et la place de la touche sont conservés. Chaque choix est une
+représentation propre au profil, stockée dans PostgreSQL avec son historique.
+Un dessin absent, rejeté, archivé ou non pris en charge laisse le mot lisible
+avec un repère neutre « ? » ; il peut être choisi à nouveau depuis l'éditeur.
 
 **Modifier le texte** corrige le libellé d'une touche validée sans modifier son
 concept ni sa signification. Chaque changement laisse un historique. La création
@@ -29,6 +43,7 @@ si la création de la touche échoue.
 ## Composer et vérifier un message
 
 1. Ouvrir **Communiquer** et sélectionner les touches dans l'ordre souhaité.
+   Le dessin et le mot apparaissent aussi dans le message composé.
    Les répétitions sont conservées, dans la limite de 32 sélections.
 2. Utiliser **Annuler la dernière touche** ou **Effacer le message** si nécessaire.
 3. Cliquer sur **Terminer mon message**. La séquence conservée est alors
@@ -70,6 +85,13 @@ Les tests backend vérifient les lectures par identifiant et l'isolation des pro
 Les tests frontend couvrent les cases stables, la pagination bornée, les collisions,
 les identifiants sur HTTP et les références de reprise sans contenu personnel.
 
+Le parcours avec dessins est aussi vérifié sur une base jetable : création et
+confirmation d'une touche Livre, sélection et reprise d'un message illustré,
+ajout d'un dessin à une ancienne touche Boire. La confirmation du dessin et du
+mot est atomique ; les tests vérifient le retour à l'état initial si l'écriture
+échoue, l'isolation et la conservation des repères stables lors d'un changement.
+
 L'accessibilité et les interactions doivent encore être testées avec les personnes
-concernées. Les pictogrammes, l'édition des représentations visuelles et le
-fonctionnement complet hors connexion restent des étapes ultérieures.
+concernées. L'import de photos ou de banques externes de pictogrammes, la
+personnalisation des dessins et le fonctionnement complet hors connexion
+restent des étapes ultérieures.

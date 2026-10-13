@@ -97,3 +97,109 @@ def test_http_rejects_implicit_validation_and_keeps_secrets_server_side(api):
         "error_code": None,
         "metadata": None,
     }
+
+
+def test_pictogram_and_word_are_validated_together_and_remain_profile_scoped(api):
+    profile = api.post("/api/v1/profiles").json()["id"]
+    foreign = api.post("/api/v1/profiles").json()["id"]
+    base = f"/api/v1/profiles/{profile}"
+    concept = api.post(
+        base + "/concepts", json={"canonical_key": "TOILETS", "label": "Toilettes"}
+    ).json()
+    block = api.post(
+        base + "/blocks",
+        json={"concept_id": concept["id"], "label": "Toilettes", "pictogram_key": "toilets"},
+    ).json()
+    assert block["status"] == "proposed" and block["representation_id"]
+    assert api.get(base + "/keyboard").json() == []
+    visuals = api.get(base + "/representations").json()
+    assert len(visuals) == 1 and visuals[0]["status"] == "proposed"
+    feedback = {"action": "confirm", "actor_role": "caregiver"}
+    endpoint = base + "/blocks/" + block["id"]
+    assert api.post(endpoint + "/feedback", json=feedback).status_code == 400
+    assert api.get(base + "/representations").json() == visuals
+    accepted = api.post(endpoint + "/feedback", json={**feedback, "confirm_representation": True})
+    assert accepted.status_code == 200 and accepted.json()["status"] == "validated"
+    assert api.get(base + "/representations").json()[0]["status"] == "validated"
+    place = {"zone": "stable", "position": 5, "actor_role": "caregiver"}
+    assert api.put(base + "/keyboard/" + block["id"], json=place).status_code == 200
+    keyboard = api.get(base + "/keyboard").json()
+    selection = {"pictogram_key": "book", "actor_role": "caregiver"}
+    foreign_endpoint = f"/api/v1/profiles/{foreign}/blocks/{block['id']}/pictogram"
+    assert api.put(foreign_endpoint, json=selection).status_code == 404
+    assert api.get(f"/api/v1/profiles/{foreign}/representations").json() == []
+    changed = api.put(endpoint + "/pictogram", json=selection)
+    assert changed.status_code == 200
+    current = changed.json()
+    assert current["label"] == "Toilettes" and current["concept_id"] == concept["id"]
+    assert (
+        current["stability"] == "stable"
+        and current["representation_id"] != block["representation_id"]
+    )
+    assert current["visual_reference"] == "pictoflow:pictogram:v1:book"
+    assert api.get(base + "/keyboard").json() == keyboard
+    visuals = api.get(base + "/representations").json()
+    assert len(visuals) == 2 and all(item["status"] == "validated" for item in visuals)
+    assert all(item["concept_id"] == concept["id"] for item in visuals)
+    assert api.get(base + "/relations").json() == []
+    audit = api.get(base + "/audit").json()
+    assert audit[-1]["event_type"] == "block_representation_changed"
+    assert audit[-1]["source"] == "human:caregiver"
+    # An uncertain network response can be reconciled and retried without duplicating a visual.
+    assert api.put(endpoint + "/pictogram", json=selection).status_code == 200
+    assert api.get(base + "/representations").json() == visuals
+    assert api.get(base + "/audit").json() == audit
+
+
+def test_invalid_or_implicit_pictogram_actions_leave_no_partial_changes(api, monkeypatch):
+    from app.infrastructure.postgres.pcl_repository import PostgresPCLRepository
+
+    profile = api.post("/api/v1/profiles").json()["id"]
+    base = f"/api/v1/profiles/{profile}"
+    concept = api.post(base + "/concepts", json={"canonical_key": "YES", "label": "Oui"}).json()
+    for key in ("../../secret", "https://example.com/tracker.svg", "unknown"):
+        assert (
+            api.post(
+                base + "/blocks",
+                json={"concept_id": concept["id"], "label": "Oui", "pictogram_key": key},
+            ).status_code
+            == 422
+        )
+    assert api.get(base + "/blocks").json() == []
+    assert api.get(base + "/representations").json() == []
+    block = api.post(
+        base + "/blocks", json={"concept_id": concept["id"], "label": "Oui", "pictogram_key": "yes"}
+    ).json()
+    endpoint = base + "/blocks/" + block["id"]
+    assert (
+        api.put(
+            endpoint + "/pictogram", json={"pictogram_key": "no", "actor_role": "user"}
+        ).status_code
+        == 400
+    )
+    assert (
+        api.post(
+            endpoint + "/feedback",
+            json={"action": "reject", "actor_role": "user", "confirm_representation": True},
+        ).status_code
+        == 400
+    )
+    before = {
+        name: api.get(base + "/" + name).json() for name in ("blocks", "representations", "audit")
+    }
+    original = PostgresPCLRepository.audit
+
+    def failing_audit(self, profile_id, event_type, *args, **kwargs):
+        if event_type == "block_confirm":
+            raise RuntimeError("Injected failure after visual validation")
+        return original(self, profile_id, event_type, *args, **kwargs)
+
+    with monkeypatch.context() as context:
+        context.setattr(PostgresPCLRepository, "audit", failing_audit)
+        with pytest.raises(RuntimeError, match="Injected failure"):
+            api.post(
+                endpoint + "/feedback",
+                json={"action": "confirm", "actor_role": "user", "confirm_representation": True},
+            )
+    assert {name: api.get(base + "/" + name).json() for name in before} == before
+    assert api.get(base + "/keyboard").json() == []

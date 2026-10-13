@@ -32,6 +32,7 @@ from app.domain.pcl.entities import (
 )
 from app.domain.pcl.gaps import GapPolicy, SemanticGapCandidate
 from app.domain.pcl.keyboard import KeyboardPosition, KeyboardZone
+from app.domain.pcl.pictograms import PictogramKey
 from app.infrastructure.postgres.models import ProfileRow
 from app.infrastructure.postgres.repositories import PostgresProfileRepository, to_domain
 from app.infrastructure.postgres.semantic_space import PostgresSemanticUnits
@@ -96,6 +97,16 @@ class InterpretationBody(Body):
 class BlockBody(Body):
     concept_id: UUID
     label: str = Field(min_length=1, max_length=256)
+    pictogram_key: PictogramKey | None = None
+
+
+class BlockFeedbackBody(FeedbackBody):
+    confirm_representation: bool = Field(default=False, strict=True)
+
+
+class PictogramSelectionBody(Body):
+    pictogram_key: PictogramKey
+    actor_role: HumanRole
 
 
 class GapDecisionBody(Body):
@@ -323,17 +334,29 @@ def attach_representation(
 
 @router.post("/profiles/{profile_id}/blocks", status_code=201, response_model=CommunicationBlock)
 def create_block(request: Request, profile_id: UUID, body: BlockBody):
-    return blocks(request).create(profile_id, body.concept_id, body.label)
+    return blocks(request).create(
+        profile_id, body.concept_id, body.label, pictogram_key=body.pictogram_key
+    )
 
 
 @router.post("/profiles/{profile_id}/blocks/{block_id}/feedback", response_model=CommunicationBlock)
-def block_feedback(request: Request, profile_id: UUID, block_id: UUID, body: FeedbackBody):
+def block_feedback(request: Request, profile_id: UUID, block_id: UUID, body: BlockFeedbackBody):
     return blocks(request).validate(
         profile_id,
         block_id,
         action=body.action,
         actor_role=body.actor_role,
         label=body.corrected_value,
+        confirm_representation=body.confirm_representation,
+    )
+
+
+@router.put("/profiles/{profile_id}/blocks/{block_id}/pictogram", response_model=CommunicationBlock)
+def select_pictogram(
+    request: Request, profile_id: UUID, block_id: UUID, body: PictogramSelectionBody
+):
+    return blocks(request).select_pictogram(
+        profile_id, block_id, body.pictogram_key, actor_role=body.actor_role
     )
 
 

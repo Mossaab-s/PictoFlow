@@ -5,6 +5,7 @@ import { api, APIError } from "@/lib/api";
 import {
   draftReference,
   joinKeyboard,
+  blockRepresentation,
   newIdentity,
   parseDraft,
   type Decision,
@@ -16,6 +17,7 @@ import {
 import KeyboardGrid from "./keyboard-grid";
 import { HumanRoleSelector, ProfileNavigation } from "./profile-navigation";
 import { useProfileKeyboard } from "./use-profile-keyboard";
+import { TouchContent } from "./pictogram";
 import { useLocalSpeech } from "./use-local-speech";
 
 export default function CommunicationScreen({
@@ -270,14 +272,25 @@ export default function CommunicationScreen({
       setNotice("Vous pouvez composer un nouveau message.");
     }
   }
-  const tiles = joinKeyboard(profileId, data.blocks, data.positions);
+  const tiles = joinKeyboard(
+    profileId,
+    data.blocks,
+    data.positions,
+    data.representations,
+  );
   const chosen =
-    sequence?.block_ids.map(
-      (id) =>
-        data.blocks.find((block) => block.id === id)?.label ??
-        "Touche indisponible",
-    ) ?? [];
-  const literal = chosen.join(" ");
+    sequence?.block_ids.map((id) => {
+      const block = data.blocks.find(
+        (item) => item.id === id && item.profile_id === profileId,
+      );
+      return {
+        label: block?.label ?? "Touche indisponible",
+        representation: block
+          ? blockRepresentation(profileId, block, data.representations)
+          : undefined,
+      };
+    }) ?? [];
+  const literal = chosen.map((item) => item.label).join(" ");
   const completed = sequence?.status === "completed";
   const accepted =
     decision?.candidates.some((candidate) =>
@@ -334,7 +347,14 @@ export default function CommunicationScreen({
           </div>
           <div className="message-tokens" role="status" aria-live="polite">
             {chosen.length ? (
-              chosen.map((label, index) => <span key={index}>{label}</span>)
+              chosen.map((item, index) => (
+                <span className="message-touch" key={index}>
+                  <TouchContent
+                    label={item.label}
+                    representation={item.representation}
+                  />
+                </span>
+              ))
             ) : (
               <p>Votre message apparaîtra ici.</p>
             )}

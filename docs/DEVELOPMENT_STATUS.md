@@ -1,4 +1,4 @@
-# État du prototype V1 — 12 octobre 2026
+# État du prototype V1 — 13 octobre 2026
 
 Le parcours métier PCL est implémenté localement, avec API REST, administration
 initiale et providers IA optionnels. Une instance de test est déployée sur
@@ -28,10 +28,19 @@ réels ; les contrôles Ruff, la compilation Next.js et TypeScript passent aussi
 La création d'un concept depuis l'administration a été vérifiée dans le navigateur,
 sur le profil fictif de la base temporaire.
 
-Le socle V1 est fusionné dans `main` via la PR #25, avec contrôles GitHub verts.
-La livraison suivante ajoute un éditeur de touches textuelles et un écran de
-communication avec reprise et validation explicite ; voir le
-[guide utilisateur](KEYBOARD_USER_GUIDE.md). Elle reste à fusionner et déployer.
+Le socle V1 et l'éditeur initial sont fusionnés dans `main` via les PR #25 et
+#26, avec contrôles GitHub verts. Ils sont déployés sur le serveur dans la
+livraison `20261012-03` (commit `dd0081f`).
+La livraison suivante ajoute des touches avec un grand dessin au-dessus du mot,
+une bibliothèque de 14 dessins et le choix explicite d'une représentation par
+profil. Les dessins apparaissent aussi dans le message composé ; voir le
+[guide utilisateur](KEYBOARD_USER_GUIDE.md). Cette évolution reste à fusionner
+et déployer.
+Sa vérification locale passe **329 tests backend**, avec PostgreSQL et Redis
+temporaires, et **9 tests frontend**, plus Ruff, Prettier, TypeScript et la
+compilation Next.js. Le parcours navigateur vérifie la création et validation
+d'une touche illustrée, la reprise du message et l'ajout d'un dessin à une
+ancienne touche textuelle.
 Les issues restent ouvertes pour suivre la revue et les prochaines étapes.
 
 ## Lire et essayer
