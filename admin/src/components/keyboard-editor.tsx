@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { api, APIError } from "@/lib/api";
 import {
   joinKeyboard,
+  blockRepresentation,
   newIdentity,
   occupied,
   zones,
@@ -11,11 +12,19 @@ import {
   type Concept,
   type HumanRole,
   type Position,
+  type Representation,
   type Zone,
 } from "@/lib/keyboard";
 import KeyboardGrid from "./keyboard-grid";
 import { HumanRoleSelector, ProfileNavigation } from "./profile-navigation";
 import { useProfileKeyboard } from "./use-profile-keyboard";
+import { Pictogram, TouchContent } from "./pictogram";
+import PictogramPicker from "./pictogram-picker";
+import {
+  pictogramFromReference,
+  pictogramSource,
+  type PictogramKey,
+} from "@/lib/pictograms";
 
 export default function KeyboardEditor({ profileId }: { profileId: string }) {
   const data = useProfileKeyboard(profileId);
@@ -23,6 +32,7 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
   const [conceptId, setConceptId] = useState("");
   const [conceptLabel, setConceptLabel] = useState("");
   const [label, setLabel] = useState("");
+  const [pictogramKey, setPictogramKey] = useState<PictogramKey | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const gate = useRef(false);
@@ -67,8 +77,13 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
   async function createBlock() {
     await api<Block>(`${base}/blocks`, {
       method: "POST",
-      body: JSON.stringify({ concept_id: conceptId, label: label.trim() }),
+      body: JSON.stringify({
+        concept_id: conceptId,
+        label: label.trim(),
+        pictogram_key: pictogramKey,
+      }),
     });
+    setPictogramKey(null);
     setNotice(
       "La touche est prête à être vérifiée. Validez-la ci-dessous pour l'afficher dans le clavier.",
     );
@@ -77,6 +92,7 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
     blockId: string,
     action: "confirm" | "correct" | "reject",
     corrected?: string,
+    confirmRepresentation = false,
   ) {
     await api(`${base}/blocks/${blockId}/feedback`, {
       method: "POST",
@@ -84,12 +100,22 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
         action,
         actor_role: role,
         ...(action === "correct" ? { corrected_value: corrected?.trim() } : {}),
+        ...(confirmRepresentation ? { confirm_representation: true } : {}),
       }),
     });
     setNotice(
       action === "reject"
         ? "La touche a été écartée. Son historique est conservé."
         : "La touche a été validée et le clavier a été actualisé.",
+    );
+  }
+  async function selectPictogram(block: Block, key: PictogramKey) {
+    await api(`${base}/blocks/${block.id}/pictogram`, {
+      method: "PUT",
+      body: JSON.stringify({ pictogram_key: key, actor_role: role }),
+    });
+    setNotice(
+      "Le dessin a été validé et enregistré. Le mot et le sens de la touche sont conservés.",
     );
   }
   async function place(block: Block, zone: Zone, position: number) {
@@ -112,8 +138,8 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
             <div className="eyebrow">MON VOCABULAIRE, MES REPÈRES</div>
             <h1>Créer mon clavier</h1>
             <p>
-              Une touche représente un sens personnel. Vérifiez-la avant de
-              l'ajouter au clavier.
+              Un grand dessin, un mot en dessous. Choisissez les deux et
+              vérifiez leur sens avant d'ajouter la touche au clavier.
             </p>
           </div>
           <Link
@@ -181,7 +207,7 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
                 </form>
               </section>
               <section className="panel">
-                <h2>2. Préparer une touche</h2>
+                <h2>2. Préparer le dessin et le mot</h2>
                 <form
                   onSubmit={(event) => {
                     event.preventDefault();
@@ -222,7 +248,31 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
                       disabled={busy}
                     />
                   </label>
-                  <button disabled={busy || !conceptId || !label.trim()}>
+                  <PictogramPicker
+                    value={pictogramKey}
+                    onChange={setPictogramKey}
+                    disabled={busy}
+                  />
+                  <div
+                    className="touch-sample"
+                    aria-label="Aperçu de la nouvelle touche"
+                  >
+                    {pictogramKey ? (
+                      <Pictogram pictogramKey={pictogramKey} />
+                    ) : (
+                      <span className="pictogram-missing" aria-hidden="true">
+                        ?
+                      </span>
+                    )}
+                    <strong className="touch-word">
+                      {label.trim() || "Votre mot"}
+                    </strong>
+                  </div>
+                  <button
+                    disabled={
+                      busy || !conceptId || !label.trim() || !pictogramKey
+                    }
+                  >
                     Créer la touche à vérifier
                   </button>
                 </form>
@@ -232,40 +282,73 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
               <section className="review-section">
                 <h2>3. Vérifier les nouvelles touches</h2>
                 <p>
-                  Une validation explicite rend la touche disponible pour
-                  communiquer.
+                  Vérifiez le dessin et le mot. Votre validation les rend
+                  disponibles pour communiquer.
                 </p>
                 <div className="block-list">
-                  {proposed.map((block) => (
-                    <section className="panel" key={block.id}>
-                      <h3>{block.label}</h3>
-                      <p>
-                        Sens :{" "}
-                        {data.concepts.find(
-                          (concept) => concept.id === block.concept_id,
-                        )?.label ?? block.canonical_intent}
-                      </p>
-                      <div className="actions">
-                        <button
-                          onClick={() =>
-                            void perform(() => feedback(block.id, "confirm"))
-                          }
-                          disabled={busy}
-                        >
-                          Valider la touche « {block.label} »
-                        </button>
-                        <button
-                          className="secondary"
-                          onClick={() =>
-                            void perform(() => feedback(block.id, "reject"))
-                          }
-                          disabled={busy}
-                        >
-                          Écarter cette touche
-                        </button>
-                      </div>
-                    </section>
-                  ))}
+                  {proposed.map((block) => {
+                    const representation = blockRepresentation(
+                      profileId,
+                      block,
+                      data.representations,
+                      true,
+                    );
+                    const supported =
+                      representation?.source === pictogramSource &&
+                      !!pictogramFromReference(representation.asset_reference);
+                    return (
+                      <section className="panel" key={block.id}>
+                        <h3>{block.label}</h3>
+                        <div className="touch-sample">
+                          <TouchContent
+                            label={block.label}
+                            representation={representation}
+                          />
+                        </div>
+                        {block.representation_id && !supported && (
+                          <p role="alert">
+                            Ce dessin n'est pas disponible dans cet éditeur.
+                          </p>
+                        )}
+                        <p>
+                          Sens :{" "}
+                          {data.concepts.find(
+                            (concept) => concept.id === block.concept_id,
+                          )?.label ?? block.canonical_intent}
+                        </p>
+                        <div className="actions">
+                          <button
+                            onClick={() =>
+                              void perform(() =>
+                                feedback(
+                                  block.id,
+                                  "confirm",
+                                  undefined,
+                                  supported,
+                                ),
+                              )
+                            }
+                            disabled={
+                              busy || (!!block.representation_id && !supported)
+                            }
+                          >
+                            {block.representation_id
+                              ? "Valider le dessin et le mot"
+                              : `Valider la touche « ${block.label} »`}
+                          </button>
+                          <button
+                            className="secondary"
+                            onClick={() =>
+                              void perform(() => feedback(block.id, "reject"))
+                            }
+                            disabled={busy}
+                          >
+                            Écarter cette touche
+                          </button>
+                        </div>
+                      </section>
+                    );
+                  })}
                 </div>
               </section>
             )}
@@ -273,7 +356,12 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
               <h2>Aperçu du clavier</h2>
               {validated.length ? (
                 <KeyboardGrid
-                  tiles={joinKeyboard(profileId, data.blocks, data.positions)}
+                  tiles={joinKeyboard(
+                    profileId,
+                    data.blocks,
+                    data.positions,
+                    data.representations,
+                  )}
                 />
               ) : (
                 <div className="empty">
@@ -294,6 +382,11 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
                     <BlockControls
                       key={block.id}
                       block={block}
+                      representation={blockRepresentation(
+                        profileId,
+                        block,
+                        data.representations,
+                      )}
                       concept={
                         data.concepts.find(
                           (concept) => concept.id === block.concept_id,
@@ -310,6 +403,9 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
                       }
                       correct={(value) =>
                         perform(() => feedback(block.id, "correct", value))
+                      }
+                      selectPictogram={(key) =>
+                        perform(() => selectPictogram(block, key))
                       }
                     />
                   ))}
@@ -330,6 +426,8 @@ function BlockControls({
   busy,
   place,
   correct,
+  representation,
+  selectPictogram,
 }: {
   block: Block;
   concept: string;
@@ -337,14 +435,60 @@ function BlockControls({
   busy: boolean;
   place: (zone: Zone, position: number) => Promise<void>;
   correct: (label: string) => Promise<void>;
+  representation?: Representation;
+  selectPictogram: (key: PictogramKey) => Promise<void>;
 }) {
   const [zone, setZone] = useState<Zone | null>(null);
   const [slot, setSlot] = useState<number | null>(null);
   const [label, setLabel] = useState<string | null>(null);
+  const [drawing, setDrawing] = useState<PictogramKey | null>(null);
+  const currentDrawing =
+    representation?.source === pictogramSource
+      ? pictogramFromReference(representation.asset_reference)?.key
+      : undefined;
   return (
     <section className="panel">
       <h3>{block.label}</h3>
+      <div className="touch-sample">
+        <TouchContent label={block.label} representation={representation} />
+      </div>
       <p>Sens : {concept}</p>
+      {block.concept_id && (
+        <details>
+          <summary>
+            {currentDrawing ? "Modifier le dessin" : "Ajouter un dessin"} de «{" "}
+            {block.label} »
+          </summary>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (drawing) void selectPictogram(drawing);
+            }}
+          >
+            <PictogramPicker
+              value={drawing ?? currentDrawing ?? null}
+              onChange={setDrawing}
+              disabled={busy}
+            />
+            {drawing && (
+              <div
+                className="touch-sample"
+                aria-label="Aperçu du dessin choisi"
+              >
+                <Pictogram pictogramKey={drawing} />
+                <strong className="touch-word">{block.label}</strong>
+              </div>
+            )}
+            <button
+              className="secondary"
+              disabled={busy || !drawing || drawing === currentDrawing}
+            >
+              Valider le nouveau dessin de « {block.label} »
+            </button>
+          </form>
+          <p>Le mot, le sens et la place de la touche sont conservés.</p>
+        </details>
+      )}
       <form
         onSubmit={(event) => {
           event.preventDefault();

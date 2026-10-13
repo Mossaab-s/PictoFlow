@@ -1,7 +1,11 @@
 # PictoFlow administration (ADMIN-017)
 
-The profile's **Clavier** page creates and validates text communication blocks
-and edits their position/label. **Communiquer** selects ordered blocks, completes
+The profile's **Clavier** page creates and validates communication blocks with a
+large bundled pictogram above their word, and edits their drawing/position/label.
+Fourteen original SVG drawings are available, including the twelve requested
+everyday examples. Existing text touches can receive a drawing explicitly.
+**Communiquer** shows the same drawing and word in the keyboard and message,
+selects ordered blocks, completes
 a sequence and presents explicit interpretation feedback. See the
 [keyboard user guide](../docs/KEYBOARD_USER_GUIDE.md).
 

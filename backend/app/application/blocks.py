@@ -14,6 +14,7 @@ from app.domain.pcl.entities import (
     Interpretation,
     ProposalStatus,
     Representation,
+    RepresentationType,
     TargetType,
     ValidationAction,
     ValidationEvent,
@@ -22,6 +23,7 @@ from app.domain.pcl.entities import (
 from app.domain.pcl.gaps import GapPolicy, GapStatus, SemanticGapCandidate
 from app.domain.pcl.invariants import DomainInvariantError
 from app.domain.pcl.keyboard import KeyboardPosition, KeyboardZone, project_keyboard
+from app.domain.pcl.pictograms import PICTOGRAM_SOURCE, PictogramKey, pictogram_reference
 
 
 class BlockService:
@@ -140,10 +142,34 @@ class BlockService:
             store.audit(profile_id, "block_proposed", None, block, "pcl")
         return block
 
-    def create(self, profile_id: UUID, concept_id: UUID, label: str):
+    def create(
+        self,
+        profile_id: UUID,
+        concept_id: UUID,
+        label: str,
+        *,
+        pictogram_key: PictogramKey | None = None,
+    ):
         with self.units() as store:
             store.get(profile_id, Concept, concept_id)
-            block = CommunicationBlock(profile_id=profile_id, concept_id=concept_id, label=label)
+            visual = None
+            if pictogram_key is not None:
+                visual = Representation(
+                    profile_id=profile_id,
+                    concept_id=concept_id,
+                    type=RepresentationType.PICTOGRAM,
+                    source=PICTOGRAM_SOURCE,
+                    asset_reference=pictogram_reference(pictogram_key),
+                )
+                store.add(profile_id, visual)
+                store.audit(profile_id, "representation_proposed", None, visual, "human")
+            block = CommunicationBlock(
+                profile_id=profile_id,
+                concept_id=concept_id,
+                label=label,
+                representation_id=visual.id if visual else None,
+                visual_reference=visual.asset_reference if visual else None,
+            )
             store.add(profile_id, block)
             store.audit(profile_id, "block_proposed", None, block, "human")
         return block
@@ -156,6 +182,7 @@ class BlockService:
         action: ValidationAction,
         actor_role: HumanRole,
         label: str | None = None,
+        confirm_representation: bool = False,
     ):
         action = ValidationAction(action)
         with self.units() as store:
@@ -174,6 +201,26 @@ class BlockService:
                 else None
             )
             accepted = action != ValidationAction.REJECT
+            if confirm_representation:
+                if not accepted or previous.representation_id is None:
+                    raise DomainInvariantError(
+                        "Visual confirmation requires an accepted visual touch"
+                    )
+                visual = store.get(profile_id, Representation, previous.representation_id)
+                if visual.concept_id != previous.concept_id or visual.status not in (
+                    ProposalStatus.PROPOSED,
+                    ProposalStatus.VALIDATED,
+                ):
+                    raise DomainInvariantError(
+                        "This representation cannot be confirmed with the touch"
+                    )
+                self._confirm_visual(store, visual, actor_role)
+            elif accepted and previous.representation_id is not None:
+                visual = store.get(profile_id, Representation, previous.representation_id)
+                if visual.status != ProposalStatus.VALIDATED:
+                    raise DomainInvariantError(
+                        "Explicitly confirm the drawing before activating the touch"
+                    )
             if (
                 accepted
                 and previous.canonical_intent is not None
@@ -206,6 +253,76 @@ class BlockService:
                 resolved = replace(gap, status=GapStatus.RESOLVED, existing_block_match=True)
                 store.save(profile_id, resolved)
                 store.audit(profile_id, "semantic_gap_resolved", gap, resolved, "pcl")
+        return current
+
+    @staticmethod
+    def _confirm_visual(store, visual: Representation, actor_role: HumanRole):
+        current = replace(visual, status=ProposalStatus.VALIDATED, updated_at=utc_now())
+        event = ValidationEvent(
+            profile_id=visual.profile_id,
+            target_type=TargetType.REPRESENTATION,
+            target_id=visual.id,
+            action=ValidationAction.CONFIRM,
+            actor_role=actor_role,
+        )
+        store.save(visual.profile_id, current)
+        store.feedback(event)
+        store.audit(
+            visual.profile_id,
+            "representation_confirm",
+            visual,
+            current,
+            f"human:{event.actor_role.value}",
+        )
+
+    def select_pictogram(
+        self, profile_id: UUID, block_id: UUID, key: PictogramKey, *, actor_role: HumanRole
+    ):
+        event = ValidationEvent(
+            profile_id=profile_id,
+            target_type=TargetType.COMMUNICATION_BLOCK,
+            target_id=block_id,
+            action=ValidationAction.CONFIRM,
+            actor_role=actor_role,
+        )
+        with self.units() as store:
+            previous = store.get(profile_id, CommunicationBlock, block_id)
+            if previous.status != ProposalStatus.VALIDATED or previous.concept_id is None:
+                raise DomainInvariantError("Select a drawing for a validated concept touch")
+            reference = pictogram_reference(key)
+            if previous.representation_id is not None:
+                existing = store.get(profile_id, Representation, previous.representation_id)
+                if (
+                    existing.status == ProposalStatus.VALIDATED
+                    and existing.source == PICTOGRAM_SOURCE
+                    and existing.asset_reference == reference
+                ):
+                    return previous
+            visual = Representation(
+                profile_id=profile_id,
+                concept_id=previous.concept_id,
+                type=RepresentationType.PICTOGRAM,
+                source=PICTOGRAM_SOURCE,
+                asset_reference=reference,
+            )
+            store.add(profile_id, visual)
+            store.audit(profile_id, "representation_proposed", None, visual, "human")
+            self._confirm_visual(store, visual, actor_role)
+            current = replace(
+                previous,
+                representation_id=visual.id,
+                visual_reference=reference,
+                updated_at=utc_now(),
+            )
+            store.save(profile_id, current)
+            store.feedback(event)
+            store.audit(
+                profile_id,
+                "block_representation_changed",
+                previous,
+                current,
+                f"human:{event.actor_role.value}",
+            )
         return current
 
     def replace_visual(self, profile_id: UUID, block_id: UUID, visual_reference: str | None):

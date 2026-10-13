@@ -1,14 +1,15 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
-import type { Block, Concept, Position } from "@/lib/keyboard";
+import type { Block, Concept, Position, Representation } from "@/lib/keyboard";
 
 export function useProfileKeyboard(profileId: string) {
   const [data, setData] = useState<{
     concepts: Concept[];
     blocks: Block[];
     positions: Position[];
-  }>({ concepts: [], blocks: [], positions: [] });
+    representations: Representation[];
+  }>({ concepts: [], blocks: [], positions: [], representations: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const controller = useRef<AbortController | null>(null);
@@ -19,13 +20,16 @@ export function useProfileKeyboard(profileId: string) {
     controller.current = request;
     try {
       const base = `profiles/${profileId}`;
-      const [concepts, blocks, positions] = await Promise.all([
+      const [concepts, blocks, positions, representations] = await Promise.all([
         api<Concept[]>(`${base}/concepts`, { signal: request.signal }),
         api<Block[]>(`${base}/blocks`, { signal: request.signal }),
         api<Position[]>(`${base}/keyboard`, { signal: request.signal }),
+        api<Representation[]>(`${base}/representations`, {
+          signal: request.signal,
+        }),
       ]);
       if (!request.signal.aborted && alive.current)
-        setData({ concepts, blocks, positions });
+        setData({ concepts, blocks, positions, representations });
     } catch (error) {
       if (!request.signal.aborted && alive.current)
         setError(
