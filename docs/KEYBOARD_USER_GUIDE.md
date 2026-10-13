@@ -60,6 +60,10 @@ littérale reste disponible sans prétendre déduire un sens personnel. Une seul
 proposition par séquence peut être acceptée à la fois. Une interprétation acceptée
 peut être écartée à nouveau, avec conservation de son historique.
 
+Si le modèle renvoie une réponse inexploitable, un message l'indique et vos mots
+restent disponibles. Vous pouvez les lire tels quels, préciser le contexte ou
+réessayer. La réponse invalide n'est pas ajoutée à la mémoire.
+
 ## Reprise et lecture
 
 Le rechargement dans le même onglet retrouve le message courant et les

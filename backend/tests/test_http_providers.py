@@ -14,6 +14,7 @@ from app.ai.errors import (
 )
 from app.ai.manager import ProviderManager, create_provider
 from app.ai.providers.fake import FakeFixtures
+from app.ai.providers.http import RESPONSES, proposal_schema
 from app.ai.providers.openai_compatible import OpenAICompatibleProvider
 from app.ai.providers.prism import PRISMProvider
 from app.config import Settings
@@ -205,3 +206,148 @@ def test_external_factory_requires_configuration_without_requiring_network():
             await manager.aclose()
 
     asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("operation", ["interpret", "simplify", "suggest_representation"])
+@pytest.mark.parametrize("strict", [False, True])
+def test_output_schemas_keep_transitive_references_and_exclude_provider_metadata(operation, strict):
+    schema = proposal_schema(operation, strict=strict)
+    assert "metadata" not in schema["properties"]
+    definitions = schema.get("$defs", {})
+    assert "ProviderMetadata" not in definitions
+    references = []
+
+    def inspect(node):
+        if isinstance(node, dict):
+            if "$ref" in node:
+                prefix = "#/$defs/"
+                assert node["$ref"].startswith(prefix)
+                name = node["$ref"].removeprefix(prefix)
+                assert name in definitions, node["$ref"]
+                references.append(name)
+            if strict and node.get("type") == "object":
+                assert node["additionalProperties"] is False
+                assert set(node["required"]) == set(node["properties"])
+            for child in node.values():
+                inspect(child)
+        elif isinstance(node, list):
+            for child in node:
+                inspect(child)
+
+    inspect(schema)
+    assert references
+    # Changing how the provider receives its schema never changes the Pydantic contracts.
+    assert "metadata" in RESPONSES[operation].model_json_schema()["properties"]
+
+
+@pytest.mark.parametrize(
+    "operation,collection",
+    [
+        ("interpret", "interpretations"),
+        ("simplify", "simplifications"),
+        ("suggest_representation", "representations"),
+    ],
+)
+def test_strict_compatible_operations_supply_complete_schemas_and_validate_output(
+    fixtures, operation, collection
+):
+    fixture = getattr(fixtures, collection)[0]
+
+    def respond(request):
+        body = json.loads(request.content)
+        format = body["response_format"]
+        assert format["type"] == "json_schema"
+        assert format["json_schema"]["strict"] is True
+        assert (
+            json.loads(body["messages"][1]["content"])["output_schema"]
+            == format["json_schema"]["schema"]
+        )
+        if operation == "interpret":
+            schema = format["json_schema"]["schema"]
+            proposed, refused = schema["properties"]["result"]["anyOf"]
+            assert proposed["properties"]["status"]["enum"] == ["proposal"]
+            assert proposed["properties"]["candidates"]["minItems"] == 1
+            assert proposed["properties"]["candidates"]["maxItems"] == 3
+            assert refused["properties"]["status"]["enum"] == ["not_understood"]
+            assert refused["properties"]["candidates"]["maxItems"] == 0
+        output = fixture.response.model_dump(exclude={"metadata"})
+        if operation == "interpret":
+            output = {"result": output}
+        return httpx.Response(
+            200,
+            json={
+                "choices": [{"finish_reason": "stop", "message": {"content": json.dumps(output)}}]
+            },
+        )
+
+    async def scenario():
+        provider = OpenAICompatibleProvider(
+            "https://example.test/v1",
+            "model",
+            response_format="json_schema",
+            transport=httpx.MockTransport(respond),
+        )
+        try:
+            output = await getattr(provider, operation)(fixture.request)
+            assert output.model_dump(exclude={"metadata"}) == fixture.response.model_dump(
+                exclude={"metadata"}
+            )
+            assert output.metadata.provider_id == "openai-compatible"
+        finally:
+            await provider.aclose()
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize(
+    "output",
+    [
+        {"status": "proposal", "candidates": []},
+        {"result": {"status": "proposal", "candidates": []}},
+        {"result": {"status": "validated", "candidates": []}},
+        {"result": {"status": "not_understood", "candidates": []}, "raw": "private text"},
+    ],
+)
+def test_strict_invalid_output_remains_explicit_and_redacted(fixtures, output):
+    async def scenario():
+        provider = OpenAICompatibleProvider(
+            "https://example.test/v1",
+            "model",
+            response_format="json_schema",
+            transport=httpx.MockTransport(
+                lambda _: httpx.Response(
+                    200,
+                    json={
+                        "choices": [
+                            {"finish_reason": "stop", "message": {"content": json.dumps(output)}}
+                        ]
+                    },
+                )
+            ),
+        )
+        try:
+            with pytest.raises(ProviderPayloadError) as error:
+                await provider.interpret(fixtures.interpretations[0].request)
+            assert "private text" not in str(error.value)
+        finally:
+            await provider.aclose()
+
+    asyncio.run(scenario())
+
+
+def test_unsupported_compatible_response_format_is_rejected_without_a_client():
+    with pytest.raises(ProviderConfigurationError):
+        OpenAICompatibleProvider("https://example.test/v1", "model", response_format="text")
+
+
+def test_strict_nullable_scalar_fields_keep_bounds_without_ambiguous_anyof():
+    simplified = proposal_schema("simplify", strict=True)
+    confidence = simplified["properties"]["confidence"]
+    assert confidence["type"] == ["number", "null"]
+    assert confidence["minimum"] == 0 and confidence["maximum"] == 1
+    assert "anyOf" not in confidence
+    represented = proposal_schema("suggest_representation", strict=True)
+    for name, limit in (("visual_description", 2000), ("spoken_text", 4000)):
+        property = represented["properties"][name]
+        assert property["type"] == ["string", "null"]
+        assert property["maxLength"] == limit

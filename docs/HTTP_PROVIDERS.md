@@ -14,9 +14,22 @@ PICTOFLOW_AI_PROVIDER=openai-compatible
 PICTOFLOW_PROVIDER_BASE_URL=http://127.0.0.1:11434/v1
 PICTOFLOW_PROVIDER_MODEL=your-model-id
 PICTOFLOW_PROVIDER_TIMEOUT_SECONDS=30
+PICTOFLOW_PROVIDER_RESPONSE_FORMAT=json_object
 # Optional authentication, set locally:
 # PICTOFLOW_PROVIDER_API_KEY=...
 ```
+
+For endpoints/models supporting strict Structured Outputs, set
+`PICTOFLOW_PROVIDER_RESPONSE_FORMAT=json_schema`. The compatible adapter sends
+the complete schema with `strict: true`. This remains opt-in so other compatible
+endpoints can keep JSON Object Mode. The setting is forwarded by both Compose
+stacks and is never a browser credential.
+
+The deployed Groq model `qwen/qwen3.8-27b` supports strict mode according to the
+[Groq Structured Outputs documentation](https://console.groq.com/docs/structured-outputs).
+Enable this setting in the private server environment when deploying the phrase
+schema correction. Real calls using synthetic data validated interpretation,
+simplification and representation proposals in this mode.
 
 For PRISM, configure its origin (without a `/v1` suffix), select `prism` mode and
 provide its API key locally if required. The native adapter sends `X-API-Key`;
@@ -39,11 +52,24 @@ provider-health endpoint or error responses.
 ## Parsing and failure
 
 All three operations request JSON matching the PictoFlow proposal schema. The
-compatible adapter uses `response_format={"type":"json_object"}` and verifies a
+compatible adapter defaults to `response_format={"type":"json_object"}` and verifies a
 completed response before parsing. JSON mode does not imply schema validity;
 Pydantic remains the authoritative transport check. See the official
 [Chat Completions reference](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create)
 and [Structured Outputs guide](https://developers.openai.com/api/docs/guides/structured-outputs).
+
+Output schemas omit provider-owned metadata while retaining **all transitively
+referenced `$defs`**. Dropping the scalar aliases used by candidate fields creates
+dangling references and can result in an empty or invalid provider proposal,
+which the API rejects with 502. Regression tests resolve every reference for all
+three operations. In strict mode, all object properties are required and objects
+are closed. Nullable scalars use explicit type unions. Interpretation uses a
+transport-only `result` union to encode both allowed outcomes: a proposal with
+one to three candidates, or a refusal with none. Pydantic still validates the
+unwrapped proposal, including confidence bounds and prohibition of validation
+commands. A malformed reply creates no interpretation or validated memory; the
+completed selection remains available. The UI explains an unusable AI response
+without displaying provider payloads.
 
 Transport is bounded by timeout and a 1 MiB response limit, does not retry,
 follow redirects, inherit proxy environment settings or log payloads. Base URLs

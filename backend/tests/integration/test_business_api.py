@@ -1,5 +1,7 @@
+import json
 from uuid import uuid4
 
+import httpx2 as httpx
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
@@ -203,3 +205,86 @@ def test_invalid_or_implicit_pictogram_actions_leave_no_partial_changes(api, mon
             )
     assert {name: api.get(base + "/" + name).json() for name in before} == before
     assert api.get(base + "/keyboard").json() == []
+
+
+@pytest.mark.parametrize("kind", ["invalid", "refusal", "proposal"])
+def test_strict_phrase_responses_never_promote_invalid_or_unconfirmed_meaning(api, kind):
+    from app.ai.manager import ProviderManager
+    from app.ai.providers.openai_compatible import OpenAICompatibleProvider
+
+    requests = []
+    output = {"status": "proposal", "candidates": []}
+    if kind == "refusal":
+        output["status"] = "not_understood"
+    elif kind == "proposal":
+        output["candidates"] = [
+            {"intent": "DRINK", "text": "Je voudrais boire.", "confidence": 0.99}
+        ]
+
+    def respond(request):
+        requests.append(request)
+        assert json.loads(request.content)["response_format"]["type"] == "json_schema"
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"content": json.dumps({"result": output})},
+                    }
+                ]
+            },
+        )
+
+    api.app.state.ai_provider = ProviderManager(
+        OpenAICompatibleProvider(
+            "https://example.test/v1",
+            "model",
+            response_format="json_schema",
+            transport=httpx.MockTransport(respond),
+        )
+    )
+    profile = api.post("/api/v1/profiles").json()["id"]
+    foreign = api.post("/api/v1/profiles").json()["id"]
+    base = f"/api/v1/profiles/{profile}"
+    concept = api.post(base + "/concepts", json={"canonical_key": "DRINK", "label": "Boire"}).json()
+    block = api.post(base + "/blocks", json={"concept_id": concept["id"], "label": "Boire"}).json()
+    api.post(
+        base + "/blocks/" + block["id"] + "/feedback",
+        json={"action": "confirm", "actor_role": "user"},
+    ).raise_for_status()
+    sequence = api.post(base + "/sequences", json={"session_id": str(uuid4())}).json()
+    path = base + "/sequences/" + sequence["id"]
+    api.post(
+        path + "/selection", json={"action": "append", "block_id": block["id"]}
+    ).raise_for_status()
+    api.post(path + "/selection", json={"action": "complete"}).raise_for_status()
+    assert (
+        api.post(
+            f"/api/v1/profiles/{foreign}/sequences/{sequence['id']}/interpret", json={}
+        ).status_code
+        == 404
+    )
+    assert requests == []
+    response = api.post(path + "/interpret", json={})
+    assert len(requests) == 1
+    assert api.get(path).json()["block_ids"] == [block["id"]]
+    assert api.get(path).json()["status"] == "completed"
+    assert api.get(base + "/memory").json()["interpretations"] == []
+    if kind == "invalid":
+        assert response.status_code == 502
+        assert response.json() == {"detail": "Provider operation failed"}
+        assert api.get(base + "/interpretations").json() == []
+    elif kind == "refusal":
+        assert response.status_code == 200
+        assert response.json() == {"state": "not_understood", "candidates": []}
+        assert api.get(base + "/interpretations").json()[0]["status"] == "not_understood"
+    else:
+        assert response.status_code == 200
+        candidate = response.json()["candidates"][0]
+        assert candidate["text"] == "Je voudrais boire." and candidate["status"] == "proposed"
+        api.post(
+            base + "/interpretations/" + candidate["id"] + "/feedback",
+            json={"action": "confirm", "actor_role": "user"},
+        ).raise_for_status()
+        assert len(api.get(base + "/memory").json()["interpretations"]) == 1
