@@ -9,6 +9,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.application.pcl_repository import HistoricalFeedback
+from app.application.photos import PhotoAsset
 from app.application.semantic_space import SemanticNotFoundError
 from app.domain.pcl.audit import SemanticAuditEvent
 from app.domain.pcl.entities import (
@@ -32,6 +33,7 @@ from app.infrastructure.postgres.models import (
     GapRow,
     InterpretationRow,
     KeyboardPositionRow,
+    PhotoAssetRow,
     ProfileRow,
     RelationRow,
     RepresentationRow,
@@ -42,6 +44,7 @@ from app.infrastructure.postgres.models import (
 from app.infrastructure.postgres.repositories import to_domain, to_values
 
 MAPPINGS = {
+    PhotoAsset: PhotoAssetRow,
     SemanticGapCandidate: GapRow,
     KeyboardPosition: KeyboardPositionRow,
     Concept: ConceptRow,
@@ -270,6 +273,7 @@ class PostgresPCLRepository:
             BlockRow,
             GapRow,
             RelationRow,
+            PhotoAssetRow,
             RepresentationRow,
             ConceptRow,
         ):
@@ -279,6 +283,14 @@ class PostgresPCLRepository:
         profile.version += 1
         profile.updated_at = utc_now()
         self.session.flush()
+
+    def remove_photo(self, profile_id: UUID, photo_id: UUID):
+        self._scope(profile_id)
+        self.session.execute(
+            delete(PhotoAssetRow).where(
+                PhotoAssetRow.profile_id == profile_id, PhotoAssetRow.id == photo_id
+            )
+        )
 
     def audit_history(
         self, profile_id: UUID, *, target_type: str | None, target_id: UUID | None, limit: int

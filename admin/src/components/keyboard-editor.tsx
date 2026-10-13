@@ -19,6 +19,8 @@ import { HumanRoleSelector, ProfileNavigation } from "./profile-navigation";
 import { useProfileKeyboard } from "./use-profile-keyboard";
 import { Pictogram, TouchContent } from "./pictogram";
 import PictogramPicker from "./pictogram-picker";
+import PhotoPicker from "./photo-picker";
+import { photoBase64, photoUrl, photoSource } from "@/lib/photos";
 import {
   pictogramFromReference,
   pictograms,
@@ -32,6 +34,8 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
   const [conceptId, setConceptId] = useState("");
   const [label, setLabel] = useState("");
   const [pictogramKey, setPictogramKey] = useState<PictogramKey | null>(null);
+  const [visualMode, setVisualMode] = useState<"drawing" | "photo">("drawing");
+  const [photo, setPhoto] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const gate = useRef(false);
@@ -62,24 +66,41 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
     }
   }
   async function createBlock() {
-    const signature = JSON.stringify([label.trim(), pictogramKey, conceptId]);
+    const signature = JSON.stringify([
+      label.trim(),
+      visualMode,
+      pictogramKey,
+      conceptId,
+      photo ? [photo.name, photo.size, photo.lastModified] : null,
+    ]);
     if (creation.current?.signature !== signature) {
       creation.current = { signature, id: newIdentity() };
     }
-    await api<Block>(`${base}/blocks${conceptId ? "" : "/personal"}`, {
-      method: "POST",
-      body: JSON.stringify({
-        ...(conceptId
-          ? { concept_id: conceptId }
-          : { request_id: creation.current.id, actor_role: role }),
+    if (visualMode === "photo") {
+      if (!photo) throw new Error("Choisissez une photo.");
+      await sendPhoto(`${base}/blocks/photo`, "POST", {
+        request_id: creation.current.id,
+        actor_role: role,
         label: label.trim(),
-        pictogram_key: pictogramKey,
-      }),
-    });
+        ...(conceptId ? { concept_id: conceptId } : {}),
+        photo_base64: await photoBase64(photo),
+      });
+    } else
+      await api<Block>(`${base}/blocks${conceptId ? "" : "/personal"}`, {
+        method: "POST",
+        body: JSON.stringify({
+          ...(conceptId
+            ? { concept_id: conceptId }
+            : { request_id: creation.current.id, actor_role: role }),
+          label: label.trim(),
+          pictogram_key: pictogramKey,
+        }),
+      });
     creation.current = null;
     setLabel("");
     setConceptId("");
     setPictogramKey(null);
+    setPhoto(null);
     setNotice(
       "La touche est prête à être vérifiée. Validez-la ci-dessous pour l'afficher dans le clavier.",
     );
@@ -113,6 +134,22 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
     setNotice(
       "Le dessin a été validé et enregistré. Le mot et le sens de la touche sont conservés.",
     );
+  }
+  async function selectPhoto(block: Block, file: File, requestId: string) {
+    await sendPhoto(`${base}/blocks/${block.id}/photo`, "PUT", {
+      request_id: requestId,
+      actor_role: role,
+      photo_base64: await photoBase64(file),
+    });
+    setNotice(
+      "La photo a été validée. Le mot, le sens et la place de la touche sont conservés.",
+    );
+  }
+  async function removePhoto(visual: Representation) {
+    await api(`${base}/representations/${visual.id}/photo?actor_role=${role}`, {
+      method: "DELETE",
+    });
+    setNotice("La photo a été supprimée. L’historique du choix est conservé.");
   }
   async function place(block: Block, zone: Zone, position: number) {
     if (occupied(data.positions, block.id, zone, position))
@@ -228,34 +265,78 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
                       </select>
                     </label>
                   </details>
-                  <PictogramPicker
-                    value={pictogramKey}
-                    onChange={(key) => {
-                      setPictogramKey(key);
-                      if (!label.trim() && !conceptId)
-                        setLabel(
-                          pictograms.find((drawing) => drawing.key === key)
-                            ?.label ?? "",
-                        );
-                    }}
-                    disabled={busy}
-                  />
                   <div
-                    className="touch-sample"
-                    aria-label="Aperçu de la nouvelle touche"
+                    className="actions"
+                    role="group"
+                    aria-label="Image de la touche"
                   >
-                    {pictogramKey ? (
-                      <Pictogram pictogramKey={pictogramKey} />
-                    ) : (
-                      <span className="pictogram-missing" aria-hidden="true">
-                        ?
-                      </span>
-                    )}
-                    <strong className="touch-word">
-                      {label.trim() || "Votre mot"}
-                    </strong>
+                    <button
+                      type="button"
+                      className="secondary"
+                      aria-pressed={visualMode === "drawing"}
+                      disabled={busy}
+                      onClick={() => setVisualMode("drawing")}
+                    >
+                      Dessin
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary"
+                      aria-pressed={visualMode === "photo"}
+                      disabled={busy}
+                      onClick={() => setVisualMode("photo")}
+                    >
+                      Photo personnelle
+                    </button>
                   </div>
-                  <button disabled={busy || !label.trim() || !pictogramKey}>
+                  {visualMode === "photo" ? (
+                    <PhotoPicker
+                      file={photo}
+                      label={label.trim() || "Votre mot"}
+                      disabled={busy}
+                      onChange={(value) => {
+                        setPhoto(value);
+                        creation.current = null;
+                      }}
+                    />
+                  ) : (
+                    <PictogramPicker
+                      value={pictogramKey}
+                      onChange={(key) => {
+                        setPictogramKey(key);
+                        if (!label.trim() && !conceptId)
+                          setLabel(
+                            pictograms.find((drawing) => drawing.key === key)
+                              ?.label ?? "",
+                          );
+                      }}
+                      disabled={busy}
+                    />
+                  )}
+                  {visualMode === "drawing" && (
+                    <div
+                      className="touch-sample"
+                      aria-label="Aperçu de la nouvelle touche"
+                    >
+                      {visualMode === "drawing" && pictogramKey ? (
+                        <Pictogram pictogramKey={pictogramKey} />
+                      ) : (
+                        <span className="pictogram-missing" aria-hidden="true">
+                          ?
+                        </span>
+                      )}
+                      <strong className="touch-word">
+                        {label.trim() || "Votre mot"}
+                      </strong>
+                    </div>
+                  )}
+                  <button
+                    disabled={
+                      busy ||
+                      !label.trim() ||
+                      (visualMode === "photo" ? !photo : !pictogramKey)
+                    }
+                  >
                     Créer la touche à vérifier
                   </button>
                 </form>
@@ -277,8 +358,11 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
                       true,
                     );
                     const supported =
-                      representation?.source === pictogramSource &&
-                      !!pictogramFromReference(representation.asset_reference);
+                      !!photoUrl(representation) ||
+                      (representation?.source === pictogramSource &&
+                        !!pictogramFromReference(
+                          representation.asset_reference,
+                        ));
                     return (
                       <section className="panel" key={block.id}>
                         <h3>{block.label}</h3>
@@ -390,8 +474,69 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
                       selectPictogram={(key) =>
                         perform(() => selectPictogram(block, key))
                       }
+                      selectPhoto={(file, requestId) =>
+                        perform(() => selectPhoto(block, file, requestId))
+                      }
                     />
                   ))}
+                </div>
+              </section>
+            )}
+            {data.representations.some(
+              (visual) =>
+                visual.source === photoSource && visual.status !== "archived",
+            ) && (
+              <section className="review-section">
+                <h2>Photos conservées</h2>
+                <p>
+                  Pour supprimer une photo utilisée, choisissez d’abord un autre
+                  dessin ou une autre photo pour sa touche.
+                </p>
+                <div className="block-list">
+                  {data.representations
+                    .filter(
+                      (visual) =>
+                        visual.source === photoSource &&
+                        visual.status !== "archived",
+                    )
+                    .map((visual) => {
+                      const linked = data.blocks.find(
+                        (block) => block.representation_id === visual.id,
+                      );
+                      const used = data.blocks.some(
+                        (block) =>
+                          block.representation_id === visual.id &&
+                          block.status === "validated",
+                      );
+                      return (
+                        <section className="panel" key={visual.id}>
+                          <div className="touch-sample">
+                            <TouchContent
+                              label={
+                                linked?.label ??
+                                data.concepts.find(
+                                  (concept) => concept.id === visual.concept_id,
+                                )?.label ??
+                                "Photo personnelle"
+                              }
+                              representation={visual}
+                            />
+                          </div>
+                          <button
+                            className="secondary"
+                            disabled={busy || used}
+                            onClick={() =>
+                              void perform(() => removePhoto(visual))
+                            }
+                          >
+                            Supprimer cette photo
+                          </button>
+                          {used && (
+                            <p>Cette photo est utilisée dans le clavier.</p>
+                          )}
+                        </section>
+                      );
+                    })}
                 </div>
               </section>
             )}
@@ -411,6 +556,7 @@ function BlockControls({
   correct,
   representation,
   selectPictogram,
+  selectPhoto,
 }: {
   block: Block;
   concept: string;
@@ -420,11 +566,14 @@ function BlockControls({
   correct: (label: string) => Promise<void>;
   representation?: Representation;
   selectPictogram: (key: PictogramKey) => Promise<void>;
+  selectPhoto: (file: File, requestId: string) => Promise<void>;
 }) {
   const [zone, setZone] = useState<Zone | null>(null);
   const [slot, setSlot] = useState<number | null>(null);
   const [label, setLabel] = useState<string | null>(null);
   const [drawing, setDrawing] = useState<PictogramKey | null>(null);
+  const [photo, setPhoto] = useState<File | null>(null);
+  const photoRequest = useRef(newIdentity());
   const currentDrawing =
     representation?.source === pictogramSource
       ? pictogramFromReference(representation.asset_reference)?.key
@@ -470,6 +619,34 @@ function BlockControls({
             </button>
           </form>
           <p>Le mot, le sens et la place de la touche sont conservés.</p>
+        </details>
+      )}
+      {block.concept_id && (
+        <details>
+          <summary>Choisir une photo pour « {block.label} »</summary>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (photo) void selectPhoto(photo, photoRequest.current);
+            }}
+          >
+            <PhotoPicker
+              file={photo}
+              label={block.label}
+              disabled={busy}
+              onChange={(file) => {
+                setPhoto(file);
+                photoRequest.current = newIdentity();
+              }}
+            />
+            <button className="secondary" disabled={busy || !photo}>
+              Valider la photo de « {block.label} »
+            </button>
+          </form>
+          <p>
+            Le mot, le sens et la place sont conservés. L’ancien choix reste
+            dans l’historique.
+          </p>
         </details>
       )}
       <form
@@ -548,4 +725,20 @@ function BlockControls({
       </details>
     </section>
   );
+}
+
+async function sendPhoto(
+  path: string,
+  method: "POST" | "PUT",
+  body: Record<string, unknown>,
+) {
+  try {
+    return await api<Block>(path, { method, body: JSON.stringify(body) });
+  } catch (error) {
+    if (error instanceof APIError && [413, 415, 422].includes(error.status))
+      throw new Error(
+        "La photo n’est pas acceptée. Choisissez une image fixe JPEG, PNG ou WebP de 5 Mo maximum.",
+      );
+    throw error;
+  }
 }

@@ -5,6 +5,8 @@ import {
   type PictogramKey,
 } from "@/lib/pictograms";
 import type { Representation } from "@/lib/keyboard";
+import { photoUrl } from "@/lib/photos";
+import { PhotoImage } from "./photo-picker";
 
 // Original bundled SVG drawings. No external image request or platform emoji font.
 const drawings: Record<PictogramKey, ReactNode> = {
@@ -324,9 +326,12 @@ export function TouchContent({
     representation.type === "pictogram"
       ? pictogramFromReference(representation.asset_reference)
       : undefined;
+  const photo = photoUrl(representation);
   return (
     <>
-      {drawing ? (
+      {photo ? (
+        <PhotoImage key={photo} src={photo} />
+      ) : drawing ? (
         <Pictogram pictogramKey={drawing.key} />
       ) : (
         <span className="pictogram-missing" aria-hidden="true">

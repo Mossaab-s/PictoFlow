@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { boundedBody } from "@/lib/proxy-body";
 
 const permitted = new Set(["health", "readiness", "profiles", "providers"]);
 
@@ -25,20 +26,26 @@ async function proxy(
       headers: { "Content-Type": "application/json" },
       body: ["GET", "HEAD"].includes(request.method)
         ? undefined
-        : await request.text(),
+        : await boundedBody(request),
       signal: AbortSignal.timeout(120_000),
     });
     const headers = new Headers({
-      "Content-Type": "application/json",
+      "Content-Type":
+        response.headers.get("content-type") === "image/jpeg"
+          ? "image/jpeg"
+          : "application/json",
       "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
     });
     const trace = response.headers.get("x-trace-id");
     if (trace) headers.set("x-trace-id", trace);
-    return new Response(
-      response.status === 204 ? null : await response.text(),
-      { status: response.status, headers },
-    );
-  } catch {
+    return new Response(response.status === 204 ? null : response.body, {
+      status: response.status,
+      headers,
+    });
+  } catch (error) {
+    if (error instanceof RangeError)
+      return Response.json({ detail: "Request too large" }, { status: 413 });
     return Response.json({ detail: "Backend unavailable" }, { status: 503 });
   }
 }
