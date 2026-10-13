@@ -9,7 +9,6 @@ import {
   occupied,
   zones,
   type Block,
-  type Concept,
   type HumanRole,
   type Position,
   type Representation,
@@ -22,6 +21,7 @@ import { Pictogram, TouchContent } from "./pictogram";
 import PictogramPicker from "./pictogram-picker";
 import {
   pictogramFromReference,
+  pictograms,
   pictogramSource,
   type PictogramKey,
 } from "@/lib/pictograms";
@@ -30,12 +30,12 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
   const data = useProfileKeyboard(profileId);
   const [role, setRole] = useState<HumanRole>("user");
   const [conceptId, setConceptId] = useState("");
-  const [conceptLabel, setConceptLabel] = useState("");
   const [label, setLabel] = useState("");
   const [pictogramKey, setPictogramKey] = useState<PictogramKey | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const gate = useRef(false);
+  const creation = useRef<{ signature: string; id: string } | null>(null);
   const base = `profiles/${profileId}`;
   async function perform(task: () => Promise<void>) {
     if (gate.current) return;
@@ -54,35 +54,31 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
             ? error.message
             : "Action impossible.",
       );
+      // Read committed state after an uncertain response; never replay a write automatically.
+      await data.reload();
     } finally {
       gate.current = false;
       setBusy(false);
     }
   }
-  async function createConcept() {
-    const concept = await api<Concept>(`${base}/concepts`, {
-      method: "POST",
-      body: JSON.stringify({
-        canonical_key: `USER_${newIdentity().replaceAll("-", "")}`,
-        label: conceptLabel.trim(),
-      }),
-    });
-    setConceptId(concept.id);
-    setLabel(concept.label);
-    setConceptLabel("");
-    setNotice(
-      "Le sens personnel a été créé. Vous pouvez maintenant créer sa touche.",
-    );
-  }
   async function createBlock() {
-    await api<Block>(`${base}/blocks`, {
+    const signature = JSON.stringify([label.trim(), pictogramKey, conceptId]);
+    if (creation.current?.signature !== signature) {
+      creation.current = { signature, id: newIdentity() };
+    }
+    await api<Block>(`${base}/blocks${conceptId ? "" : "/personal"}`, {
       method: "POST",
       body: JSON.stringify({
-        concept_id: conceptId,
+        ...(conceptId
+          ? { concept_id: conceptId }
+          : { request_id: creation.current.id, actor_role: role }),
         label: label.trim(),
         pictogram_key: pictogramKey,
       }),
     });
+    creation.current = null;
+    setLabel("");
+    setConceptId("");
     setPictogramKey(null);
     setNotice(
       "La touche est prête à être vérifiée. Validez-la ci-dessous pour l'afficher dans le clavier.",
@@ -174,69 +170,19 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
           <p role="status">Chargement du clavier…</p>
         ) : (
           <>
-            <div className="editor-forms">
+            <div className="touch-creator">
               <section className="panel">
-                <h2>1. Choisir le sens</h2>
+                <h2>1. Préparer une touche</h2>
                 <p>
-                  Utilisez un sens existant ou ajoutez votre vocabulaire
-                  personnel.
+                  Choisissez un dessin et écrivez votre mot. Vous vérifierez la
+                  touche avant de l'utiliser.
                 </p>
-                <form
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    void perform(createConcept);
-                  }}
-                >
-                  <label>
-                    Nouveau sens personnel
-                    <input
-                      value={conceptLabel}
-                      onChange={(event) => setConceptLabel(event.target.value)}
-                      placeholder="Par exemple : boire"
-                      required
-                      maxLength={256}
-                      disabled={busy}
-                    />
-                  </label>
-                  <button
-                    className="secondary"
-                    disabled={busy || !conceptLabel.trim()}
-                  >
-                    Ajouter ce sens
-                  </button>
-                </form>
-              </section>
-              <section className="panel">
-                <h2>2. Préparer le dessin et le mot</h2>
                 <form
                   onSubmit={(event) => {
                     event.preventDefault();
                     void perform(createBlock);
                   }}
                 >
-                  <label>
-                    Sens de la touche
-                    <select
-                      value={conceptId}
-                      onChange={(event) => {
-                        setConceptId(event.target.value);
-                        setLabel(
-                          data.concepts.find(
-                            (concept) => concept.id === event.target.value,
-                          )?.label ?? "",
-                        );
-                      }}
-                      required
-                      disabled={busy}
-                    >
-                      <option value="">Choisir un sens</option>
-                      {data.concepts.map((concept) => (
-                        <option key={concept.id} value={concept.id}>
-                          {concept.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
                   <label>
                     Texte affiché sur la touche
                     <input
@@ -248,9 +194,50 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
                       disabled={busy}
                     />
                   </label>
+                  <details>
+                    <summary>
+                      Utiliser un sens déjà présent{" "}
+                      {conceptId ? "(sélectionné)" : "(facultatif)"}
+                    </summary>
+                    <p>
+                      Choisissez-le si cette touche exprime un sens personnel
+                      que vous avez déjà créé.
+                    </p>
+                    <label>
+                      Sens existant
+                      <select
+                        value={conceptId}
+                        onChange={(event) => {
+                          setConceptId(event.target.value);
+                          setLabel(
+                            data.concepts.find(
+                              (concept) => concept.id === event.target.value,
+                            )?.label ?? label,
+                          );
+                        }}
+                        disabled={busy}
+                      >
+                        <option value="">
+                          Créer un nouveau sens avec mon mot
+                        </option>
+                        {data.concepts.map((concept) => (
+                          <option key={concept.id} value={concept.id}>
+                            {concept.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </details>
                   <PictogramPicker
                     value={pictogramKey}
-                    onChange={setPictogramKey}
+                    onChange={(key) => {
+                      setPictogramKey(key);
+                      if (!label.trim() && !conceptId)
+                        setLabel(
+                          pictograms.find((drawing) => drawing.key === key)
+                            ?.label ?? "",
+                        );
+                    }}
                     disabled={busy}
                   />
                   <div
@@ -268,11 +255,7 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
                       {label.trim() || "Votre mot"}
                     </strong>
                   </div>
-                  <button
-                    disabled={
-                      busy || !conceptId || !label.trim() || !pictogramKey
-                    }
-                  >
+                  <button disabled={busy || !label.trim() || !pictogramKey}>
                     Créer la touche à vérifier
                   </button>
                 </form>
@@ -280,7 +263,7 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
             </div>
             {proposed.length > 0 && (
               <section className="review-section">
-                <h2>3. Vérifier les nouvelles touches</h2>
+                <h2>2. Vérifier les nouvelles touches</h2>
                 <p>
                   Vérifiez le dessin et le mot. Votre validation les rend
                   disponibles pour communiquer.

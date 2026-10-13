@@ -8,9 +8,10 @@ ces nouveaux écrans.
 ## Préparer ses touches
 
 1. Ouvrir un profil, puis l'onglet **Clavier**.
-2. Ajouter un sens personnel, par exemple « Boire », ou choisir un concept
-   existant dans le formulaire de création de touche.
-3. Choisir le texte affiché et un dessin dans la bibliothèque, vérifier l'aperçu,
+2. Rechercher un dessin par mot (les accents sont facultatifs) ou par catégorie.
+   « repas » trouve Manger et « portable » trouve Téléphone. Le dessin choisi
+   reste sélectionné même si la recherche ne le montre plus.
+3. Choisir le dessin, écrire ou adapter le texte proposé, vérifier l'aperçu,
    puis cliquer sur **Créer la touche à vérifier**.
 4. Vérifier le sens, le dessin et le mot, choisir le rôle de la personne qui valide,
    puis **Valider le dessin et le mot** ou **Écarter cette touche**.
@@ -22,8 +23,12 @@ déplacer une autre touche. Les **repères stables** conservent leurs cases libr
 Les grandes grilles sont paginées. Les nouvelles suggestions PCL ne peuvent
 pas être promues en repères stables dans ce parcours V1.
 
-La bibliothèque comprend Toilettes, Jouet, Livre, Maman, Papa, Stop, Oui, Non,
-Aimer, Voiture, Chat, Soleil, Boire et Dormir. Ce sont des dessins vectoriels
+La bibliothèque comprend **28 dessins**, répartis en besoins quotidiens,
+personnes, activités et objets, réponses et demandes, émotions, lieux et
+déplacements, animaux et nature. Aux premiers exemples (Toilettes, Jouet,
+Livre, Maman, Papa, Stop, Oui, Non, Aimer, Voiture, Chat, Soleil, Boire et Dormir)
+s'ajoutent Téléphone, Manger, Eau, Aide, Maison, École, Dehors, Marcher, Chien,
+Musique, Content, Triste, Mal et Douche. Ce sont des dessins vectoriels
 intégrés à l'application ; aucune image externe n'est chargée. Le choix du
 dessin appartient à la personne qui prépare et valide la touche. Le mot seul
 ne déclenche aucune association automatique à un dessin.
@@ -36,9 +41,15 @@ Un dessin absent, rejeté, archivé ou non pris en charge laisse le mot lisible
 avec un repère neutre « ? » ; il peut être choisi à nouveau depuis l'éditeur.
 
 **Modifier le texte** corrige le libellé d'une touche validée sans modifier son
-concept ni sa signification. Chaque changement laisse un historique. La création
-du sens et celle de sa touche sont distinctes : le sens reste disponible même
-si la création de la touche échoue.
+concept ni sa signification. Chaque changement laisse un historique.
+
+Par défaut, le nouveau sens personnel, le dessin et la touche à vérifier sont
+créés ensemble : si l'écriture échoue, aucun élément incomplet n'est conservé.
+Un identifiant de création évite les doublons lors d'une nouvelle tentative
+explicite avec le même mot et le même dessin dans le formulaire courant. Un
+rechargement relit les touches ; aucune écriture n'est rejouée automatiquement.
+**Utiliser un sens déjà présent (facultatif)** permet de réutiliser un concept
+existant. Le choix du dessin ne fusionne jamais deux sens d'après leurs mots.
 
 ## Composer et vérifier un message
 
@@ -94,6 +105,13 @@ confirmation d'une touche Livre, sélection et reprise d'un message illustré,
 ajout d'un dessin à une ancienne touche Boire. La confirmation du dessin et du
 mot est atomique ; les tests vérifient le retour à l'état initial si l'écriture
 échoue, l'isolation et la conservation des repères stables lors d'un changement.
+
+Le formulaire simplifié est vérifié dans le navigateur : recherche sans accent,
+synonyme, catégorie, conservation du choix filtré, absence de soumission depuis
+la recherche, création et validation de Téléphone et Manger, réutilisation d'un
+sens existant et rejet d'une variante, reprise du message illustré après
+rechargement. Les tests backend couvrent le retour à l'état initial d'une
+création interrompue, les tentatives répétées et l'isolation des profils.
 
 L'accessibilité et les interactions doivent encore être testées avec les personnes
 concernées. L'import de photos ou de banques externes de pictogrammes, la

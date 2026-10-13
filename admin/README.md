@@ -2,8 +2,10 @@
 
 The profile's **Clavier** page creates and validates communication blocks with a
 large bundled pictogram above their word, and edits their drawing/position/label.
-Fourteen original SVG drawings are available, including the twelve requested
-everyday examples. Existing text touches can receive a drawing explicitly.
+Twenty-eight original SVG drawings are available, searchable by French word,
+synonym and category. A new personal meaning and its proposed touch are created
+atomically in one form, with a stable request ID for explicit retries. Reusing
+an existing meaning remains available. Existing text touches can receive a drawing explicitly.
 **Communiquer** shows the same drawing and word in the keyboard and message,
 selects ordered blocks, completes
 a sequence and presents explicit interpretation feedback. See the
@@ -39,6 +41,7 @@ Verification:
 npm run format:check
 npm run build
 npm run typecheck
+..\backend\.venv\Scripts\python ..\scripts\check_pictogram_catalog.py
 ```
 
 The Admin GitHub Actions workflow repeats these checks using `npm ci` and the
