@@ -1,5 +1,8 @@
 """Configurable Chat Completions JSON adapter without vendor SDK or PCL access."""
 
+import json
+from copy import deepcopy
+
 from pydantic import TypeAdapter
 
 from app.ai.contracts import Key, ProviderMetadata
@@ -11,6 +14,7 @@ from app.ai.providers.http import (
     HTTPProvider,
     instruction,
     parse,
+    proposal_schema,
 )
 
 
@@ -18,11 +22,16 @@ class OpenAICompatibleProvider(HTTPProvider):
     health_path = "/models"
     capabilities = OPERATIONS
 
-    def __init__(self, base_url: str, model: str, **kwargs):
+    def __init__(
+        self, base_url: str, model: str, *, response_format: str = "json_object", **kwargs
+    ):
         try:
             self._model = TypeAdapter(Key).validate_python(model)
         except ValueError:
             raise ProviderConfigurationError("A valid configured model is required") from None
+        if response_format not in ("json_object", "json_schema"):
+            raise ProviderConfigurationError("Compatible response format is invalid")
+        self._response_format = response_format
         super().__init__(base_url, **kwargs)
 
     @property
@@ -35,6 +44,28 @@ class OpenAICompatibleProvider(HTTPProvider):
         )
 
     async def call(self, operation: str, request):
+        schema = proposal_schema(operation, strict=self._response_format == "json_schema")
+        response_format = {"type": "json_object"}
+        if self._response_format == "json_schema":
+            if operation == "interpret":
+                # A nested union encodes the cross-field invariant in the transport schema.
+                definitions = schema.pop("$defs", {})
+                proposed, refused = deepcopy(schema), deepcopy(schema)
+                proposed["properties"]["status"] = {"type": "string", "enum": ["proposal"]}
+                proposed["properties"]["candidates"]["minItems"] = 1
+                refused["properties"]["status"] = {"type": "string", "enum": ["not_understood"]}
+                refused["properties"]["candidates"]["maxItems"] = 0
+                schema = {
+                    "type": "object",
+                    "properties": {"result": {"anyOf": [proposed, refused]}},
+                    "required": ["result"],
+                    "additionalProperties": False,
+                    "$defs": definitions,
+                }
+            response_format = {
+                "type": "json_schema",
+                "json_schema": {"name": f"pictoflow_{operation}", "strict": True, "schema": schema},
+            }
         result = await self.exchange(
             "POST",
             "/chat/completions",
@@ -45,10 +76,12 @@ class OpenAICompatibleProvider(HTTPProvider):
                     {"role": "system", "content": PROPOSAL_INSTRUCTIONS},
                     {
                         "role": "user",
-                        "content": instruction(operation, request, include_preamble=False),
+                        "content": instruction(
+                            operation, request, include_preamble=False, schema=schema
+                        ),
                     },
                 ],
-                "response_format": {"type": "json_object"},
+                "response_format": response_format,
             },
         )
         try:
@@ -58,6 +91,11 @@ class OpenAICompatibleProvider(HTTPProvider):
             content = choice["message"]["content"]
             if not isinstance(content, str):
                 raise ValueError
+            if self._response_format == "json_schema" and operation == "interpret":
+                output = json.loads(content)
+                if not isinstance(output, dict) or set(output) != {"result"}:
+                    raise ValueError
+                content = output["result"]
             proposal = parse(RESPONSES[operation], content)
             usage = result.get("usage") or {}
             metadata = ProviderMetadata(

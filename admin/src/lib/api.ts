@@ -3,7 +3,9 @@ export class APIError extends Error {
     super(
       status === 503
         ? "Le service est indisponible."
-        : `La requête a échoué (${status}).`,
+        : status === 502
+          ? "Le modèle IA n'a pas renvoyé de proposition exploitable. Vos mots sont conservés ; vous pouvez réessayer."
+          : `La requête a échoué (${status}).`,
     );
   }
 }

@@ -118,7 +118,10 @@ def create_provider(settings: Settings, telemetry=None) -> ProviderManager:
         )
         if settings.ai_provider == "openai-compatible":
             provider = OpenAICompatibleProvider(
-                settings.provider_base_url, settings.provider_model, **options
+                settings.provider_base_url,
+                settings.provider_model,
+                response_format=settings.provider_response_format,
+                **options,
             )
         else:
             provider = PRISMProvider(

@@ -26,3 +26,12 @@ def test_dotenv_configuration(monkeypatch, tmp_path) -> None:
 def test_invalid_environment_fails_validation() -> None:
     with pytest.raises(ValidationError):
         Settings(environment="unknown", _env_file=None)
+
+
+def test_strict_compatible_response_format_is_explicit(monkeypatch):
+    monkeypatch.delenv("PICTOFLOW_PROVIDER_RESPONSE_FORMAT", raising=False)
+    assert Settings(_env_file=None).provider_response_format == "json_object"
+    monkeypatch.setenv("PICTOFLOW_PROVIDER_RESPONSE_FORMAT", "json_schema")
+    assert Settings(_env_file=None).provider_response_format == "json_schema"
+    with pytest.raises(ValidationError):
+        Settings(provider_response_format="text", _env_file=None)

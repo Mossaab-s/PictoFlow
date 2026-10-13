@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     provider_base_url: str | None = None
     provider_api_key: SecretStr | None = None
     provider_model: str | None = None
+    provider_response_format: Literal["json_object", "json_schema"] = "json_object"
     provider_timeout_seconds: float = Field(default=30.0, gt=0, le=120, allow_inf_nan=False)
     prism_capabilities: tuple[Literal["interpret", "simplify", "suggest_representation"], ...] = (
         "interpret",
