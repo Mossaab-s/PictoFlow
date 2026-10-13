@@ -1,9 +1,10 @@
 """Human-controlled gap approval, block activation and representation replacement."""
 
 from dataclasses import replace
-from uuid import UUID
+from uuid import UUID, uuid5
 
 from app.application.pcl_repository import PCLUnits
+from app.application.semantic_space import SemanticNotFoundError
 from app.domain.pcl.entities import (
     BlockOrigin,
     BlockStability,
@@ -152,26 +153,88 @@ class BlockService:
     ):
         with self.units() as store:
             store.get(profile_id, Concept, concept_id)
-            visual = None
-            if pictogram_key is not None:
-                visual = Representation(
-                    profile_id=profile_id,
-                    concept_id=concept_id,
-                    type=RepresentationType.PICTOGRAM,
-                    source=PICTOGRAM_SOURCE,
-                    asset_reference=pictogram_reference(pictogram_key),
-                )
-                store.add(profile_id, visual)
-                store.audit(profile_id, "representation_proposed", None, visual, "human")
-            block = CommunicationBlock(
+            return self._create(store, profile_id, concept_id, label, pictogram_key=pictogram_key)
+
+    def create_personal(
+        self,
+        profile_id: UUID,
+        request_id: UUID,
+        label: str,
+        pictogram_key: PictogramKey,
+        actor_role: HumanRole,
+    ):
+        """Create the meaning and proposed touch atomically; explicit retries share one ID."""
+        label = label.strip()
+        reference = pictogram_reference(pictogram_key)
+        actor_role = HumanRole(actor_role)
+        block_id = uuid5(profile_id, f"personal-touch:{request_id}")
+        concept_id = uuid5(block_id, "concept")
+        with self.units() as store:
+            try:
+                previous = store.get(profile_id, CommunicationBlock, block_id)
+            except SemanticNotFoundError:
+                previous = None
+            if previous is not None:
+                if previous.concept_id != concept_id or previous.label != label:
+                    raise DomainInvariantError("This creation ID already has a different touch")
+                visual = store.get(profile_id, Representation, previous.representation_id)
+                if visual.source != PICTOGRAM_SOURCE or visual.asset_reference != reference:
+                    raise DomainInvariantError("This creation ID already has a different drawing")
+                return previous
+            concept = Concept(
+                id=concept_id,
+                profile_id=profile_id,
+                canonical_key=f"USER_{concept_id.hex}",
+                label=label,
+            )
+            source = f"human:{actor_role.value}"
+            store.add(profile_id, concept)
+            store.audit(profile_id, "concept_created", None, concept, source)
+            return self._create(
+                store,
+                profile_id,
+                concept_id,
+                label,
+                pictogram_key=pictogram_key,
+                block_id=block_id,
+                origin=BlockOrigin(actor_role.value),
+                source=source,
+            )
+
+    @staticmethod
+    def _create(
+        store,
+        profile_id: UUID,
+        concept_id: UUID,
+        label: str,
+        *,
+        pictogram_key: PictogramKey | None,
+        block_id: UUID | None = None,
+        origin: BlockOrigin = BlockOrigin.USER,
+        source: str = "human",
+    ):
+        visual = None
+        if pictogram_key is not None:
+            visual = Representation(
                 profile_id=profile_id,
                 concept_id=concept_id,
-                label=label,
-                representation_id=visual.id if visual else None,
-                visual_reference=visual.asset_reference if visual else None,
+                type=RepresentationType.PICTOGRAM,
+                source=PICTOGRAM_SOURCE,
+                asset_reference=pictogram_reference(pictogram_key),
             )
-            store.add(profile_id, block)
-            store.audit(profile_id, "block_proposed", None, block, "human")
+            store.add(profile_id, visual)
+            store.audit(profile_id, "representation_proposed", None, visual, source)
+        block = CommunicationBlock(
+            **({"id": block_id} if block_id is not None else {}),
+            profile_id=profile_id,
+            concept_id=concept_id,
+            label=label,
+            origin=origin,
+            representation_id=visual.id if visual else None,
+            visual_reference=visual.asset_reference if visual else None,
+        )
+        store.add(profile_id, block)
+        store.audit(profile_id, "block_proposed", None, block, source)
         return block
 
     def validate(

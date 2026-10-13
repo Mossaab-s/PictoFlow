@@ -104,6 +104,13 @@ class BlockFeedbackBody(FeedbackBody):
     confirm_representation: bool = Field(default=False, strict=True)
 
 
+class PersonalBlockBody(Body):
+    request_id: UUID
+    label: str = Field(min_length=1, max_length=256)
+    pictogram_key: PictogramKey
+    actor_role: HumanRole
+
+
 class PictogramSelectionBody(Body):
     pictogram_key: PictogramKey
     actor_role: HumanRole
@@ -337,6 +344,13 @@ def create_block(request: Request, profile_id: UUID, body: BlockBody):
     return blocks(request).create(
         profile_id, body.concept_id, body.label, pictogram_key=body.pictogram_key
     )
+
+
+@router.post(
+    "/profiles/{profile_id}/blocks/personal", status_code=201, response_model=CommunicationBlock
+)
+def create_personal_block(request: Request, profile_id: UUID, body: PersonalBlockBody):
+    return blocks(request).create_personal(profile_id, **body.model_dump())
 
 
 @router.post("/profiles/{profile_id}/blocks/{block_id}/feedback", response_model=CommunicationBlock)

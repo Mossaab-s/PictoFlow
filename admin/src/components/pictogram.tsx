@@ -153,6 +153,145 @@ const drawings: Record<PictogramKey, ReactNode> = {
       <path d="M43 60q6 7 12 0M66 79q8 6 15 0" />
     </>
   ),
+  phone: (
+    <>
+      <rect x="32" y="8" width="56" height="104" rx="11" fill="#6f918a" />
+      <rect x="39" y="23" width="42" height="65" rx="3" fill="#e2f2f5" />
+      <path d="M52 16h16" stroke="#fff" />
+      <circle cx="60" cy="100" r="5" fill="#fff" />
+    </>
+  ),
+  eat: (
+    <>
+      <circle cx="60" cy="60" r="32" fill="#e2f2f5" />
+      <circle cx="60" cy="60" r="22" stroke="#7bada5" />
+      <path d="M13 14v24q0 13 8 13t8-13V14M21 14v91M105 105V14c-14 13-15 37 0 39" />
+    </>
+  ),
+  water: (
+    <>
+      <path
+        d="M60 10C48 31 22 56 22 76c0 45 76 45 76 0 0-20-26-45-38-66Z"
+        fill="#79c5e0"
+      />
+      <path d="M38 74q-2 16 13 21" stroke="#e2f2f5" strokeWidth="7" />
+    </>
+  ),
+  help: (
+    <>
+      <circle cx="60" cy="60" r="45" fill="#fff" />
+      <circle
+        cx="60"
+        cy="60"
+        r="31"
+        stroke="#e57c79"
+        strokeWidth="24"
+        strokeDasharray="24 25"
+        transform="rotate(-22 60 60)"
+      />
+      <circle cx="60" cy="60" r="18" fill="#e2f2f5" />
+    </>
+  ),
+  home: (
+    <>
+      <path d="M24 53v54h72V53" fill="#ffe5be" />
+      <path d="m10 55 50-42 50 42Z" fill="#e57c79" />
+      <path d="M49 107V72h22v35" fill="#7bada5" />
+      <rect x="31" y="67" width="12" height="14" fill="#e2f2f5" />
+    </>
+  ),
+  school: (
+    <>
+      <path d="M14 48h92v60H14Z" fill="#ffe5be" />
+      <path d="m9 48 51-31 51 31Z" fill="#86b8da" />
+      <path d="M60 18V5h21v13Z" fill="#e57c79" />
+      <path d="M49 108V76h22v32" fill="#7bada5" />
+      <path
+        d="M25 63h10M25 85h10M85 63h10M85 85h10"
+        stroke="#4b7296"
+        strokeWidth="8"
+      />
+    </>
+  ),
+  outside: (
+    <>
+      <path d="M20 107V14h54v93" fill="#ffe5be" />
+      <path d="m28 23 27 7v66l-27 7Z" fill="#7bada5" />
+      <path d="M64 60h43M95 47l13 13-13 13" stroke="#4b7296" strokeWidth="6" />
+      <path d="M10 108h100" />
+      <circle cx="47" cy="63" r="2" fill="#283d38" />
+    </>
+  ),
+  walk: (
+    <>
+      <circle cx="67" cy="18" r="11" fill="#f4cfa8" />
+      <path
+        d="m60 35-8 34 22 16 9 25M53 68l-17 37M58 41 38 55l-15-5M62 41l17 19 17-2"
+        stroke="#4b7296"
+        strokeWidth="9"
+      />
+      <path d="M12 113h96" stroke="#7bada5" />
+    </>
+  ),
+  dog: (
+    <>
+      <path
+        d="M31 36c-24-21-28 30-12 44l21-21M89 36c24-21 28 30 12 44L80 59"
+        fill="#725445"
+      />
+      <path d="M33 29c12-10 42-10 54 0l9 48c-1 38-71 38-72 0Z" fill="#d8a573" />
+      <ellipse cx="60" cy="80" rx="25" ry="18" fill="#ffe5be" />
+      <path d="M43 54h1M76 54h1" strokeWidth="7" />
+      <path d="m51 74 9 7 9-7ZM60 81v9m0 0q-9 8-16 0m16 0q9 8 16 0" />
+    </>
+  ),
+  music: (
+    <>
+      <path
+        d="M43 89V26l55-14v63M43 43l55-14"
+        stroke="#4b7296"
+        strokeWidth="8"
+      />
+      <ellipse cx="28" cy="94" rx="17" ry="12" fill="#86b8da" />
+      <ellipse cx="83" cy="80" rx="17" ry="12" fill="#86b8da" />
+    </>
+  ),
+  happy: (
+    <>
+      <circle cx="60" cy="60" r="46" fill="#f5d25e" />
+      <path d="M40 47h1M79 47h1" strokeWidth="8" />
+      <path d="M34 70q26 34 52 0" strokeWidth="5" />
+    </>
+  ),
+  sad: (
+    <>
+      <circle cx="60" cy="60" r="46" fill="#b8dfe8" />
+      <path d="M40 47h1M79 47h1" strokeWidth="8" />
+      <path d="M39 87q21-26 42 0" />
+      <path d="M32 57c-16 20 16 20 0 0Z" fill="#79c5e0" stroke="#4b7296" />
+    </>
+  ),
+  pain: (
+    <>
+      <path
+        d="m15 48 33-33c7-7 17-7 24 0l33 33c7 7 7 17 0 24l-33 33c-7 7-17 7-24 0L15 72c-7-7-7-17 0-24Z"
+        fill="#ffe5be"
+      />
+      <rect x="43" y="43" width="34" height="34" rx="5" fill="#e57c79" />
+      <path d="M29 49v1M29 66v1M91 49v1M91 66v1" strokeWidth="5" />
+    </>
+  ),
+  shower: (
+    <>
+      <path d="M21 107V29c0-22 44-24 46 0" stroke="#4b7296" strokeWidth="7" />
+      <path d="M45 42c0-22 44-22 44 0Z" fill="#b8dfe8" />
+      <path
+        d="M49 56v7M67 56v7M85 56v7M49 80v7M67 80v7M85 80v7M49 104v7M67 104v7M85 104v7"
+        stroke="#79c5e0"
+        strokeWidth="5"
+      />
+    </>
+  ),
 };
 
 export function Pictogram({ pictogramKey }: { pictogramKey: PictogramKey }) {

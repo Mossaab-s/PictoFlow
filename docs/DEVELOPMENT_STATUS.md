@@ -22,25 +22,25 @@ sont vérifiées en montée/descente et comparées aux modèles SQLAlchemy.
 La compilation Next.js, TypeScript et les contrôles de format sont exécutables
 avec les commandes documentées.
 
-Dernière vérification : **327 tests backend passent dans chacun des deux modes
-Disabled et FakeProvider**, dans Docker sur le serveur, avec PostgreSQL et Redis
-réels ; les contrôles Ruff, la compilation Next.js et TypeScript passent aussi.
-La création d'un concept depuis l'administration a été vérifiée dans le navigateur,
-sur le profil fictif de la base temporaire.
+Le socle, l'éditeur, les pictogrammes et la correction des propositions Groq
+sont fusionnés dans `main` via les **PR #25 à #28**, avec contrôles GitHub verts.
+Ils sont déployés sur le serveur dans la livraison **`20261013-02`**, commit
+`26089d3`. Le provider utilise les réponses structurées strictes ; deux appels
+réels sur des données fictives produisent des propositions françaises valides.
+Le déploiement conserve la base et les repères existants.
 
-Le socle V1 et l'éditeur initial sont fusionnés dans `main` via les PR #25 et
-#26, avec contrôles GitHub verts. Ils sont déployés sur le serveur dans la
-livraison `20261012-03` (commit `dd0081f`).
-La livraison suivante ajoute des touches avec un grand dessin au-dessus du mot,
-une bibliothèque de 14 dessins et le choix explicite d'une représentation par
-profil. Les dessins apparaissent aussi dans le message composé ; voir le
-[guide utilisateur](KEYBOARD_USER_GUIDE.md). Cette évolution reste à fusionner
-et déployer.
-Sa vérification locale passe **329 tests backend**, avec PostgreSQL et Redis
-temporaires, et **9 tests frontend**, plus Ruff, Prettier, TypeScript et la
-compilation Next.js. Le parcours navigateur vérifie la création et validation
-d'une touche illustrée, la reprise du message et l'ajout d'un dessin à une
-ancienne touche textuelle.
+La prochaine livraison simplifie la création : un formulaire prépare le mot,
+son sens personnel et son dessin dans une seule transaction. La validation
+reste explicite. La bibliothèque passe de 14 à **28 dessins**, avec recherche
+par mot ou synonyme et catégories ; voir le [guide utilisateur](KEYBOARD_USER_GUIDE.md).
+Cette évolution reste à fusionner et déployer.
+
+Sa vérification locale passe **356 tests backend**, avec PostgreSQL et Redis
+temporaires, et **12 tests frontend**, plus Ruff, Prettier, TypeScript et la
+compilation Next.js. Un contrôle CI compare les clés des catalogues Python et
+TypeScript. Le parcours navigateur vérifie les recherches, le choix conservé
+malgré les filtres, la création et validation de Téléphone et Manger, le choix
+d'un sens existant et la reprise du message illustré après rechargement.
 Les issues restent ouvertes pour suivre la revue et les prochaines étapes.
 
 ## Lire et essayer
@@ -51,6 +51,7 @@ Les issues restent ouvertes pour suivre la revue et les prochaines étapes.
 - [API et observabilité](API_OBSERVABILITY.md)
 - [Administration](../admin/README.md)
 - [Créer son clavier et communiquer](KEYBOARD_USER_GUIDE.md)
+- [Prochaines étapes](NEXT_STEPS.md)
 - [Développement local et Compose](LOCAL_DEVELOPMENT.md)
 - [Déploiement et sauvegardes sur serveur](SERVER_DEPLOYMENT.md)
 

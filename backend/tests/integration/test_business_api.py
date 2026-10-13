@@ -207,6 +207,95 @@ def test_invalid_or_implicit_pictogram_actions_leave_no_partial_changes(api, mon
     assert api.get(base + "/keyboard").json() == []
 
 
+def test_personal_touch_creation_is_atomic_retryable_and_profile_scoped(api, monkeypatch):
+    from app.infrastructure.postgres.pcl_repository import PostgresPCLRepository
+
+    profile = api.post("/api/v1/profiles").json()["id"]
+    foreign = api.post("/api/v1/profiles").json()["id"]
+    base = f"/api/v1/profiles/{profile}"
+    payload = {
+        "request_id": str(uuid4()),
+        "label": "  Mon téléphone  ",
+        "pictogram_key": "phone",
+        "actor_role": "caregiver",
+    }
+    original = PostgresPCLRepository.audit
+
+    def failing_audit(self, profile_id, event_type, *args, **kwargs):
+        if event_type == "block_proposed":
+            raise RuntimeError("Injected failure after concept, visual and block creation")
+        return original(self, profile_id, event_type, *args, **kwargs)
+
+    with monkeypatch.context() as context:
+        context.setattr(PostgresPCLRepository, "audit", failing_audit)
+        with pytest.raises(RuntimeError, match="Injected failure"):
+            api.post(base + "/blocks/personal", json=payload)
+    for name in ("concepts", "representations", "blocks", "audit", "keyboard"):
+        assert api.get(base + "/" + name).json() == []
+
+    response = api.post(base + "/blocks/personal", json=payload)
+    assert response.status_code == 201
+    block = response.json()
+    assert block["label"] == "Mon téléphone"
+    assert block["status"] == "proposed" and block["origin"] == "caregiver"
+    concept = api.get(base + "/concepts").json()[0]
+    visual = api.get(base + "/representations").json()[0]
+    assert concept["label"] == "Mon téléphone" and concept["id"] == block["concept_id"]
+    assert visual["concept_id"] == concept["id"] and visual["id"] == block["representation_id"]
+    assert visual["asset_reference"] == "pictoflow:pictogram:v1:phone"
+    assert visual["status"] == "proposed" and api.get(base + "/keyboard").json() == []
+    before = {
+        name: api.get(base + "/" + name).json()
+        for name in ("concepts", "representations", "blocks", "audit")
+    }
+    assert all(event["source"] == "human:caregiver" for event in before["audit"])
+    assert api.post(base + "/blocks/personal", json=payload).json() == before["blocks"][0]
+    for change in ({"label": "Autre sens"}, {"pictogram_key": "book"}):
+        assert api.post(base + "/blocks/personal", json={**payload, **change}).status_code == 400
+    assert {name: api.get(base + "/" + name).json() for name in before} == before
+
+    feedback = {"action": "confirm", "actor_role": "caregiver", "confirm_representation": True}
+    accepted = api.post(base + "/blocks/" + block["id"] + "/feedback", json=feedback).json()
+    audit = api.get(base + "/audit").json()
+    assert accepted["status"] == "validated"
+    stored = api.get(base + "/blocks").json()[0]
+    assert api.post(base + "/blocks/personal", json=payload).json() == stored
+    assert api.get(base + "/audit").json() == audit
+
+    foreign_base = f"/api/v1/profiles/{foreign}"
+    assert api.get(foreign_base + "/concepts").json() == []
+    other = api.post(foreign_base + "/blocks/personal", json=payload).json()
+    assert other["profile_id"] == foreign and other["id"] != block["id"]
+    assert other["concept_id"] != concept["id"] and other["status"] == "proposed"
+    assert api.post(f"/api/v1/profiles/{uuid4()}/blocks/personal", json=payload).status_code == 404
+
+
+@pytest.mark.parametrize(
+    "change, status",
+    [
+        ({"label": " "}, 400),
+        ({"label": ""}, 422),
+        ({"label": "a" * 257}, 422),
+        ({"pictogram_key": "https://example.test/photo.svg"}, 422),
+        ({"pictogram_key": "unknown"}, 422),
+        ({"actor_role": "ai"}, 422),
+        ({"status": "validated"}, 422),
+    ],
+)
+def test_invalid_personal_touch_creates_nothing(api, change, status):
+    profile = api.post("/api/v1/profiles").json()["id"]
+    base = f"/api/v1/profiles/{profile}"
+    payload = {
+        "request_id": str(uuid4()),
+        "label": "Manger",
+        "pictogram_key": "eat",
+        "actor_role": "user",
+    }
+    assert api.post(base + "/blocks/personal", json={**payload, **change}).status_code == status
+    for name in ("concepts", "blocks", "representations", "audit"):
+        assert api.get(base + "/" + name).json() == []
+
+
 @pytest.mark.parametrize("kind", ["invalid", "refusal", "proposal"])
 def test_strict_phrase_responses_never_promote_invalid_or_unconfirmed_meaning(api, kind):
     from app.ai.manager import ProviderManager
