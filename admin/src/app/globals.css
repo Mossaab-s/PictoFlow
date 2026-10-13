@@ -49,7 +49,7 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 summary:focus-visible {
-  outline: 3px solid #bd913d;
+  outline: 3px solid var(--ink);
   outline-offset: 3px;
 }
 
@@ -159,10 +159,12 @@ textarea {
 }
 .keyboard-zones {
   display: grid;
+  min-width: 0;
   gap: 26px;
   margin: 28px 0;
 }
 .keyboard-zone {
+  min-width: 0;
   padding: 22px;
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -229,6 +231,7 @@ textarea {
 }
 .pagination {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
   gap: 14px;
@@ -878,6 +881,132 @@ pre {
     font-size: 10px;
   }
   .inline-form label {
+    width: 100%;
+  }
+}
+
+.communication-standalone {
+  max-width: 1280px;
+  padding: 28px;
+}
+.communication-navigation {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.communication-navigation .button-link {
+  min-height: 48px;
+}
+.communication-navigation a[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: wait;
+}
+.display-settings {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0 18px;
+  background: #fff;
+}
+.display-settings summary {
+  padding: 16px 0;
+  min-height: 48px;
+  font-weight: 600;
+}
+.display-settings fieldset {
+  border: 0;
+  padding: 12px 0 0;
+  margin: 0;
+  min-width: 0;
+}
+.display-settings legend {
+  font-weight: 600;
+}
+.display-settings p {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.display-options {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.display-options label {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 64px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+  cursor: pointer;
+}
+.display-options label:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--soft);
+}
+.display-options label:focus-within {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+.display-options input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+}
+.display-options small {
+  display: block;
+  margin-top: 4px;
+}
+.keyboard-pages button,
+.pagination button {
+  min-height: 48px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.communication-tile .pictogram,
+.communication-tile .pictogram-missing {
+  max-width: 100%;
+}
+.grid-columns-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.grid-columns-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.grid-columns-3 .communication-tile,
+.grid-columns-3 .tile-placeholder {
+  min-height: 220px;
+}
+.grid-columns-2 .communication-tile,
+.grid-columns-2 .tile-placeholder {
+  min-height: 260px;
+}
+.grid-columns-3 .pictogram,
+.grid-columns-3 .pictogram-missing,
+.grid-columns-3 .touch-photo {
+  width: 120px;
+  height: 120px;
+}
+.grid-columns-2 .pictogram,
+.grid-columns-2 .pictogram-missing,
+.grid-columns-2 .touch-photo {
+  width: 144px;
+  height: 144px;
+}
+.grid-columns-3 .touch-word {
+  font-size: 26px;
+}
+.grid-columns-2 .touch-word {
+  font-size: 30px;
+}
+@media (max-width: 620px) {
+  .communication-standalone {
+    padding: 24px 12px;
+  }
+  .grid-columns-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .display-options label {
     width: 100%;
   }
 }

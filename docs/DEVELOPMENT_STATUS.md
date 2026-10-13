@@ -23,9 +23,9 @@ La compilation Next.js, TypeScript et les contrôles de format sont exécutables
 avec les commandes documentées.
 
 Le socle, l'éditeur, les pictogrammes et la correction des propositions Groq
-sont fusionnés dans `main` via les **PR #25 à #31**, avec contrôles GitHub verts.
-Ils sont déployés sur le serveur dans la livraison **`20261013-05`**, commit
-`082d835`. Le provider utilise les réponses structurées strictes ; les appels
+sont fusionnés dans `main` via les **PR #25 à #32**, avec contrôles GitHub verts.
+Ils sont déployés sur le serveur dans la livraison **`20261013-06`**, commit
+`30c2df9`. Le provider utilise les réponses structurées strictes ; les appels
 réels sur des données fictives produisent des propositions françaises valides.
 Le déploiement conserve la base et les repères existants.
 
@@ -74,19 +74,31 @@ la reprise d'un message avec photo. Une sauvegarde complète de la démonstratio
 est restaurée dans une autre base jetable : les comptages des 14 tables et les
 empreintes des deux photos sont identiques.
 
-La livraison suivante ajoute les **pages personnelles du clavier** : création,
+La PR #32, fusionnée et déployée, ajoute les **pages personnelles du clavier** : création,
 renommage et placement explicite des touches par page. Les repères stables restent
 globaux. Un message peut mélanger des sélections de plusieurs pages, puis être
 repris après rechargement. Le nom et les placements d'une page sont conservés
 dans PostgreSQL avec audit et isolation par profil. Une ancienne requête de
 placement ne retire pas implicitement la touche de sa page. Voir
-[KEYBOARD_PAGES.md](KEYBOARD_PAGES.md). Cette évolution reste à fusionner et déployer.
+[KEYBOARD_PAGES.md](KEYBOARD_PAGES.md). La bascule conserve les 21 positions et
+la photo déjà présente, avec comparaison des pixels par SHA256. Les contrôles du
+code installé couvrent les pages et la compatibilité des photos dans des
+transactions annulées, sans laisser d'exemples dans la base du serveur.
 
 La version avec pages passe **392 tests backend** (suite complète de 391 tests
 avec PostgreSQL/Redis, puis contrôle supplémentaire du downgrade), **16 tests
 frontend**, Ruff, Prettier, TypeScript et la compilation Next.js. Le parcours
 navigateur vérifie création, renommage, deux cases 1 sur des pages distinctes,
 repères stables communs, composition entre pages et reprise du message.
+
+La livraison en préparation ajoute l'**espace de communication dédié** et les
+**tailles de touches personnelles**, sans migration ni modification des API.
+Les repères stables gardent leur grille et leur pagination. Un message peut
+être repris entre la préparation, la vue Communiquer et l'écran dédié. Le choix
+de taille reste dans le navigateur, séparé par profil et sans contenu personnel.
+Voir [COMMUNICATION_DISPLAY.md](COMMUNICATION_DISPLAY.md). Les **19 tests frontend**,
+Prettier, TypeScript et la compilation Next.js passent. Le navigateur est vérifié
+sur une base PostgreSQL jetable, avec reprise et deux largeurs d'écran.
 
 ## Lire et essayer
 

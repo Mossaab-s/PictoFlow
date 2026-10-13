@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   keyboardPage,
   pageTiles,
@@ -9,6 +9,7 @@ import {
   type KeyboardGroup,
 } from "@/lib/keyboard";
 import { TouchContent } from "./pictogram";
+import { zoneDisplay, type DisplaySize } from "@/lib/display";
 
 export default function KeyboardGrid({
   tiles,
@@ -16,12 +17,14 @@ export default function KeyboardGrid({
   disabled = false,
   groups,
   profileId,
+  displaySize = "standard",
 }: {
   tiles: Tile[];
   onSelect?: (tile: Tile) => void | Promise<void>;
   disabled?: boolean;
   groups: KeyboardGroup[];
   profileId: string;
+  displaySize?: DisplaySize;
 }) {
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const scoped = groups.filter((group) => group.profile_id === profileId);
@@ -62,11 +65,16 @@ export default function KeyboardGrid({
       )}
       {(Object.keys(zones) as Zone[]).map((zone) => (
         <ZoneGrid
-          key={zone === "stable" ? zone : `${zone}:${groupId ?? "home"}`}
+          key={
+            zone === "stable"
+              ? zone
+              : `${zone}:${groupId ?? "home"}:${displaySize}`
+          }
           zone={zone}
           tiles={visible.filter((tile) => tile.zone === zone)}
           onSelect={onSelect}
           disabled={disabled}
+          displaySize={displaySize}
         />
       ))}
     </div>
@@ -78,14 +86,19 @@ function ZoneGrid({
   tiles,
   onSelect,
   disabled,
+  displaySize,
 }: {
   zone: Zone;
   tiles: Tile[];
   onSelect?: (tile: Tile) => void | Promise<void>;
   disabled: boolean;
+  displaySize: DisplaySize;
 }) {
   const [page, setPage] = useState(0);
-  const layout = keyboardPage(tiles, page);
+  const previous = useRef<HTMLButtonElement>(null);
+  const next = useRef<HTMLButtonElement>(null);
+  const display = zoneDisplay(zone, displaySize);
+  const layout = keyboardPage(tiles, page, display.size);
   if (!tiles.length) return null;
   return (
     <section className={`keyboard-zone zone-${zone}`} aria-label={zones[zone]}>
@@ -95,13 +108,14 @@ function ZoneGrid({
           {tiles.length} touche{tiles.length > 1 ? "s" : ""}
         </span>
       </div>
-      <div className="keyboard-grid">
+      <div className={`keyboard-grid grid-columns-${display.columns}`}>
         {layout.slots.map((tile, index) =>
           tile ? (
             onSelect ? (
               <button
                 key={tile.block_id}
                 className="communication-tile"
+                aria-label={tile.block.label}
                 disabled={disabled}
                 onClick={async (event) => {
                   const button = event.currentTarget;
@@ -147,19 +161,37 @@ function ZoneGrid({
       {layout.pages > 1 && (
         <div className="pagination">
           <button
+            ref={previous}
             className="secondary"
-            onClick={() => setPage(layout.page - 1)}
-            disabled={layout.page === 0}
+            aria-label={`Touches précédentes : ${zones[zone]}`}
+            onClick={(event) => {
+              const button = event.currentTarget;
+              setPage(layout.page - 1);
+              requestAnimationFrame(() => {
+                if (button.isConnected && button.disabled)
+                  next.current?.focus();
+              });
+            }}
+            disabled={disabled || layout.page === 0}
           >
             Précédentes
           </button>
-          <span>
+          <span role="status" aria-live="polite">
             Page {layout.page + 1} / {layout.pages}
           </span>
           <button
+            ref={next}
             className="secondary"
-            onClick={() => setPage(layout.page + 1)}
-            disabled={layout.page + 1 === layout.pages}
+            aria-label={`Touches suivantes : ${zones[zone]}`}
+            onClick={(event) => {
+              const button = event.currentTarget;
+              setPage(layout.page + 1);
+              requestAnimationFrame(() => {
+                if (button.isConnected && button.disabled)
+                  previous.current?.focus();
+              });
+            }}
+            disabled={disabled || layout.page + 1 === layout.pages}
           >
             Suivantes
           </button>

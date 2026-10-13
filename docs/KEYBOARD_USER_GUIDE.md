@@ -53,6 +53,13 @@ existant. Le choix du dessin ne fusionne jamais deux sens d'après leurs mots.
 
 ## Composer et vérifier un message
 
+**Ouvrir la communication** mène à un écran dédié au message et au clavier,
+sans les menus d'administration. **Retour à la préparation** retrouve l'éditeur.
+Dans **Réglages d’affichage**, choisir Classique, Grandes touches ou Très grandes
+touches pour les zones personnelles et adaptatives. Les repères stables gardent
+leur grille et le message composé est conservé. Le choix de taille est propre
+au profil dans ce navigateur ; voir [le guide d'affichage](COMMUNICATION_DISPLAY.md).
+
 **Les pages de mon clavier** permet de créer et renommer Personnes, Besoins ou
 vos propres pages. Dans les réglages d'une touche validée, choisir **Page** et
 **Place**, puis enregistrer. Les touches sans page restent dans **Accueil**.

@@ -19,13 +19,18 @@ import { HumanRoleSelector, ProfileNavigation } from "./profile-navigation";
 import { useProfileKeyboard } from "./use-profile-keyboard";
 import { TouchContent } from "./pictogram";
 import { useLocalSpeech } from "./use-local-speech";
+import DisplaySettings from "./display-settings";
+import { useDisplaySettings } from "./use-display-settings";
 
 export default function CommunicationScreen({
   profileId,
+  standalone = false,
 }: {
   profileId: string;
+  standalone?: boolean;
 }) {
   const data = useProfileKeyboard(profileId);
+  const display = useDisplaySettings(profileId);
   const [sequence, setSequence] = useState<Sequence | null>(null);
   const [decision, setDecision] = useState<Decision | null>(null);
   const [context, setContext] = useState("");
@@ -296,26 +301,53 @@ export default function CommunicationScreen({
     decision?.candidates.some((candidate) =>
       ["confirmed", "corrected"].includes(candidate.status),
     ) ?? false;
-  const pending = busy || restoring || data.loading || restoreFailed;
+  const pending =
+    busy || restoring || data.loading || restoreFailed || !display.ready;
   return (
     <>
-      <ProfileNavigation profileId={profileId} section="communication" />
-      <section className="page communication-page">
+      {!standalone && (
+        <ProfileNavigation profileId={profileId} section="communication" />
+      )}
+      <section
+        className={`page communication-page${standalone ? " communication-standalone" : ""}`}
+      >
         <div className="page-heading">
           <div>
-            <div className="eyebrow">MON MESSAGE, MES MOTS</div>
+            <div className="eyebrow">
+              {standalone ? "PICTOFLOW · MES MOTS" : "MON MESSAGE, MES MOTS"}
+            </div>
             <h1>Je communique</h1>
             <p>
               Choisissez vos touches dans l'ordre. Votre message peut rester tel
               quel ou recevoir une proposition de phrase.
             </p>
           </div>
-          <Link
-            className="button-link secondary"
-            href={`/admin/profiles/${profileId}/keyboard`}
-          >
-            Modifier mon clavier
-          </Link>
+          <div className="communication-navigation">
+            {!standalone && (
+              <Link
+                className="button-link"
+                href={`/communication/${profileId}`}
+                aria-disabled={busy}
+                tabIndex={busy ? -1 : undefined}
+                onClick={(event) => {
+                  if (busy) event.preventDefault();
+                }}
+              >
+                Ouvrir l’espace de communication
+              </Link>
+            )}
+            <Link
+              className="button-link secondary"
+              href={`/admin/profiles/${profileId}/keyboard`}
+              aria-disabled={busy}
+              tabIndex={busy ? -1 : undefined}
+              onClick={(event) => {
+                if (busy) event.preventDefault();
+              }}
+            >
+              {standalone ? "Retour à la préparation" : "Modifier mon clavier"}
+            </Link>
+          </div>
         </div>
         {data.error && (
           <div className="error" role="alert">
@@ -408,7 +440,14 @@ export default function CommunicationScreen({
           )}
           {speech.error && <p role="alert">{speech.error}</p>}
         </section>
+        <DisplaySettings
+          size={display.size}
+          onChange={display.change}
+          disabled={pending}
+          temporary={display.temporary}
+        />
         {!data.loading &&
+          display.ready &&
           (tiles.length ? (
             <KeyboardGrid
               profileId={profileId}
@@ -416,6 +455,7 @@ export default function CommunicationScreen({
               tiles={tiles}
               onSelect={(tile) => perform(() => select(tile))}
               disabled={pending || Boolean(completed) || chosen.length >= 32}
+              displaySize={display.size}
             />
           ) : (
             <div className="empty">

@@ -214,10 +214,7 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
               vérifiez leur sens avant d'ajouter la touche au clavier.
             </p>
           </div>
-          <Link
-            className="button-link"
-            href={`/admin/profiles/${profileId}/communication`}
-          >
+          <Link className="button-link" href={`/communication/${profileId}`}>
             Ouvrir la communication →
           </Link>
         </div>
