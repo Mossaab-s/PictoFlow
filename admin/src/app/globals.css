@@ -1238,6 +1238,162 @@ pre {
   max-width: 1280px;
   padding: 28px;
 }
+.communication-page {
+  --muted: #4d6258;
+  --line: #73867c;
+}
+.communication-page button,
+.communication-page select,
+.communication-page summary,
+.communication-page .button-link {
+  min-height: 48px;
+}
+.communication-page button,
+.communication-page .button-link {
+  min-width: 48px;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.communication-page
+  :is(a, button, input, select, textarea, summary, [tabindex="-1"]) {
+  scroll-margin-block: 140px 24px;
+}
+.communication-page
+  :is(
+    a,
+    button,
+    input,
+    select,
+    textarea,
+    summary,
+    [tabindex="-1"]
+  ):focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px #fff;
+}
+.communication-page .communication-tile {
+  border-color: var(--line);
+}
+.communication-jumps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.communication-jumps a {
+  padding: 14px;
+  text-decoration: underline;
+  color: var(--accent);
+  min-height: 48px;
+}
+.speech-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.speech-controls.is-speaking {
+  position: sticky;
+  top: 8px;
+  z-index: 5;
+  border-color: var(--accent);
+}
+.speech-settings {
+  margin-top: 16px;
+}
+.speech-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.speech-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.speech-options select {
+  width: 100%;
+}
+.speech-settings fieldset button {
+  margin-bottom: 16px;
+}
+.contrast-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  margin-block: 16px;
+  padding: 12px;
+  cursor: pointer;
+}
+.contrast-option input {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.keyboard-help {
+  color: var(--muted);
+  line-height: 1.5;
+}
+.communication-page.contrast-enhanced {
+  --ink: #142b24;
+  --muted: #394d44;
+  --accent: #1d513e;
+  --line: #475950;
+  --soft: #edf2ee;
+  color: var(--ink);
+  background: #fff;
+}
+.contrast-enhanced
+  :is(
+    .keyboard-zone,
+    .message-panel,
+    .display-settings,
+    .speech-controls,
+    .panel
+  ) {
+  background: #fff;
+  border: 2px solid var(--line);
+}
+.contrast-enhanced .keyboard-pages button[aria-current="page"] {
+  border: 3px double var(--ink);
+  font-weight: 700;
+}
+.contrast-enhanced .notice {
+  border-color: var(--line);
+}
+@media (max-width: 620px) {
+  .speech-options {
+    grid-template-columns: 1fr;
+  }
+}
+@media (forced-colors: active) {
+  .communication-page .keyboard-pages button[aria-current="page"] {
+    border: 3px double Highlight;
+  }
+  .communication-page
+    :is(
+      a,
+      button,
+      input,
+      select,
+      textarea,
+      summary,
+      [tabindex="-1"]
+    ):focus-visible {
+    outline-color: Highlight;
+    box-shadow: none;
+  }
+}
 .communication-navigation {
   display: flex;
   gap: 12px;

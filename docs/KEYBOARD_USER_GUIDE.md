@@ -112,8 +112,14 @@ abandonnée. En cas d'indisponibilité pendant la reprise, l'écran demande de
 recharger avant de reprendre les écritures. Aucun envoi n'est rejoué automatiquement.
 
 **Lire mes mots** et **Lire cette phrase** utilisent une voix française locale
-du navigateur lorsqu'elle existe. La lecture exige un clic et ne lance aucun
+du navigateur lorsqu'elle existe. La lecture exige une action choisie et ne lance aucun
 service vocal externe ; son absence laisse la communication textuelle disponible.
+
+**Réglages de lecture vocale** permet de choisir la voix, son débit et de
+l’essayer. **Arrêter la lecture** et **Échap** permettent de l’interrompre.
+Au clavier, utiliser **Aller au clavier**, **Tab/Maj+Tab**, puis **Entrée** ou
+**Espace**. **Réglages d’affichage → Contraste renforcé** adapte le contraste.
+Voir [les réglages et les essais d’accessibilité](COMMUNICATION_ACCESSIBILITY.md).
 
 Les identifiants fonctionnent aussi sur l'origine HTTP du réseau local grâce à
 [getRandomValues](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/getRandomValues).

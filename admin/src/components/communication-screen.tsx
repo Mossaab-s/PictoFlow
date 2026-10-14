@@ -23,6 +23,8 @@ import { useLocalSpeech } from "./use-local-speech";
 import DisplaySettings from "./display-settings";
 import { useDisplaySettings } from "./use-display-settings";
 import PhraseLibrary from "./phrase-library";
+import SpeechSettings from "./speech-settings";
+import { useContrastSetting } from "./use-contrast-setting";
 
 export default function CommunicationScreen({
   profileId,
@@ -35,6 +37,8 @@ export default function CommunicationScreen({
 }) {
   const data = useProfileKeyboard(profileId);
   const display = useDisplaySettings(profileId);
+  const contrast = useContrastSetting(profileId);
+  const messageHeading = useRef<HTMLHeadingElement>(null);
   const [sequence, setSequence] = useState<Sequence | null>(null);
   const [decision, setDecision] = useState<Decision | null>(null);
   const [context, setContext] = useState("");
@@ -46,7 +50,7 @@ export default function CommunicationScreen({
   const current = useRef<Sequence | null>(null);
   const gate = useRef(false);
   const alive = useRef(true);
-  const speech = useLocalSpeech();
+  const speech = useLocalSpeech(profileId);
   const base = `profiles/${profileId}`;
   const storageKey = `pictoflow:sequence:${profileId}`;
   function remember(value: Sequence | null, result: Decision | null) {
@@ -143,6 +147,10 @@ export default function CommunicationScreen({
 
   async function perform(task: () => Promise<void>) {
     if (gate.current) return;
+    const origin =
+      document.activeElement instanceof HTMLButtonElement
+        ? document.activeElement
+        : null;
     gate.current = true;
     setBusy(true);
     data.setError("");
@@ -186,7 +194,20 @@ export default function CommunicationScreen({
       }
     } finally {
       gate.current = false;
-      if (alive.current) setBusy(false);
+      if (alive.current) {
+        setBusy(false);
+        requestAnimationFrame(() => {
+          if (
+            !alive.current ||
+            !origin?.isConnected ||
+            (document.activeElement !== document.body &&
+              document.activeElement !== origin)
+          )
+            return;
+          if (!origin.disabled) origin.focus();
+          else messageHeading.current?.focus();
+        });
+      }
     }
   }
   async function select(tile: Tile) {
@@ -306,15 +327,31 @@ export default function CommunicationScreen({
       ["confirmed", "corrected"].includes(candidate.status),
     ) ?? false;
   const pending =
-    busy || restoring || data.loading || restoreFailed || !display.ready;
+    busy ||
+    restoring ||
+    data.loading ||
+    restoreFailed ||
+    !display.ready ||
+    !contrast.ready ||
+    !speech.ready;
   return (
     <>
       {!standalone && (
         <ProfileNavigation profileId={profileId} section="communication" />
       )}
       <section
-        className={`page communication-page${standalone ? " communication-standalone" : ""}`}
+        className={`page communication-page${standalone ? " communication-standalone" : ""}${contrast.enhanced ? " contrast-enhanced" : ""}`}
+        onKeyDownCapture={(event) => {
+          if (event.key === "Escape" && speech.speaking) {
+            event.preventDefault();
+            speech.stop();
+          }
+        }}
       >
+        <nav className="communication-jumps" aria-label="Accès rapides">
+          <a href="#communication-message">Aller au message</a>
+          <a href="#communication-keyboard">Aller au clavier</a>
+        </nav>
         <div className="page-heading">
           <div>
             <div className="eyebrow">
@@ -379,6 +416,25 @@ export default function CommunicationScreen({
             {busy ? "Enregistrement…" : "Chargement de votre clavier…"}
           </p>
         )}
+        <div
+          className={`speech-controls${speech.speaking ? " is-speaking" : ""}`}
+        >
+          <span role="status">
+            {speech.speaking ? "Lecture en cours…" : "Lecture arrêtée"}
+          </span>
+          <button
+            className="secondary"
+            onClick={speech.stop}
+            disabled={!speech.speaking}
+          >
+            Arrêter la lecture
+          </button>
+        </div>
+        {speech.error && (
+          <p className="error" role="alert">
+            {speech.error}
+          </p>
+        )}
         <PhraseLibrary
           profileId={profileId}
           blocks={data.blocks}
@@ -388,12 +444,24 @@ export default function CommunicationScreen({
           initialPhraseId={initialPhraseId}
           revision={decision}
         />
-        <section className="message-panel" aria-label="Message en cours">
+        <section
+          className="message-panel"
+          aria-label="Message en cours"
+          id="communication-message"
+          tabIndex={-1}
+        >
           <div className="zone-heading">
-            <h2>{completed ? "Mon message terminé" : "Mon message"}</h2>
+            <h2 ref={messageHeading} tabIndex={-1}>
+              {completed ? "Mon message terminé" : "Mon message"}
+            </h2>
             <span>{chosen.length} / 32 touches</span>
           </div>
-          <div className="message-tokens" role="status" aria-live="polite">
+          <div
+            className="message-tokens"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
             {chosen.length ? (
               chosen.map((item, index) => (
                 <span className="message-touch" key={index}>
@@ -449,45 +517,52 @@ export default function CommunicationScreen({
               navigateur.
             </p>
           )}
-          {speech.speaking && (
-            <button className="secondary" onClick={speech.stop}>
-              Arrêter la lecture
-            </button>
-          )}
-          {speech.error && <p role="alert">{speech.error}</p>}
         </section>
         <DisplaySettings
           size={display.size}
           onChange={display.change}
           disabled={pending}
           temporary={display.temporary}
+          contrast={contrast}
         />
-        {!data.loading &&
-          display.ready &&
-          (tiles.length ? (
-            <KeyboardGrid
-              profileId={profileId}
-              groups={data.groups}
-              tiles={tiles}
-              onSelect={(tile) => perform(() => select(tile))}
-              disabled={pending || Boolean(completed) || chosen.length >= 32}
-              displaySize={display.size}
-            />
-          ) : (
-            <div className="empty">
-              <h2>Il faut d'abord préparer vos touches</h2>
-              <p>
-                Créez et validez vos premières touches dans l'éditeur du
-                clavier.
-              </p>
-              <Link
-                className="button-link"
-                href={`/admin/profiles/${profileId}/keyboard`}
-              >
-                Créer mes premières touches
-              </Link>
-            </div>
-          ))}
+        <SpeechSettings speech={speech} disabled={pending} />
+        <section
+          className="communication-keyboard"
+          id="communication-keyboard"
+          tabIndex={-1}
+          aria-label="Mon clavier de communication"
+        >
+          <p className="keyboard-help">
+            Au clavier : Tab pour parcourir, Entrée ou Espace pour choisir.
+            Échap arrête la lecture. Les cases libres sont ignorées.
+          </p>
+          {!data.loading &&
+            display.ready &&
+            (tiles.length ? (
+              <KeyboardGrid
+                profileId={profileId}
+                groups={data.groups}
+                tiles={tiles}
+                onSelect={(tile) => perform(() => select(tile))}
+                disabled={pending || Boolean(completed) || chosen.length >= 32}
+                displaySize={display.size}
+              />
+            ) : (
+              <div className="empty">
+                <h2>Il faut d'abord préparer vos touches</h2>
+                <p>
+                  Créez et validez vos premières touches dans l'éditeur du
+                  clavier.
+                </p>
+                <Link
+                  className="button-link"
+                  href={`/admin/profiles/${profileId}/keyboard`}
+                >
+                  Créer mes premières touches
+                </Link>
+              </div>
+            ))}
+        </section>
         {completed && !decision && (
           <section className="panel interpretation-panel">
             <h2>Une proposition de phrase ?</h2>
