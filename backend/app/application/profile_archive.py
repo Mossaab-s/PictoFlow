@@ -131,7 +131,7 @@ TARGETS = {
 
 class ProfileArchive(Contract):
     format: Literal["pictoflow-profile"]
-    version: Annotated[int, Field(strict=True, ge=1, le=2)]
+    version: Annotated[int, Field(strict=True, ge=1, le=3)]
     exported_at: datetime
     profile: UserCommunicationProfile
     records: Records
@@ -159,7 +159,9 @@ class ProfileArchive(Contract):
                 raise ArchiveError("Conflicting archive records")
 
         unique([c.canonical_key for c in self.records.concepts])
-        unique([g.label for g in self.records.groups])
+        unique([g.label for g in self.records.groups if g.status == "active"])
+        if self.version < 3 and any(g.status != "active" for g in self.records.groups):
+            raise ArchiveError("Archived pages require archive version 3")
         unique([b.semantic_gap_id for b in self.records.blocks if b.semantic_gap_id])
         unique([(g.source_sequence_signature, g.validated_intent) for g in self.records.gaps])
         for visual in self.records.representations:
@@ -210,6 +212,8 @@ class ProfileArchive(Contract):
                 raise ArchiveError("Gap has no source sequence")
         for position in self.records.positions:
             ref("groups", position.group_id)
+            if position.group_id and known["groups"][position.group_id].status != "active":
+                raise ArchiveError("Placement refers to an archived page")
             ref("blocks", position.block_id)
         project_keyboard(self.profile.id, self.records.blocks, self.records.positions)
         for event in (*self.records.validations, *self.records.audit):
@@ -316,6 +320,8 @@ def complete_snapshot(value):
             required = {f.name for f in fields(entity)}
             if entity is Interpretation and value.get("version") == 1:
                 required.remove("shortcut")
+            if entity is KeyboardGroup and value.get("version") in (1, 2):
+                required.difference_update(("sort_order", "status"))
             for item in items:
                 if not isinstance(item, dict) or set(item) != required:
                     raise ArchiveError("Incomplete archive record")
@@ -401,6 +407,16 @@ def remap_archive(archive: ProfileArchive, profile: UserCommunicationProfile) ->
         return json.dumps(decoded, ensure_ascii=False, allow_nan=False)
 
     collections = {}
+    legacy_order = (
+        {
+            g.id: index
+            for index, g in enumerate(
+                sorted(archive.records.groups, key=lambda g: (g.created_at, g.id))
+            )
+        }
+        if archive.version < 3
+        else {}
+    )
     for name, values in archive.records.collections().items():
         changed = []
         for value in values:
@@ -413,6 +429,8 @@ def remap_archive(archive: ProfileArchive, profile: UserCommunicationProfile) ->
                 "profile_id": profile.id,
                 "id": identity("representations" if name == "photos" else name, value.id),
             }
+            if name == "groups" and archive.version < 3:
+                updates["sort_order"] = legacy_order[value.id]
             for key in columns:
                 item = getattr(value, key)
                 if key in REFERENCES:

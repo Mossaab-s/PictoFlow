@@ -15,13 +15,14 @@ Chaque restauration crée **un nouveau profil**. Les profils existants restent
 intacts. Toutes les écritures, y compris les photos et l’historique, sont
 effectuées dans une seule transaction PostgreSQL.
 
-## Contenu du fichier v2 et compatibilité v1
+## Contenu du fichier v3 et compatibilité v1/v2
 
-Le format `pictoflow-profile`, version entière `2`, contient `exported_at`,
+Le format `pictoflow-profile`, version entière `3`, contient `exported_at`,
 le profil source et les collections obligatoires `records` :
 
 - `concepts`, `representations`, `blocks` et `relations` ;
-- `groups` et `positions` : pages, zones, cases libres et repères stables ;
+- `groups` et `positions` : pages actives/archivées, ordre choisi, zones,
+  cases libres et repères stables ;
 - `sequences`, dans l’ordre des sélections, répétitions comprises ;
 - `interpretations`, y compris les corrections, propositions, refus et le choix
   explicite `shortcut` de chaque message accepté ;
@@ -29,10 +30,15 @@ le profil source et les collections obligatoires `records` :
 - `photos`, en base64, avec SHA-256, dimensions et date ;
 - `validations` et `audit`, sans tronquer l’historique.
 
-Les anciens fichiers version `1`, sans `shortcut`, restent restaurables :
-leurs messages n’ont aucun raccourci choisi. La version `2` exige ce champ
-booléen ; une application limitée à la version `1` ne lit pas les nouveaux
-fichiers. Voir [Phrases habituelles](USUAL_PHRASES.md).
+Les fichiers version `1`, sans `shortcut`, restaurent les messages sans
+raccourci choisi. La version `2` conserve ce champ booléen. Ces anciens fichiers
+restaurent les pages actives dans leur ordre de création. La version `3` exige
+`sort_order` et `status` dans chaque page et conserve les pages archivées avec
+leur historique ; aucune position ne peut référencer une page archivée.
+Les empreintes des demandes v1/v2 restent identiques pour préserver les reçus
+de reprise déjà enregistrés. Une ancienne application ne lit pas les nouveaux
+exports v3. Voir [Phrases habituelles](USUAL_PHRASES.md) et
+[Organisation des pages](KEYBOARD_PAGES.md).
 
 Les licences et provenances des représentations sont conservées. Les photos
 stockées dans PostgreSQL sont intégrées octet pour octet. Une photo dont les

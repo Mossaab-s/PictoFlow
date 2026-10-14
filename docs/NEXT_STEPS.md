@@ -10,11 +10,12 @@ Chaque point passe par une PR, puis par un déploiement après sa fusion.
 2. **Mémoire lisible** : PR #37 fusionnée et déployée ; cartes de messages avec
    leurs mots/dessins, corrections prioritaires, relations et décisions humaines
    paginées, recherche et séparation des propositions. Voir [READABLE_MEMORY.md](READABLE_MEMORY.md).
-3. **Phrases habituelles** : livraison en préparation ; retrouver/réutiliser un
+3. **Phrases habituelles** : PR #38 fusionnée et déployée ; retrouver/réutiliser un
    message validé, avec des raccourcis explicitement choisis et conservés dans
    la sauvegarde. Voir [USUAL_PHRASES.md](USUAL_PHRASES.md).
-4. **Organisation des pages** : ordre, suppression contrôlée et déplacement des
-   touches, en conservant les repères stables.
+4. **Organisation des pages** : livraison en préparation ; ordre choisi,
+   aperçu des déplacements et retrait contrôlé avec transfert des touches,
+   en conservant les repères stables. Voir [KEYBOARD_PAGES.md](KEYBOARD_PAGES.md).
 5. **Accessibilité et voix** : essais tablette/clavier, contrastes et cibles ;
    cadrer le balayage/contacteur avec les personnes concernées.
 6. **Reprise hors connexion** : lire le clavier validé et composer, puis définir
@@ -60,7 +61,8 @@ et une vue de communication facile à utiliser au quotidien.
 La PR #32, fusionnée et déployée, implémente les pages personnelles, le renommage,
 le placement explicite et la navigation pendant un message ; voir
 [KEYBOARD_PAGES.md](KEYBOARD_PAGES.md). Les repères stables restent communs.
-Le réordonnancement, la suppression et les pages imbriquées restent à cadrer.
+La livraison suivante prépare le réordonnancement et le retrait avec transfert
+contrôlé. Les pages imbriquées restent à cadrer.
 
 ## 3. Accessibilité et essais d'usage
 

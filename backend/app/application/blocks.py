@@ -473,7 +473,9 @@ class BlockService:
             if group_id == "unchanged":
                 group_id = existing.group_id if existing and zone != KeyboardZone.STABLE else None
             if group_id is not None:
-                store.get(profile_id, KeyboardGroup, group_id)
+                destination = store.get(profile_id, KeyboardGroup, group_id)
+                if destination.status != "active":
+                    raise DomainInvariantError("Only active keyboard pages accept placements")
             if previous.status != ProposalStatus.VALIDATED:
                 raise DomainInvariantError("Only validated blocks may be positioned")
             if previous.origin == BlockOrigin.PCL_SUGGESTION and zone == KeyboardZone.STABLE:

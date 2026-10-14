@@ -10,6 +10,7 @@ import {
 } from "@/lib/keyboard";
 import { TouchContent } from "./pictogram";
 import { zoneDisplay, type DisplaySize } from "@/lib/display";
+import { orderedGroups } from "@/lib/keyboard-organization";
 
 export default function KeyboardGrid({
   tiles,
@@ -27,7 +28,7 @@ export default function KeyboardGrid({
   displaySize?: DisplaySize;
 }) {
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
-  const scoped = groups.filter((group) => group.profile_id === profileId);
+  const scoped = orderedGroups(profileId, groups);
   const groupId = scoped.some((group) => group.id === selectedGroup)
     ? selectedGroup
     : null;

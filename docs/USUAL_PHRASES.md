@@ -59,11 +59,12 @@ un message non accepté ou un choix incompatible renvoie 409, sans reproduire le
 contenu personnel. Le même état demandé avec le même texte peut être réessayé
 sans doubler l’audit. Une cible étrangère ou absente renvoie 404.
 
-Les sauvegardes sont désormais exportées en **version 2**, avec `shortcut`
-obligatoire dans chaque interprétation. La restauration conserve les choix dans
+Les sauvegardes **versions 2 et 3** ont `shortcut` obligatoire dans chaque
+interprétation. L’export courant est en v3 pour conserver aussi l’organisation
+des pages. La restauration conserve les choix dans
 le nouveau profil et remappe les références. Les anciens fichiers **version 1**,
 sans ce champ, restent acceptés : ils restaurent tous les messages sans raccourci.
-Une ancienne application limitée à la version 1 ne lit pas ces nouveaux fichiers.
+Une ancienne application ne lit pas les fichiers d’une version qu’elle ne connaît pas.
 L’empreinte canonique des anciennes demandes v1 reste identique : leurs reçus
 de restauration continuent à protéger une reprise, même après une purge.
 

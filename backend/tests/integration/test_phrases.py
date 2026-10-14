@@ -222,7 +222,7 @@ def test_v2_backup_preserves_shortcuts_and_v1_restoration_does_not_invent_them(a
     )
     assert response.status_code == 200
     snapshot = api.get(base + "/backup").json()
-    assert snapshot["version"] == 2
+    assert snapshot["version"] == 3
     restored = api.post("/api/v1/profiles/restore", json=restore_body(snapshot))
     assert restored.status_code == 201, restored.text
     target = "/api/v1/profiles/" + restored.json()["id"]
@@ -233,6 +233,9 @@ def test_v2_backup_preserves_shortcuts_and_v1_restoration_does_not_invent_them(a
     # Existing complete v1 snapshots have no shortcut field; compatibility is deliberate.
     old = download.json()
     old["version"] = 1
+    for page in old["records"]["groups"]:
+        page.pop("sort_order")
+        page.pop("status")
     for record in old["records"]["interpretations"]:
         record.pop("shortcut")
     old_body = restore_body(old)
@@ -242,6 +245,9 @@ def test_v2_backup_preserves_shortcuts_and_v1_restoration_does_not_invent_them(a
     assert not api.get(legacy_base + "/memory").json()["interpretations"][0]["shortcut"]
     # Reproduce the canonical v1 envelope used by receipts before this migration.
     old_payload = parse_restore(json.dumps(old_body).encode()).model_dump(mode="json")
+    for page in old_payload["snapshot"]["records"]["groups"]:
+        page.pop("sort_order")
+        page.pop("status")
     for record in old_payload["snapshot"]["records"]["interpretations"]:
         record.pop("shortcut")
     old_digest = hashlib.sha256(

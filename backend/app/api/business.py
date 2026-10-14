@@ -14,6 +14,7 @@ from app.application.communication import CommunicationService, PersonalMemory
 from app.application.feedback_history import EvidenceTarget, FeedbackHistory
 from app.application.interpretation import InterpretationService
 from app.application.keyboard_groups import KeyboardGroupService
+from app.application.keyboard_organization import KeyboardChangePreview, KeyboardOrganization
 from app.application.pcl_repository import FeedbackPage
 from app.application.phrases import PhraseConflict, PhraseService, ReusablePhrase
 from app.application.semantic_space import SemanticSpace
@@ -155,6 +156,41 @@ class PositionBody(Body):
 class KeyboardGroupBody(Body):
     label: str = Field(min_length=1, max_length=80)
     actor_role: HumanRole
+
+
+class KeyboardGroupRenameBody(KeyboardGroupBody):
+    expected_label: str | None = Field(default=None, min_length=1, max_length=80)
+
+
+class PageOrderBody(Body):
+    group_ids: tuple[UUID, ...] = Field(max_length=10000)
+    expected_group_ids: tuple[UUID, ...] = Field(max_length=10000)
+    actor_role: HumanRole
+
+
+class RemovalPreviewBody(Body):
+    destination_group_id: UUID | None
+
+
+class MovePreviewBody(RemovalPreviewBody):
+    position: int = Field(ge=0, le=2_147_483_647, strict=True)
+
+
+class ApplyMoveBody(MovePreviewBody):
+    preview_token: str = Field(pattern="^[0-9a-f]{64}$")
+    actor_role: HumanRole
+
+
+class ApplyRemovalBody(RemovalPreviewBody):
+    preview_token: str = Field(pattern="^[0-9a-f]{64}$")
+    actor_role: HumanRole
+    confirm: bool = Field(strict=True)
+
+    @model_validator(mode="after")
+    def confirmed_removal(self):
+        if self.confirm is not True:
+            raise ValueError("Explicit removal confirmation required")
+        return self
 
 
 class RepresentationSelectionBody(Body):
@@ -583,7 +619,47 @@ def keyboard(request: Request, profile_id: UUID):
 
 @router.get("/profiles/{profile_id}/keyboard-groups", response_model=tuple[KeyboardGroup, ...])
 def keyboard_groups(request: Request, profile_id: UUID):
-    return listing(request, profile_id, KeyboardGroup)
+    return KeyboardGroupService(units(request)).list(profile_id)
+
+
+@router.put(
+    "/profiles/{profile_id}/keyboard-groups/order", response_model=tuple[KeyboardGroup, ...]
+)
+def order_keyboard_groups(request: Request, profile_id: UUID, body: PageOrderBody):
+    return KeyboardGroupService(units(request)).reorder(profile_id, **body.model_dump())
+
+
+@router.post(
+    "/profiles/{profile_id}/keyboard-groups/{group_id}/removal-preview",
+    response_model=KeyboardChangePreview,
+)
+def removal_preview(request: Request, profile_id: UUID, group_id: UUID, body: RemovalPreviewBody):
+    return KeyboardOrganization(units(request)).preview_removal(
+        profile_id, group_id, body.destination_group_id
+    )
+
+
+@router.post(
+    "/profiles/{profile_id}/keyboard-groups/{group_id}/remove", response_model=KeyboardGroup
+)
+def remove_keyboard_group(
+    request: Request, profile_id: UUID, group_id: UUID, body: ApplyRemovalBody
+):
+    return KeyboardOrganization(units(request)).remove(profile_id, group_id, **body.model_dump())
+
+
+@router.post(
+    "/profiles/{profile_id}/keyboard/{block_id}/move-preview", response_model=KeyboardChangePreview
+)
+def movement_preview(request: Request, profile_id: UUID, block_id: UUID, body: MovePreviewBody):
+    return KeyboardOrganization(units(request)).preview_move(
+        profile_id, block_id, **body.model_dump()
+    )
+
+
+@router.post("/profiles/{profile_id}/keyboard/{block_id}/move", response_model=KeyboardPosition)
+def move_keyboard_touch(request: Request, profile_id: UUID, block_id: UUID, body: ApplyMoveBody):
+    return KeyboardOrganization(units(request)).move(profile_id, block_id, **body.model_dump())
 
 
 @router.post(
@@ -595,10 +671,10 @@ def create_keyboard_group(request: Request, profile_id: UUID, body: KeyboardGrou
 
 @router.patch("/profiles/{profile_id}/keyboard-groups/{group_id}", response_model=KeyboardGroup)
 def rename_keyboard_group(
-    request: Request, profile_id: UUID, group_id: UUID, body: KeyboardGroupBody
+    request: Request, profile_id: UUID, group_id: UUID, body: KeyboardGroupRenameBody
 ):
     return KeyboardGroupService(units(request)).rename(
-        profile_id, group_id, body.label, body.actor_role
+        profile_id, group_id, body.label, body.actor_role, expected_label=body.expected_label
     )
 
 
