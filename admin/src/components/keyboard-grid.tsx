@@ -19,6 +19,7 @@ export default function KeyboardGrid({
   groups,
   profileId,
   displaySize = "standard",
+  localPhotos,
 }: {
   tiles: Tile[];
   onSelect?: (tile: Tile) => void | Promise<void>;
@@ -26,6 +27,7 @@ export default function KeyboardGrid({
   groups: KeyboardGroup[];
   profileId: string;
   displaySize?: DisplaySize;
+  localPhotos?: Record<string, string>;
 }) {
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const scoped = orderedGroups(profileId, groups);
@@ -76,6 +78,7 @@ export default function KeyboardGrid({
           onSelect={onSelect}
           disabled={disabled}
           displaySize={displaySize}
+          localPhotos={localPhotos}
         />
       ))}
     </div>
@@ -88,12 +91,14 @@ function ZoneGrid({
   onSelect,
   disabled,
   displaySize,
+  localPhotos,
 }: {
   zone: Zone;
   tiles: Tile[];
   onSelect?: (tile: Tile) => void | Promise<void>;
   disabled: boolean;
   displaySize: DisplaySize;
+  localPhotos?: Record<string, string>;
 }) {
   const [page, setPage] = useState(0);
   const previous = useRef<HTMLButtonElement>(null);
@@ -133,6 +138,11 @@ function ZoneGrid({
                 <TouchContent
                   label={tile.block.label}
                   representation={tile.representation}
+                  localPhoto={
+                    tile.representation
+                      ? localPhotos?.[tile.representation.id]
+                      : undefined
+                  }
                 />
               </button>
             ) : (
@@ -147,6 +157,11 @@ function ZoneGrid({
                 <TouchContent
                   label={tile.block.label}
                   representation={tile.representation}
+                  localPhoto={
+                    tile.representation
+                      ? localPhotos?.[tile.representation.id]
+                      : undefined
+                  }
                 />
               </div>
             )

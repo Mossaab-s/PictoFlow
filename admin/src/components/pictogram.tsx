@@ -317,16 +317,18 @@ export function Pictogram({ pictogramKey }: { pictogramKey: PictogramKey }) {
 export function TouchContent({
   label,
   representation,
+  localPhoto,
 }: {
   label: string;
   representation?: Representation;
+  localPhoto?: string;
 }) {
   const drawing =
     representation?.source === pictogramSource &&
     representation.type === "pictogram"
       ? pictogramFromReference(representation.asset_reference)
       : undefined;
-  const photo = photoUrl(representation);
+  const photo = localPhoto ?? photoUrl(representation);
   return (
     <>
       {photo ? (

@@ -4,8 +4,8 @@ Le parcours métier PCL est implémenté localement, avec API REST, administrati
 initiale et providers IA optionnels. Une instance de test est déployée sur
 [10.0.0.121:3000](http://10.0.0.121:3000), avec une base persistante dédiée.
 
-Les PR #36 à #39 sont fusionnées et déployées dans la livraison `20261014-05`
-(commit `74fb113`) : sauvegarde/restauration, mémoire lisible, phrases habituelles
+Les PR #36 à #40 sont fusionnées et déployées dans la livraison `20261014-06`
+(commit `cdb1753`) : sauvegarde/restauration, mémoire lisible, phrases habituelles
 et organisation du clavier : ordre des pages,
 déplacements avec aperçu et retrait avec transfert conservant repères, photos,
 messages et décisions. Les sauvegardes v3 conservent les pages archivées et
@@ -16,13 +16,29 @@ Déploiement vérifié : migration 0010, quatre services sains, empreintes de to
 les anciennes lignes PCL conservées, 21 positions et deux photos intactes.
 Les contrôles du code installé s’exécutent dans une transaction annulée.
 
-La prochaine livraison prépare l’accessibilité au clavier et la voix : accès
+La PR #40 ajoute l’accessibilité au clavier et la voix : accès
 directs, retour du focus, contraste renforcé, cibles de 48 pixels, choix/débit
 d’une voix française locale et arrêt contrôlé. Elle passe 42 tests frontend,
 Prettier, TypeScript et Next.js. Le navigateur vérifie le parcours clavier et
 les contrôles axe A/AA sur ordinateur, tablette et 320 pixels ; le moteur vocal
 est simulé, le son réel et les lecteurs d’écran restent à essayer sur appareil.
 Voir [COMMUNICATION_ACCESSIBILITY.md](COMMUNICATION_ACCESSIBILITY.md).
+
+Le déploiement conserve également l’usage concurrent : les cinq raccourcis
+choisis pendant la bascule sont vérifiés par leur audit et leurs empreintes,
+avec tous les autres champs conservés. Les nouvelles séquences et validations
+restent présentes ; aucune restauration de base n’est effectuée.
+
+La livraison en préparation ajoute une copie choisie du clavier validé et ses
+photos, un brouillon local séparé, et un import explicite atomique sans doublon,
+avec refus des copies périmées et protection contre l’écrasement entre onglets.
+Ce premier mode fonctionne dans l’écran ouvert pendant une coupure ; la
+réouverture complète sans réseau reste à livrer avec HTTPS/cache de l’application.
+Voir [OFFLINE_COMMUNICATION.md](OFFLINE_COMMUNICATION.md).
+Vérifications : suite complète de 553 tests backend, puis 18 contrôles de
+l’incrément avec restauration/effacement supplémentaires (555 scénarios au total),
+48 tests frontend, Ruff, Prettier, TypeScript, Next.js et parcours navigateur
+sur base fictive avec coupure réseau et réponse d’envoi perdue.
 
 | Issues | État local |
 | --- | --- |

@@ -1308,6 +1308,27 @@ pre {
 .speech-settings {
   margin-top: 16px;
 }
+.offline-communication {
+  margin-top: 20px;
+}
+.offline-communication summary {
+  font-weight: 600;
+  padding-block: 12px;
+}
+.offline-communication .offline-confirm {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-block: 12px;
+  line-height: 1.5;
+}
+.offline-confirm input {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  margin: 0;
+  accent-color: var(--accent);
+}
 .speech-options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

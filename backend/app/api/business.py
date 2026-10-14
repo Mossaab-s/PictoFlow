@@ -15,6 +15,7 @@ from app.application.feedback_history import EvidenceTarget, FeedbackHistory
 from app.application.interpretation import InterpretationService
 from app.application.keyboard_groups import KeyboardGroupService
 from app.application.keyboard_organization import KeyboardChangePreview, KeyboardOrganization
+from app.application.offline_communication import CommunicationSnapshot, OfflineCommunication
 from app.application.pcl_repository import FeedbackPage
 from app.application.phrases import PhraseConflict, PhraseService, ReusablePhrase
 from app.application.semantic_space import SemanticSpace
@@ -55,6 +56,32 @@ ProfileName = Annotated[str, StringConstraints(strip_whitespace=True, min_length
 
 class ProfileCreateBody(Body):
     display_name: ProfileName | None = None
+
+
+class OfflineDraftBody(Body):
+    request_id: UUID
+    expected_revision: Annotated[str, StringConstraints(pattern=r"^[a-f0-9]{64}$")]
+    block_ids: Annotated[tuple[UUID, ...], Field(min_length=1, max_length=32)]
+    actor_role: HumanRole
+    confirm: bool = Field(strict=True)
+
+    @model_validator(mode="after")
+    def chosen_import(self):
+        if self.confirm is not True:
+            raise ValueError("Explicit import confirmation required")
+        return self
+
+
+@router.get("/profiles/{profile_id}/communication-snapshot", response_model=CommunicationSnapshot)
+def communication_snapshot(request: Request, profile_id: UUID):
+    return OfflineCommunication(units(request)).snapshot(profile_id)
+
+
+@router.post("/profiles/{profile_id}/offline-drafts", response_model=CommunicationSequence)
+def import_offline_draft(request: Request, profile_id: UUID, body: OfflineDraftBody):
+    return OfflineCommunication(units(request)).import_draft(
+        profile_id, **body.model_dump(exclude={"confirm"})
+    )
 
 
 class ProfileRenameBody(Body):

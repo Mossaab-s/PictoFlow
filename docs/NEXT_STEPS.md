@@ -16,14 +16,18 @@ Chaque point passe par une PR, puis par un déploiement après sa fusion.
 4. **Organisation des pages** : PR #39 fusionnée et déployée ; ordre choisi,
    aperçu des déplacements et retrait contrôlé avec transfert des touches,
    en conservant les repères stables. Voir [KEYBOARD_PAGES.md](KEYBOARD_PAGES.md).
-5. **Accessibilité et voix** : livraison en préparation ; accès clavier,
+5. **Accessibilité et voix** : PR #40 fusionnée et déployée ; accès clavier,
    focus, contrastes et cibles, choix/débit d’une voix française locale,
    arrêt contrôlé et essais navigateur. Priorité clavier/souris confirmée.
    Voir [COMMUNICATION_ACCESSIBILITY.md](COMMUNICATION_ACCESSIBILITY.md).
    Le son réel, les lecteurs d’écran et le balayage/contacteur restent à
    vérifier avec les personnes concernées.
-6. **Reprise hors connexion** : lire le clavier validé et composer, puis définir
-   la synchronisation et ses conflits.
+6. **Reprise hors connexion** : premier incrément en préparation ; copie choisie
+   du clavier validé, photos et brouillon local pendant une coupure dans l’écran
+   ouvert, import explicite atomique, contrôle de révision et refus des conflits.
+   Voir [OFFLINE_COMMUNICATION.md](OFFLINE_COMMUNICATION.md).
+   La réouverture totalement hors connexion demandera le cache de l’application
+   avec HTTPS ; elle reste à livrer avec la préparation du serveur.
 7. **Qualité IA** : scénarios d’évaluation, suivi des refus/corrections et usage
    borné des corrections validées.
 8. **Préparation à la production** : authentification, droits par profil, HTTPS,
