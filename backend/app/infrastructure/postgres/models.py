@@ -87,6 +87,23 @@ class ConceptRow(Scoped, Timestamps, Base):
     )
 
 
+class ProfileRestoreRow(Base):
+    """Technical receipt, retained after memory purge to prevent replaying an erased backup."""
+
+    __tablename__ = "profile_restore_receipt"
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True)
+    profile_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("user_communication_profile.id", ondelete="RESTRICT"), unique=True
+    )
+    payload_digest: Mapped[str] = mapped_column(sa.String(64))
+    actor_role: Mapped[str]
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), default=utc_now)
+    __table_args__ = (
+        states("actor_role", ("user", "caregiver", "professional")),
+        sa.CheckConstraint("payload_digest ~ '^[0-9a-f]{64}$'", name="valid_digest"),
+    )
+
+
 class RepresentationRow(Scoped, Timestamps, Base):
     __tablename__ = "representation"
     concept_id: Mapped[UUID] = mapped_column(sa.Uuid)

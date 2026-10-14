@@ -1,5 +1,34 @@
 # Suite du développement après la bibliothèque de dessins
 
+## Ordre de travail actuel, après la PR #35
+
+Chaque point passe par une PR, puis par un déploiement après sa fusion.
+
+1. **Sauvegarde et restauration d’un profil** : implémentation en préparation,
+   voir [PROFILE_BACKUP.md](PROFILE_BACKUP.md). Fichier versionné incluant le PCL,
+   clavier, pages, photos et historique ; restauration dans un nouveau profil.
+2. **Mémoire lisible** : remplacer l’affichage JSON par les messages acceptés,
+   leurs mots/dessins, les corrections, relations et décisions humaines.
+3. **Phrases habituelles** : retrouver/réutiliser un message validé et préparer
+   des raccourcis explicitement choisis.
+4. **Organisation des pages** : ordre, suppression contrôlée et déplacement des
+   touches, en conservant les repères stables.
+5. **Accessibilité et voix** : essais tablette/clavier, contrastes et cibles ;
+   cadrer le balayage/contacteur avec les personnes concernées.
+6. **Reprise hors connexion** : lire le clavier validé et composer, puis définir
+   la synchronisation et ses conflits.
+7. **Qualité IA** : scénarios d’évaluation, suivi des refus/corrections et usage
+   borné des corrections validées.
+8. **Préparation à la production** : authentification, droits par profil, HTTPS,
+   sauvegardes automatiques et essais de restauration serveur.
+
+Les PR #31 à #35 sont fusionnées et déployées : photos, pages, communication
+dédiée, noms des profils et corrections de fidélité des propositions IA.
+PRISM reste un provider de test avancé optionnel, à vérifier sur une instance
+réelle. PictoFlow fonctionne avec les providers Disabled/Fake et compatible.
+
+Les sections ci-dessous conservent les détails des étapes précédentes.
+
 La livraison courante ajoute 28 dessins recherchables et la création d'une
 touche personnelle en un formulaire, suivie de sa validation. Le prompt de
 formulation est déployé via la PR #30. Chaque incrément

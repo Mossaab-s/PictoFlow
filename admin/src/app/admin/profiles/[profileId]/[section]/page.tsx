@@ -3,6 +3,7 @@ import { sections, Section } from "@/lib/api";
 import ProfileSection from "@/components/profile-section";
 import KeyboardEditor from "@/components/keyboard-editor";
 import CommunicationScreen from "@/components/communication-screen";
+import ProfileBackup from "@/components/profile-backup";
 
 export default async function Page({
   params,
@@ -16,5 +17,7 @@ export default async function Page({
     return <KeyboardEditor key={profileId} profileId={profileId} />;
   if (section === "communication")
     return <CommunicationScreen key={profileId} profileId={profileId} />;
+  if (section === "backup")
+    return <ProfileBackup key={profileId} profileId={profileId} />;
   return <ProfileSection profileId={profileId} section={section as Section} />;
 }

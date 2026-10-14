@@ -1,4 +1,12 @@
 // Bound request allocation even when Content-Length is absent or untrustworthy.
+export function bodyLimit(method: string, path: string[]) {
+  if (method === "POST" && path.length === 2 && path[0] === "profiles") {
+    if (path[1] === "restore-preview") return 32 * 1024 * 1024;
+    if (path[1] === "restore") return 32 * 1024 * 1024 + 1024;
+  }
+  return 8 * 1024 * 1024;
+}
+
 export async function boundedBody(request: Request, limit = 8 * 1024 * 1024) {
   if (!request.body) return undefined;
   const reader = request.body.getReader();
