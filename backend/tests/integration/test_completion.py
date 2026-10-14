@@ -195,6 +195,13 @@ def test_provider_request_uses_readable_scoped_meanings_and_only_validated_hints
     assert [item.meaning for item in request.blocks] == ["Boire de l'eau", "Boire de l'eau"]
     assert [item.block_id for item in request.blocks] == [block.id, block.id]
     assert request.declared_context == ("À la maison",) and request.language == "fr"
+    assert request.semantic_hints == ()  # Eau is associated but has not been selected.
+    water = block_service.create(a, target.id, "Eau")
+    water = block_service.validate(a, water.id, action="confirm", actor_role="user")
+    sequence = completed(service, a, (block, water, block))
+    before = service.memory(a, validated=True)
+    request = interpreter.request(a, sequence.id)
+    assert [item.label for item in request.blocks] == ["Boire", "Eau", "Boire"]
     assert len(request.semantic_hints) == 1
     hint = request.semantic_hints[0]
     assert (hint.source_meaning, hint.target_meaning, hint.relation_type, hint.confidence) == (

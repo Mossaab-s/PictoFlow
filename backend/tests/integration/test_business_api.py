@@ -296,7 +296,7 @@ def test_invalid_personal_touch_creates_nothing(api, change, status):
         assert api.get(base + "/" + name).json() == []
 
 
-@pytest.mark.parametrize("kind", ["invalid", "refusal", "proposal"])
+@pytest.mark.parametrize("kind", ["invalid", "refusal", "proposal", "unfaithful", "alternatives"])
 def test_strict_phrase_responses_never_promote_invalid_or_unconfirmed_meaning(api, kind):
     from app.ai.manager import ProviderManager
     from app.ai.providers.openai_compatible import OpenAICompatibleProvider
@@ -309,6 +309,17 @@ def test_strict_phrase_responses_never_promote_invalid_or_unconfirmed_meaning(ap
         output["candidates"] = [
             {"intent": "DRINK", "text": "Je voudrais boire.", "confidence": 0.99}
         ]
+    elif kind in ("unfaithful", "alternatives"):
+        output["candidates"] = [
+            {"intent": "REQUEST", "text": "Je voudrais un livre.", "confidence": 1.0}
+        ]
+        if kind == "alternatives":
+            output["candidates"].extend(
+                [
+                    {"intent": "DRINK", "text": "Je voudrais boire.", "confidence": 0.7},
+                    {"intent": "DRINK", "text": "Je veux boire.", "confidence": 0.5},
+                ]
+            )
 
     def respond(request):
         requests.append(request)
@@ -360,14 +371,27 @@ def test_strict_phrase_responses_never_promote_invalid_or_unconfirmed_meaning(ap
     assert api.get(path).json()["block_ids"] == [block["id"]]
     assert api.get(path).json()["status"] == "completed"
     assert api.get(base + "/memory").json()["interpretations"] == []
-    if kind == "invalid":
-        assert response.status_code == 502
-        assert response.json() == {"detail": "Provider operation failed"}
-        assert api.get(base + "/interpretations").json() == []
-    elif kind == "refusal":
+    if kind in ("invalid", "refusal", "unfaithful"):
         assert response.status_code == 200
-        assert response.json() == {"state": "not_understood", "candidates": []}
-        assert api.get(base + "/interpretations").json()[0]["status"] == "not_understood"
+        candidate = response.json()["candidates"][0]
+        assert candidate["text"] == "Boire" and candidate["source"] == "pcl"
+        assert candidate["status"] == "proposed"
+        from datetime import datetime
+
+        stored = api.get(base + "/interpretations").json()
+        assert len(stored) == 1
+        assert datetime.fromisoformat(stored[0]["created_at"]) == datetime.fromisoformat(
+            candidate["created_at"]
+        )
+        assert stored[0] == {**candidate, "created_at": stored[0]["created_at"]}
+    elif kind == "alternatives":
+        assert response.status_code == 200
+        candidates = response.json()["candidates"]
+        assert [c["text"] for c in candidates] == ["Je voudrais boire.", "Je veux boire."]
+        assert all(c["source"] == "openai-compatible" for c in candidates)
+        assert {c["id"] for c in api.get(base + "/interpretations").json()} == {
+            c["id"] for c in candidates
+        }
     else:
         assert response.status_code == 200
         candidate = response.json()["candidates"][0]

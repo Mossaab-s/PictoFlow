@@ -3,10 +3,11 @@
 from uuid import UUID
 
 from app.ai.contracts import InterpretationRequest, SelectedBlock, SemanticHint
-from app.ai.errors import ProviderDisabledError, ProviderUnavailableError
+from app.ai.errors import ProviderDisabledError, ProviderPayloadError, ProviderUnavailableError
 from app.ai.protocol import AIProvider
 from app.application.communication import CommunicationService
 from app.application.pcl_repository import PCLUnits
+from app.application.phrase_fidelity import faithful_words
 from app.domain.pcl.entities import (
     CommunicationBlock,
     CommunicationSequence,
@@ -19,10 +20,26 @@ from app.domain.pcl.invariants import DomainInvariantError
 
 
 class InterpretationService:
-    def __init__(self, units: PCLUnits, communication: CommunicationService, provider: AIProvider):
+    def __init__(
+        self,
+        units: PCLUnits,
+        communication: CommunicationService,
+        provider: AIProvider,
+        telemetry=None,
+    ):
         self.units = units
         self.communication = communication
         self.provider = provider
+        self.telemetry = telemetry
+
+    def fallback(self, profile_id: UUID, sequence_id: UUID, reason: str):
+        if self.telemetry:
+            self.telemetry.signal(
+                "interpretation.fallback", provider=self.provider.provider_id, result_state=reason
+            )
+        return self.communication.propose(
+            profile_id, sequence_id, (self.literal(profile_id, sequence_id),), source="pcl"
+        )
 
     def literal(self, profile_id: UUID, sequence_id: UUID):
         with self.units() as store:
@@ -39,7 +56,7 @@ class InterpretationService:
             profile_id=profile_id,
             sequence_id=sequence_id,
             text=" → ".join(labels),
-            confidence=0.5,
+            confidence=max(0.5, self.communication.policy.refusal),
             source="pcl",
         )
 
@@ -65,7 +82,11 @@ class InterpretationService:
                 )
             hints = []
             for relation in store.list(profile_id, SemanticRelation):
-                if relation.status != "validated" or relation.source_concept_id not in concepts:
+                if (
+                    relation.status != "validated"
+                    or relation.source_concept_id not in concepts
+                    or relation.target_concept_id not in concepts
+                ):
                     continue
                 source = store.get(profile_id, Concept, relation.source_concept_id)
                 target = store.get(profile_id, Concept, relation.target_concept_id)
@@ -87,13 +108,13 @@ class InterpretationService:
         self, profile_id: UUID, sequence_id: UUID, *, declared_context: tuple[str, ...] = ()
     ):
         if self.provider.provider_id == "disabled":
-            return self.communication.propose(
-                profile_id, sequence_id, (self.literal(profile_id, sequence_id),), source="pcl"
-            )
+            return self.fallback(profile_id, sequence_id, "disabled")
         request = self.request(profile_id, sequence_id, declared_context=declared_context)
         source = self.provider.provider_id
         try:
             result = await self.provider.interpret(request)
+            if result.status == "not_understood":
+                return self.fallback(profile_id, sequence_id, "model_refusal")
             items = tuple(
                 Interpretation(
                     profile_id=profile_id,
@@ -103,9 +124,14 @@ class InterpretationService:
                     source=source,
                 )
                 for item in result.candidates
+                if faithful_words(request, item.text)
             )
+            if not items:
+                return self.fallback(profile_id, sequence_id, "unfaithful_words")
+            if not self.communication.policy.decide(items).candidates:
+                return self.fallback(profile_id, sequence_id, "low_confidence")
         except (ProviderDisabledError, ProviderUnavailableError):
-            # Literal user-selected labels remain available without claiming inferred meaning.
-            source = "pcl"
-            items = (self.literal(profile_id, sequence_id),)
+            return self.fallback(profile_id, sequence_id, "unavailable")
+        except ProviderPayloadError:
+            return self.fallback(profile_id, sequence_id, "invalid_payload")
         return self.communication.propose(profile_id, sequence_id, items, source=source)

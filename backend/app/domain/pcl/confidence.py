@@ -39,9 +39,9 @@ class ConfidencePolicy:
             return ConfidenceDecision(HandlingState.NOT_UNDERSTOOD, ())
         score = eligible[0].confidence
         if score >= self.direct:
-            return ConfidenceDecision(HandlingState.PROPOSAL, eligible[:1])
+            return ConfidenceDecision(HandlingState.PROPOSAL, eligible[:3])
         if score >= self.confirmation:
-            return ConfidenceDecision(HandlingState.CONFIRMATION_REQUIRED, eligible[:1])
+            return ConfidenceDecision(HandlingState.CONFIRMATION_REQUIRED, eligible[:3])
         return ConfidenceDecision(HandlingState.MULTIPLE_HYPOTHESES, eligible[:3])
 
 

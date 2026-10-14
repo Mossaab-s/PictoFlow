@@ -50,6 +50,7 @@ def test_all_operations_map_mocked_http_into_unvalidated_contracts(
             assert request.headers["Authorization"] == "Bearer server-secret"
             assert body["model"] == "configured-model"
             assert body["response_format"] == {"type": "json_object"}
+            assert body.get("temperature") == (0.2 if operation == "interpret" else None)
             # Some compatible endpoints reject requests without an actual user turn.
             users = [message for message in body["messages"] if message["role"] == "user"]
             if not users:
@@ -384,6 +385,38 @@ def test_strict_invalid_output_remains_explicit_and_redacted(fixtures, output):
 def test_unsupported_compatible_response_format_is_rejected_without_a_client():
     with pytest.raises(ProviderConfigurationError):
         OpenAICompatibleProvider("https://example.test/v1", "model", response_format="text")
+
+
+def test_temperature_can_be_omitted_for_compatible_models_that_reject_it(fixtures):
+    fixture = fixtures.interpretations[0]
+
+    def respond(request):
+        assert "temperature" not in json.loads(request.content)
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"content": fixture.response.model_dump_json()},
+                    }
+                ]
+            },
+        )
+
+    async def scenario():
+        provider = OpenAICompatibleProvider(
+            "https://example.test/v1",
+            "model",
+            temperature=None,
+            transport=httpx.MockTransport(respond),
+        )
+        try:
+            await provider.interpret(fixture.request)
+        finally:
+            await provider.aclose()
+
+    asyncio.run(scenario())
 
 
 def test_strict_nullable_scalar_fields_keep_bounds_without_ambiguous_anyof():

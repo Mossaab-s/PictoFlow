@@ -23,7 +23,13 @@ class OpenAICompatibleProvider(HTTPProvider):
     capabilities = OPERATIONS
 
     def __init__(
-        self, base_url: str, model: str, *, response_format: str = "json_object", **kwargs
+        self,
+        base_url: str,
+        model: str,
+        *,
+        response_format: str = "json_object",
+        temperature: float | None = 0.2,
+        **kwargs,
     ):
         try:
             self._model = TypeAdapter(Key).validate_python(model)
@@ -32,6 +38,13 @@ class OpenAICompatibleProvider(HTTPProvider):
         if response_format not in ("json_object", "json_schema"):
             raise ProviderConfigurationError("Compatible response format is invalid")
         self._response_format = response_format
+        if temperature is not None and (
+            isinstance(temperature, bool)
+            or not isinstance(temperature, (int, float))
+            or not 0 <= temperature <= 2
+        ):
+            raise ProviderConfigurationError("Compatible temperature is invalid")
+        self._temperature = temperature
         super().__init__(base_url, **kwargs)
 
     @property
@@ -86,6 +99,11 @@ class OpenAICompatibleProvider(HTTPProvider):
                     },
                 ],
                 "response_format": response_format,
+                **(
+                    {"temperature": self._temperature}
+                    if operation == "interpret" and self._temperature is not None
+                    else {}
+                ),
             },
         )
         try:

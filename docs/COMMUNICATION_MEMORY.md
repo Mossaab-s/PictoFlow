@@ -18,14 +18,32 @@ completion creates semantic relations or accepted interpretations.
 
 `ConfidencePolicy` accepts configurable refusal, confirmation and direct-proposal
 thresholds (defaults .40, .65, .90). Thresholds must be strictly increasing and
-finite. Eligible candidates are ranked and bounded: direct proposal or required
-confirmation exposes one candidate, multiple hypotheses exposes at most three,
-and refusal exposes none. A persisted refusal has empty text and cannot be
+finite. Eligible candidates are ranked and bounded to at most three in every
+non-refusal state: a high score must not hide useful alternatives.
+Refusal exposes none. A persisted refusal has empty text and cannot be
 confirmed into meaning. Scores never promote proposals to validated memory.
 
 The application requires a completed sequence and matching profile/sequence/source
 for every interpretation proposal. Provider identity is provenance, not authority.
 High-confidence proposals remain correctable.
+
+The interpretation adapter sends validated relations only when both endpoints
+are selected. For French phrases it conservatively checks selected content words,
+known inflections, repetitions, added words and negation before persistence.
+This is a lexical guard, not proof of actors' roles, intent or semantic fidelity.
+Unknown paraphrases and other languages fall back to the original labels rather
+than claiming an inferred meaning. Declared context and relations do not authorize
+new content words. See `app/application/phrase_fidelity.py` for the bounded rules.
+
+A provider refusal, invalid structured response, unavailable provider, lack of
+eligible candidates or failed word coverage preserves the ordered labels as an
+unvalidated proposal with source `pcl`. Its score is at least the configured
+refusal threshold so even a custom confidence policy keeps literal words usable.
+The screen identifies this as the original words; it is not attributed to the
+model or automatically confirmed. The technical `interpretation.fallback` event
+distinguishes these outcomes without capturing payloads. Generic direct calls to
+`CommunicationService.propose` can still persist a refusal; existing refusal
+history is not rewritten.
 
 ## Memory partitions and validation
 

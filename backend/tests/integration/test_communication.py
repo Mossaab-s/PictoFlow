@@ -312,7 +312,7 @@ def test_end_to_end_gap_approval_block_validation_and_stable_keyboard(communicat
                         candidates=(
                             InterpretationCandidate(
                                 intent="LEAVE_DUE_TO_NOISE",
-                                text="Le bruit me gêne et je veux partir.",
+                                text="Bruit, stop : je veux partir.",
                                 confidence=0.78,
                             ),
                         )
