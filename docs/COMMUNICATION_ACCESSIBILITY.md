@@ -89,8 +89,9 @@ Une valeur invalide revient aux réglages par défaut. Si le stockage est bloqu�
 les choix fonctionnent pour l’écran courant et un message explique qu’ils ne
 seront pas conservés. Recharger ou revenir dans l’autre vue reprend les choix
 conservés et le message identifié dans l’onglet, sans lecture automatique.
-La composition nécessite toujours l’accès au serveur ; l’usage hors connexion
-est le point suivant du plan.
+Le parcours habituel compose sur le serveur. Le panneau séparé
+**Mon clavier pour les coupures** prépare une copie et un brouillon local ; voir
+[sa portée et les conflits](OFFLINE_COMMUNICATION.md).
 
 ## Vérifications et essais sur un appareil
 

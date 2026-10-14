@@ -17,6 +17,7 @@ from app.api.photos import router as photo_router
 from app.api.profile_archives import router as archive_router
 from app.api.router import router as api_router
 from app.application.keyboard_groups import KeyboardOrganizationConflict
+from app.application.offline_communication import OfflineConflict, OfflineSnapshotTooLarge
 from app.application.photos import PhotoPayloadError
 from app.application.profile_archive import ArchiveError, ArchiveTooLarge, RestoreConflict
 from app.application.repositories import ProfileVersionConflict
@@ -91,6 +92,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         (SemanticNotFoundError, 404, "Object not found in this profile"),
         (IntegrityError, 409, "Conflicting persistent state"),
         (ProfileVersionConflict, 409, "Profile changed; reload before renaming"),
+        (OfflineConflict, 409, "Keyboard or offline request changed; retain draft and review"),
+        (OfflineSnapshotTooLarge, 413, "Offline media snapshot too large"),
         (
             KeyboardOrganizationConflict,
             409,

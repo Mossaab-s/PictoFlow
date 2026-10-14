@@ -127,6 +127,12 @@ Les voix sont filtrées avec [localService](https://developer.mozilla.org/en-US/
 
 ## Validation
 
+Pour une coupure de réseau, ouvrir **Mon clavier pour les coupures** et
+**Préparer mon clavier** avant la coupure. Composer dans cette copie garde le
+message serveur séparé ; l’envoi au retour reste choisi. Garder l’écran ouvert :
+la réouverture complète hors connexion n’est pas encore disponible.
+Voir [le brouillon local et son enregistrement](OFFLINE_COMMUNICATION.md).
+
 L’onglet **Mémoire** présente les phrases acceptées et corrigées, leurs touches,
 les sens personnels et les relations. La recherche et le filtre permettent de
 les retrouver ; **Voir les décisions humaines** donne leurs confirmations,

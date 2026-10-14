@@ -25,6 +25,7 @@ import { useDisplaySettings } from "./use-display-settings";
 import PhraseLibrary from "./phrase-library";
 import SpeechSettings from "./speech-settings";
 import { useContrastSetting } from "./use-contrast-setting";
+import OfflineCommunication from "./offline-communication";
 
 export default function CommunicationScreen({
   profileId,
@@ -526,6 +527,17 @@ export default function CommunicationScreen({
           contrast={contrast}
         />
         <SpeechSettings speech={speech} disabled={pending} />
+        <OfflineCommunication
+          key={profileId}
+          profileId={profileId}
+          speech={speech}
+          size={display.size}
+          canOpen={!sequence && !pending}
+          onOpen={(value) => {
+            remember(value, null);
+            setNotice("Votre message local enregistré est ouvert.");
+          }}
+        />
         <section
           className="communication-keyboard"
           id="communication-keyboard"
