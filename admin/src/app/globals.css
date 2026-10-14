@@ -676,6 +676,30 @@ textarea {
     width: 100%;
   }
 }
+
+.phrase-library {
+  margin: 20px 0;
+}
+.phrase-chosen {
+  border: 2px solid var(--accent);
+}
+.phrase-picker summary {
+  font-weight: 650;
+  cursor: pointer;
+  min-height: 48px;
+  padding: 12px 0;
+}
+.phrase-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
+}
+.phrase-cards h3 {
+  overflow-wrap: anywhere;
+}
+.phrase-shortcut button {
+  min-height: 48px;
+}
 .app-shell {
   display: grid;
   grid-template-columns: 240px minmax(0, 1fr);

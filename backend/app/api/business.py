@@ -15,6 +15,7 @@ from app.application.feedback_history import EvidenceTarget, FeedbackHistory
 from app.application.interpretation import InterpretationService
 from app.application.keyboard_groups import KeyboardGroupService
 from app.application.pcl_repository import FeedbackPage
+from app.application.phrases import PhraseConflict, PhraseService, ReusablePhrase
 from app.application.semantic_space import SemanticSpace
 from app.application.validation import RelationCorrectionService
 from app.domain.pcl.audit import SemanticAuditEvent
@@ -108,6 +109,13 @@ class SelectionBody(Body):
 
 class InterpretationBody(Body):
     declared_context: tuple[str, ...] = Field(default=(), max_length=8)
+
+
+class ShortcutBody(Body):
+    selected: bool = Field(strict=True)
+    expected_selected: bool = Field(strict=True)
+    expected_text: str = Field(min_length=1, max_length=4000)
+    actor_role: HumanRole
 
 
 class BlockBody(Body):
@@ -493,6 +501,30 @@ def interpretation_feedback(
 @router.get("/profiles/{profile_id}/memory", response_model=PersonalMemory)
 def memory(request: Request, profile_id: UUID, validated: bool = True):
     return communication(request).memory(profile_id, validated=validated)
+
+
+@router.get("/profiles/{profile_id}/phrases/{interpretation_id}", response_model=ReusablePhrase)
+def reusable_phrase(request: Request, profile_id: UUID, interpretation_id: UUID):
+    try:
+        return PhraseService(units(request)).read(profile_id, interpretation_id)
+    except PhraseConflict:
+        raise HTTPException(409, "Ce message n’est plus accepté. Actualisez vos phrases.") from None
+
+
+@router.patch(
+    "/profiles/{profile_id}/phrases/{interpretation_id}/shortcut", response_model=Interpretation
+)
+def choose_phrase_shortcut(
+    request: Request, profile_id: UUID, interpretation_id: UUID, body: ShortcutBody
+):
+    try:
+        return PhraseService(units(request)).choose(
+            profile_id, interpretation_id, **body.model_dump()
+        )
+    except PhraseConflict:
+        raise HTTPException(
+            409, "Ce message ou le choix du raccourci a changé. Actualisez avant de réessayer."
+        ) from None
 
 
 @router.delete("/profiles/{profile_id}/memory", status_code=204)

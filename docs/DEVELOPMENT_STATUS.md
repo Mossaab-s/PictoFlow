@@ -1,8 +1,14 @@
-# État du prototype V1 — 13 octobre 2026
+# État du prototype V1 — 14 octobre 2026
 
 Le parcours métier PCL est implémenté localement, avec API REST, administration
 initiale et providers IA optionnels. Une instance de test est déployée sur
 [10.0.0.121:3000](http://10.0.0.121:3000), avec une base persistante dédiée.
+
+Les PR #36 et #37 sont fusionnées et déployées dans la livraison `20261014-03`
+(commit `d8347db`) : sauvegarde/restauration et mémoire lisible. La prochaine
+livraison prépare les phrases habituelles et raccourcis choisis, avec lecture
+locale explicite, correction prioritaire et sauvegardes v2 compatibles avec la
+restauration v1. Voir [USUAL_PHRASES.md](USUAL_PHRASES.md).
 
 | Issues | État local |
 | --- | --- |
@@ -132,6 +138,7 @@ restauration est vérifié dans le navigateur sur une base jetable sans IA.
 
 - [Mémoire, séquences et validation](COMMUNICATION_MEMORY.md)
 - [Lire la mémoire dans l’administration](READABLE_MEMORY.md)
+- [Réutiliser une phrase et choisir ses raccourcis](USUAL_PHRASES.md)
 - [Sauvegarder et restaurer un profil](PROFILE_BACKUP.md)
 - [Gaps, blocs, clavier, représentations et audit](ADAPTIVE_WORKFLOW.md)
 - [Providers HTTP optionnels](HTTP_PROVIDERS.md)

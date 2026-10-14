@@ -7,6 +7,7 @@ import {
   type Block,
   type Concept,
   type Representation,
+  type HumanRole,
 } from "@/lib/keyboard";
 import {
   memoryMatches,
@@ -16,7 +17,8 @@ import {
   scopedMemory,
   type Memory,
 } from "@/lib/memory";
-import { ProfileNavigation } from "./profile-navigation";
+import { ProfileNavigation, HumanRoleSelector } from "./profile-navigation";
+import PhraseShortcut from "./phrase-shortcut";
 import { TouchContent } from "./pictogram";
 import MemoryEvidence, { memoryDate } from "./memory-evidence";
 
@@ -36,6 +38,7 @@ export default function ProfileMemory({ profileId }: { profileId: string }) {
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<Category>("all");
+  const [role, setRole] = useState<HumanRole>("user");
   const [pages, setPages] = useState({ messages: 0, blocks: 0, relations: 0 });
   const pending = useRef<AbortController | null>(null);
   const base = `profiles/${profileId}`;
@@ -260,6 +263,20 @@ export default function ProfileMemory({ profileId }: { profileId: string }) {
                     {validated ? "Messages acceptés" : "Messages proposés"}{" "}
                     <span className="tag">{messages.length}</span>
                   </h2>
+                  {validated && (
+                    <>
+                      <p>
+                        Choisissez les phrases à retrouver facilement dans
+                        l’espace de communication. Ce choix ne crée pas une
+                        nouvelle validation.
+                      </p>
+                      <HumanRoleSelector
+                        value={role}
+                        onChange={setRole}
+                        label="Je choisis mes raccourcis en tant que"
+                      />
+                    </>
+                  )}
                   {shown(messages, pages.messages).map((item) => {
                     const touches = messageTouches(
                       profileId,
@@ -323,6 +340,40 @@ export default function ProfileMemory({ profileId }: { profileId: string }) {
                           type="interpretation"
                           targetId={item.id}
                         />
+                        {validated && (
+                          <div className="actions">
+                            <Link
+                              className="button-link"
+                              href={`/communication/${profileId}?phrase=${item.id}`}
+                            >
+                              Utiliser ce message
+                            </Link>
+                            <PhraseShortcut
+                              profileId={profileId}
+                              item={item}
+                              role={role}
+                              onChange={(changed) =>
+                                setBundle((previous) =>
+                                  previous
+                                    ? {
+                                        ...previous,
+                                        memory: {
+                                          ...previous.memory,
+                                          interpretations:
+                                            previous.memory.interpretations.map(
+                                              (v) =>
+                                                v.id === changed.id
+                                                  ? { ...v, ...changed }
+                                                  : v,
+                                            ),
+                                        },
+                                      }
+                                    : null,
+                                )
+                              }
+                            />
+                          </div>
+                        )}
                       </article>
                     );
                   })}

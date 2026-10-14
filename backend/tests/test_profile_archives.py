@@ -94,7 +94,7 @@ def test_external_asset_references_are_preserved_without_becoming_managed_photos
 @pytest.mark.parametrize(
     "mutation",
     [
-        lambda x: x.update(version=2),
+        lambda x: x.update(version=3),
         lambda x: x.update(version=True),
         lambda x: x.update(api_key="Private input"),
         lambda x: x["records"].pop("blocks"),

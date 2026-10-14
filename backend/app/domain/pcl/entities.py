@@ -287,10 +287,16 @@ class Interpretation:
     status: InterpretationStatus = InterpretationStatus.PROPOSED
     corrected_text: str | None = None
     created_at: datetime = field(default_factory=utc_now)
+    shortcut: bool = False
 
     def __post_init__(self) -> None:
         check.identity_and_dates(self)
         check.identifier(self.sequence_id, "sequence_id")
+        if type(self.shortcut) is not bool or (
+            self.shortcut
+            and self.status not in (InterpretationStatus.CONFIRMED, InterpretationStatus.CORRECTED)
+        ):
+            raise check.DomainInvariantError("Only accepted messages can be explicit shortcuts")
         check.text(self.source, "source")
         check.confidence(self.confidence)
         check.enum_field(self, "status", InterpretationStatus)

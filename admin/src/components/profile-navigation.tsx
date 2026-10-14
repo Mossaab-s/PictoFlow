@@ -35,14 +35,16 @@ export function HumanRoleSelector({
   value,
   onChange,
   disabled,
+  label = "Je valide en tant que",
 }: {
   value: HumanRole;
   onChange: (value: HumanRole) => void;
   disabled?: boolean;
+  label?: string;
 }) {
   return (
     <label className="role-selector">
-      Je valide en tant que
+      {label}
       <select
         value={value}
         onChange={(event) => onChange(event.target.value as HumanRole)}

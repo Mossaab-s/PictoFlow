@@ -91,7 +91,7 @@ class PostgresProfileArchives:
             exported_at = utc_now()
             empty = ProfileArchive(
                 format="pictoflow-profile",
-                version=1,
+                version=2,
                 exported_at=exported_at,
                 profile=profile,
                 records=Records(**{name: () for name in Records.model_fields}),
@@ -189,7 +189,7 @@ class PostgresProfileArchives:
             )
             snapshot = ProfileArchive(
                 format="pictoflow-profile",
-                version=1,
+                version=2,
                 exported_at=exported_at,
                 profile=profile,
                 records=Records(**records),
@@ -207,8 +207,14 @@ class PostgresProfileArchives:
 
     def restore(self, request: RestoreRequest) -> UserCommunicationProfile:
         self.preview(request.snapshot)
+        payload = request.model_dump(mode="json")
+        if request.snapshot.version == 1:
+            # Keep receipts issued before shortcuts valid for the exact same legacy request.
+            # v1 parsing guarantees that this omitted field can only default to false.
+            for item in payload["snapshot"]["records"]["interpretations"]:
+                item.pop("shortcut")
         encoded = json.dumps(
-            request.model_dump(mode="json"),
+            payload,
             sort_keys=True,
             ensure_ascii=False,
             separators=(",", ":"),

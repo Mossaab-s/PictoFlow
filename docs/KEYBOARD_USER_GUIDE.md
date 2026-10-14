@@ -124,6 +124,13 @@ les retrouver ; **Voir les décisions humaines** donne leurs confirmations,
 corrections ou refus. Les propositions restent dans une vue distincte et cette
 lecture ne les valide pas. Voir [Mémoire lisible](READABLE_MEMORY.md).
 
+Dans la mémoire validée, **Utiliser ce message** ouvre la phrase dans l’espace
+de communication, avec sa correction humaine. **Ajouter à mes raccourcis** la
+conserve dans les phrases choisies de ce profil. Dans la communication, ouvrir
+**Mes phrases habituelles et raccourcis**, retrouver une phrase, puis choisir
+**Lire cette phrase**. La composition en cours reste conservée ; aucun appel IA
+n’est nécessaire. Voir [Phrases habituelles](USUAL_PHRASES.md).
+
 Pour conserver le clavier, ses pages, ses photos et sa mémoire, utiliser
 l’onglet **Sauvegarde** du profil. La liste des profils propose **Restaurer une
 sauvegarde**, avec aperçu du fichier puis confirmation dans un nouveau profil.

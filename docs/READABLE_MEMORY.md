@@ -67,5 +67,6 @@ frontend sont vérifiés. La vérification visuelle native a été bloquée par
 Computer Use, qui ne pouvait pas identifier l’URL du navigateur avec suffisamment
 de certitude ; les interactions avec cette fenêtre ont été arrêtées.
 
-La réutilisation d’un message pour communiquer et les raccourcis choisis sont
-le point suivant du plan. Cette étape fournit la lecture et la recherche.
+Les messages validés peuvent aussi être réutilisés en communication et choisis
+comme raccourcis. Ces actions explicites sont documentées dans
+[Phrases habituelles](USUAL_PHRASES.md) ; les propositions ne proposent pas ces actions.
