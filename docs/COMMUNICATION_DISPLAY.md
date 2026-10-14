@@ -43,9 +43,11 @@ besoins de la personne.
 
 ## Reprise et conservation du réglage
 
-Le navigateur conserve uniquement un choix de taille versionné, séparé par
-profil, dans `localStorage`. Aucun mot, photo ou sens personnel n'y est ajouté.
-Ce réglage est commun aux deux vues de communication dans le même navigateur,
+Le navigateur conserve le choix de taille v1, séparé par profil, dans
+`localStorage`. Le contraste et la voix/débit utilisent deux autres réglages
+versionnés ; voir [Accessibilité et voix](COMMUNICATION_ACCESSIBILITY.md).
+Aucun mot, photo ou sens personnel n’y est ajouté.
+Ces réglages sont communs aux deux vues de communication dans le même navigateur,
 mais n'est pas synchronisé entre appareils. Une valeur invalide revient au
 format classique. Si le stockage est bloqué, le réglage fonctionne jusqu'au
 départ de l'écran et un message l'indique.
@@ -67,6 +69,8 @@ Le parcours navigateur utilise PostgreSQL jetable et des données fictives :
 composition depuis deux pages, changement de taille par souris et flèches du
 clavier, conservation d'un repère sur le deuxième écran stable, reprise après
 rechargement et passage entre les deux vues. Les mises en page sont vérifiées
-à 768 × 1024 et 320 × 800. Les essais avec un lecteur d'écran réel, les personnes
+à 768 × 1024 et 320 × 800. L’incrément suivant ajoute le contraste renforcé,
+les accès directs au clavier/message, la reprise du focus et les choix de voix.
+Les essais avec un lecteur d'écran réel, les personnes
 concernées et les aidants restent nécessaires. Le balayage et les contacteurs
 ne sont pas implémentés dans cet incrément.

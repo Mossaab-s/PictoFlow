@@ -1,49 +1,107 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import {
+  chooseVoice,
+  createLocalReader,
+  defaultSpeech,
+  localFrenchVoices,
+  parseSpeech,
+  serializeSpeech,
+  speechStorageKey,
+  type SpeechSettings,
+} from "@/lib/speech";
 
-export function useLocalSpeech() {
-  const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
+export function useLocalSpeech(profileId: string) {
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [settings, setSettings] = useState<SpeechSettings>({
+    ...defaultSpeech,
+  });
+  const [ready, setReady] = useState(false);
+  const [supported, setSupported] = useState(false);
+  const [temporary, setTemporary] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [error, setError] = useState("");
+  const reader = useRef<ReturnType<typeof createLocalReader> | null>(null);
+  const key = speechStorageKey(profileId);
   useEffect(() => {
-    if (!("speechSynthesis" in window)) return;
-    const speech = window.speechSynthesis;
-    const update = () =>
-      setVoice(
-        speech
-          .getVoices()
-          .find(
-            (item) =>
-              item.localService && item.lang.toLowerCase().startsWith("fr"),
-          ) ?? null,
-      );
+    setReady(false);
+    setTemporary(false);
+    try {
+      setSettings(parseSpeech(localStorage.getItem(key)));
+    } catch {
+      setSettings({ ...defaultSpeech });
+      setTemporary(true);
+    }
+    setReady(true);
+  }, [key]);
+  useEffect(() => {
+    const synthesis = window.speechSynthesis;
+    if (!synthesis || typeof window.SpeechSynthesisUtterance !== "function")
+      return;
+    setSupported(true);
+    let alive = true;
+    const local = createLocalReader(
+      synthesis,
+      (text) => new SpeechSynthesisUtterance(text),
+      (reading, failure) => {
+        if (alive) {
+          setSpeaking(reading);
+          setError(failure);
+        }
+      },
+    );
+    reader.current = local;
+    const update = () => {
+      local.stop();
+      try {
+        setVoices(localFrenchVoices(synthesis.getVoices()));
+      } catch {
+        setVoices([]);
+      }
+    };
+    const hide = () => {
+      if (document.hidden) local.stop();
+    };
     update();
-    speech.addEventListener("voiceschanged", update);
+    synthesis.addEventListener("voiceschanged", update);
+    window.addEventListener("pagehide", local.stop);
+    document.addEventListener("visibilitychange", hide);
     return () => {
-      speech.removeEventListener("voiceschanged", update);
-      speech.cancel();
+      alive = false;
+      synthesis.removeEventListener("voiceschanged", update);
+      window.removeEventListener("pagehide", local.stop);
+      document.removeEventListener("visibilitychange", hide);
+      local.stop();
+      reader.current = null;
     };
-  }, []);
-  function read(text: string) {
-    if (!voice || !text.trim()) return;
-    const speech = window.speechSynthesis;
-    speech.cancel();
-    setError("");
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.voice = voice;
-    utterance.lang = voice.lang;
-    utterance.onstart = () => setSpeaking(true);
-    utterance.onend = () => setSpeaking(false);
-    utterance.onerror = (event) => {
-      setSpeaking(false);
-      if (event.error !== "canceled" && event.error !== "interrupted")
-        setError("La lecture n'a pas pu démarrer.");
-    };
-    speech.speak(utterance);
-  }
+  }, [profileId]);
   function stop() {
-    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
-    setSpeaking(false);
+    reader.current?.stop();
   }
-  return { available: Boolean(voice), speaking, error, read, stop };
+  function change(next: SpeechSettings) {
+    stop();
+    setSettings(next);
+    try {
+      localStorage.setItem(key, serializeSpeech(next));
+      setTemporary(false);
+    } catch {
+      setTemporary(true);
+    }
+  }
+  function read(text: string) {
+    if (ready) reader.current?.read(text, settings);
+  }
+  return {
+    available: ready && Boolean(chooseVoice(voices, settings.voiceURI)),
+    supported,
+    ready,
+    voices,
+    settings,
+    temporary,
+    speaking,
+    error,
+    read,
+    stop,
+    change,
+  };
 }

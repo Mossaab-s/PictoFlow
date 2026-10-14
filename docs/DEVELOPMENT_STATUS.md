@@ -4,14 +4,25 @@ Le parcours métier PCL est implémenté localement, avec API REST, administrati
 initiale et providers IA optionnels. Une instance de test est déployée sur
 [10.0.0.121:3000](http://10.0.0.121:3000), avec une base persistante dédiée.
 
-Les PR #36 à #38 sont fusionnées et déployées dans la livraison `20261014-04`
-(commit `dcefb9a`) : sauvegarde/restauration, mémoire lisible et phrases habituelles.
-La prochaine livraison prépare l’organisation du clavier : ordre des pages,
+Les PR #36 à #39 sont fusionnées et déployées dans la livraison `20261014-05`
+(commit `74fb113`) : sauvegarde/restauration, mémoire lisible, phrases habituelles
+et organisation du clavier : ordre des pages,
 déplacements avec aperçu et retrait avec transfert conservant repères, photos,
 messages et décisions. Les sauvegardes v3 conservent les pages archivées et
 l’ordre choisi ; restauration et reçus v1/v2 restent compatibles.
 Voir [KEYBOARD_PAGES.md](KEYBOARD_PAGES.md). Vérifications : 537 scénarios
 backend et 35 tests frontend, avec parcours navigateur sur base fictive.
+Déploiement vérifié : migration 0010, quatre services sains, empreintes de toutes
+les anciennes lignes PCL conservées, 21 positions et deux photos intactes.
+Les contrôles du code installé s’exécutent dans une transaction annulée.
+
+La prochaine livraison prépare l’accessibilité au clavier et la voix : accès
+directs, retour du focus, contraste renforcé, cibles de 48 pixels, choix/débit
+d’une voix française locale et arrêt contrôlé. Elle passe 42 tests frontend,
+Prettier, TypeScript et Next.js. Le navigateur vérifie le parcours clavier et
+les contrôles axe A/AA sur ordinateur, tablette et 320 pixels ; le moteur vocal
+est simulé, le son réel et les lecteurs d’écran restent à essayer sur appareil.
+Voir [COMMUNICATION_ACCESSIBILITY.md](COMMUNICATION_ACCESSIBILITY.md).
 
 | Issues | État local |
 | --- | --- |

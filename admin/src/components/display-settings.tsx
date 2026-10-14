@@ -5,11 +5,17 @@ export default function DisplaySettings({
   onChange,
   disabled,
   temporary,
+  contrast,
 }: {
   size: DisplaySize;
   onChange: (size: DisplaySize) => void;
   disabled: boolean;
   temporary: boolean;
+  contrast: {
+    enhanced: boolean;
+    temporary: boolean;
+    change: (value: boolean) => void;
+  };
 }) {
   return (
     <details className="display-settings">
@@ -34,6 +40,21 @@ export default function DisplaySettings({
           ))}
         </div>
       </fieldset>
+      <label className="contrast-option">
+        <input
+          type="checkbox"
+          checked={contrast.enhanced}
+          disabled={disabled}
+          onChange={(event) => contrast.change(event.target.checked)}
+        />
+        Contraste renforcé
+      </label>
+      {contrast.temporary && (
+        <p role="status">
+          Le contraste reste actif jusqu’au départ de cet écran ; ce navigateur
+          ne conserve pas ce réglage.
+        </p>
+      )}
       <p id="display-help">
         Les repères stables gardent leur grille. Votre message reste en cours.
         {!temporary &&
