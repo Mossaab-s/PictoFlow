@@ -1,5 +1,6 @@
 """Actual PostgreSQL shortcut ownership, human decisions and archive compatibility."""
 
+import hashlib
 import json
 from dataclasses import replace
 from uuid import UUID
@@ -10,10 +11,15 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
 from app.application.phrases import PhraseConflict, PhraseService
-from app.application.profile_archive import ArchiveError, parse_archive
+from app.application.profile_archive import ArchiveError, parse_archive, parse_restore
 from app.application.semantic_space import SemanticNotFoundError
 from app.domain.pcl.entities import HumanRole, Interpretation, ProposalStatus, ValidationAction
-from app.infrastructure.postgres.models import AuditRow, InterpretationRow, ValidationRow
+from app.infrastructure.postgres.models import (
+    AuditRow,
+    InterpretationRow,
+    ProfileRestoreRow,
+    ValidationRow,
+)
 from tests.integration import test_communication as communication_scenarios
 from tests.integration import test_profile_archives as archive_scenarios
 from tests.integration.conftest import migration_config
@@ -229,10 +235,25 @@ def test_v2_backup_preserves_shortcuts_and_v1_restoration_does_not_invent_them(a
     old["version"] = 1
     for record in old["records"]["interpretations"]:
         record.pop("shortcut")
-    legacy = api.post("/api/v1/profiles/restore", json=restore_body(old))
+    old_body = restore_body(old)
+    legacy = api.post("/api/v1/profiles/restore", json=old_body)
     assert legacy.status_code == 201, legacy.text
     legacy_base = "/api/v1/profiles/" + legacy.json()["id"]
     assert not api.get(legacy_base + "/memory").json()["interpretations"][0]["shortcut"]
+    # Reproduce the canonical v1 envelope used by receipts before this migration.
+    old_payload = parse_restore(json.dumps(old_body).encode()).model_dump(mode="json")
+    for record in old_payload["snapshot"]["records"]["interpretations"]:
+        record.pop("shortcut")
+    old_digest = hashlib.sha256(
+        json.dumps(
+            old_payload, sort_keys=True, ensure_ascii=False, separators=(",", ":"), allow_nan=False
+        ).encode()
+    ).hexdigest()
+    with api.app.state.pcl_units.factory() as session:
+        receipt = session.get(ProfileRestoreRow, UUID(old_body["request_id"]))
+        assert receipt.payload_digest == old_digest
+    retry = api.post("/api/v1/profiles/restore", json=old_body)
+    assert retry.status_code == 201 and retry.json()["id"] == legacy.json()["id"]
     incomplete = api.get(base + "/backup").json()
     incomplete["records"]["interpretations"][0].pop("shortcut")
     with pytest.raises(ArchiveError):

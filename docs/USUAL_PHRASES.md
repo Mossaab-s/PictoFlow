@@ -64,6 +64,8 @@ obligatoire dans chaque interprétation. La restauration conserve les choix dans
 le nouveau profil et remappe les références. Les anciens fichiers **version 1**,
 sans ce champ, restent acceptés : ils restaurent tous les messages sans raccourci.
 Une ancienne application limitée à la version 1 ne lit pas ces nouveaux fichiers.
+L’empreinte canonique des anciennes demandes v1 reste identique : leurs reçus
+de restauration continuent à protéger une reprise, même après une purge.
 
 ## Vérification
 
