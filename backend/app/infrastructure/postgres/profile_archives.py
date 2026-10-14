@@ -91,7 +91,7 @@ class PostgresProfileArchives:
             exported_at = utc_now()
             empty = ProfileArchive(
                 format="pictoflow-profile",
-                version=1,
+                version=2,
                 exported_at=exported_at,
                 profile=profile,
                 records=Records(**{name: () for name in Records.model_fields}),
@@ -189,7 +189,7 @@ class PostgresProfileArchives:
             )
             snapshot = ProfileArchive(
                 format="pictoflow-profile",
-                version=1,
+                version=2,
                 exported_at=exported_at,
                 profile=profile,
                 records=Records(**records),

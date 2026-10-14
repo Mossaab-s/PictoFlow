@@ -131,7 +131,7 @@ TARGETS = {
 
 class ProfileArchive(Contract):
     format: Literal["pictoflow-profile"]
-    version: Annotated[int, Field(strict=True, ge=1, le=1)]
+    version: Annotated[int, Field(strict=True, ge=1, le=2)]
     exported_at: datetime
     profile: UserCommunicationProfile
     records: Records
@@ -194,6 +194,8 @@ class ProfileArchive(Contract):
                 ref("blocks", block_id)
         accepted = []
         for item in self.records.interpretations:
+            if self.version == 1 and item.shortcut:
+                raise ArchiveError("Shortcuts require archive version 2")
             ref("sequences", item.sequence_id)
             if known["sequences"][item.sequence_id].status != "completed":
                 raise ArchiveError("Interpretation has no completed sequence")
@@ -285,7 +287,7 @@ def parse_restore(data: bytes) -> RestoreRequest:
 
 
 def complete_snapshot(value):
-    """A v1 snapshot is complete; missing persisted fields must not take domain defaults."""
+    """Persisted fields are required; only old v1 messages default to no shortcut."""
     if not isinstance(value, dict):
         raise ArchiveError("Invalid snapshot")
     profile = value.get("profile")
@@ -312,6 +314,8 @@ def complete_snapshot(value):
         items = records.get(name)
         if isinstance(items, list):
             required = {f.name for f in fields(entity)}
+            if entity is Interpretation and value.get("version") == 1:
+                required.remove("shortcut")
             for item in items:
                 if not isinstance(item, dict) or set(item) != required:
                     raise ArchiveError("Incomplete archive record")

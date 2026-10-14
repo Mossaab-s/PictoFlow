@@ -5,6 +5,12 @@ personal relations as readable cards, keeping accepted and proposed partitions
 separate. Actual human feedback is read through a typed, scoped paginated
 endpoint; legacy missing roles are never inferred. See [READABLE_MEMORY.md](READABLE_MEMORY.md).
 
+Accepted messages can be displayed and read again without inference or a new
+sequence. An explicit human shortcut choice is persisted on the accepted
+interpretation, separately from validation. Changed corrections and rejection
+clear this choice. Archives v2 preserve it; existing v1 archives restore without
+inventing shortcuts. See [USUAL_PHRASES.md](USUAL_PHRASES.md).
+
 MEM-003, SEQ-004, VAL-005 and CONF-006 are implemented by
 `app/application/communication.py`. The sequence and confidence rules are pure
 Python under `app/domain/pcl`. PostgreSQL units own state, feedback and audit

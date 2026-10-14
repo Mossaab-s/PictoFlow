@@ -27,10 +27,13 @@ def apply_interpretation_feedback(
     if proposal.status == InterpretationStatus.NOT_UNDERSTOOD:
         raise DomainInvariantError("A refusal is final; create a new proposal before validation")
     if event.action == ValidationAction.REJECT:
-        return replace(proposal, status=InterpretationStatus.REJECTED)
+        return replace(proposal, status=InterpretationStatus.REJECTED, shortcut=False)
     if event.action == ValidationAction.CORRECT:
         return replace(
-            proposal, status=InterpretationStatus.CORRECTED, corrected_text=event.corrected_value
+            proposal,
+            status=InterpretationStatus.CORRECTED,
+            corrected_text=event.corrected_value,
+            shortcut=proposal.shortcut and proposal.validated_text == event.corrected_value,
         )
     # Later confirmation must not restore the model's text over a human correction.
     status = (

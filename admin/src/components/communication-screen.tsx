@@ -22,13 +22,16 @@ import ProfileIdentity from "./profile-identity";
 import { useLocalSpeech } from "./use-local-speech";
 import DisplaySettings from "./display-settings";
 import { useDisplaySettings } from "./use-display-settings";
+import PhraseLibrary from "./phrase-library";
 
 export default function CommunicationScreen({
   profileId,
   standalone = false,
+  initialPhraseId = null,
 }: {
   profileId: string;
   standalone?: boolean;
+  initialPhraseId?: string | null;
 }) {
   const data = useProfileKeyboard(profileId);
   const display = useDisplaySettings(profileId);
@@ -376,6 +379,15 @@ export default function CommunicationScreen({
             {busy ? "Enregistrement…" : "Chargement de votre clavier…"}
           </p>
         )}
+        <PhraseLibrary
+          profileId={profileId}
+          blocks={data.blocks}
+          visuals={data.representations}
+          speech={speech}
+          disabled={pending}
+          initialPhraseId={initialPhraseId}
+          revision={decision}
+        />
         <section className="message-panel" aria-label="Message en cours">
           <div className="zone-heading">
             <h2>{completed ? "Mon message terminé" : "Mon message"}</h2>

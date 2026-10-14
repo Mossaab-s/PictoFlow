@@ -7,11 +7,12 @@ Chaque point passe par une PR, puis par un déploiement après sa fusion.
 1. **Sauvegarde et restauration d’un profil** : PR #36 fusionnée et déployée,
    voir [PROFILE_BACKUP.md](PROFILE_BACKUP.md). Fichier versionné incluant le PCL,
    clavier, pages, photos et historique ; restauration dans un nouveau profil.
-2. **Mémoire lisible** : livraison en préparation ; cartes de messages avec
+2. **Mémoire lisible** : PR #37 fusionnée et déployée ; cartes de messages avec
    leurs mots/dessins, corrections prioritaires, relations et décisions humaines
    paginées, recherche et séparation des propositions. Voir [READABLE_MEMORY.md](READABLE_MEMORY.md).
-3. **Phrases habituelles** : retrouver/réutiliser un message validé et préparer
-   des raccourcis explicitement choisis.
+3. **Phrases habituelles** : livraison en préparation ; retrouver/réutiliser un
+   message validé, avec des raccourcis explicitement choisis et conservés dans
+   la sauvegarde. Voir [USUAL_PHRASES.md](USUAL_PHRASES.md).
 4. **Organisation des pages** : ordre, suppression contrôlée et déplacement des
    touches, en conservant les repères stables.
 5. **Accessibilité et voix** : essais tablette/clavier, contrastes et cibles ;

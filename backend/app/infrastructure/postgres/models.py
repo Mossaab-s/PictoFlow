@@ -243,11 +243,15 @@ class InterpretationRow(Scoped, Base):
     source: Mapped[str]
     status: Mapped[str] = mapped_column(default="proposed")
     created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), default=utc_now)
+    shortcut: Mapped[bool] = mapped_column(default=False, server_default=sa.false())
     __table_args__ = (
         sa.UniqueConstraint("profile_id", "id"),
         scoped_fk("sequence_id", "communication_sequence"),
         states("status", ("proposed", "confirmed", "corrected", "rejected", "not_understood")),
         sa.CheckConstraint("confidence >= 0 AND confidence <= 1", name="confidence_range"),
+        sa.CheckConstraint(
+            "NOT shortcut OR status IN ('confirmed', 'corrected')", name="accepted_shortcut"
+        ),
     )
 
 
