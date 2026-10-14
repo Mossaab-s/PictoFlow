@@ -113,7 +113,17 @@ et le parcours navigateur sont vérifiés avant ouverture de la PR.
 
 ## Lire et essayer
 
+La livraison en préparation ajoute la **sauvegarde/restauration d’un profil**,
+décrite dans [PROFILE_BACKUP.md](PROFILE_BACKUP.md). L’export complet est versionné
+et la restauration crée un profil distinct dans une transaction, avec remappage
+des références, photos inchangées et conservation des décisions humaines.
+La reprise d’une même demande est protégée par un reçu PostgreSQL, conservé
+après une purge de mémoire. Les tests couvrent la restitution, l’isolation,
+les erreurs de fichier et le rollback ; le parcours de téléchargement puis
+restauration est vérifié dans le navigateur sur une base jetable sans IA.
+
 - [Mémoire, séquences et validation](COMMUNICATION_MEMORY.md)
+- [Sauvegarder et restaurer un profil](PROFILE_BACKUP.md)
 - [Gaps, blocs, clavier, représentations et audit](ADAPTIVE_WORKFLOW.md)
 - [Providers HTTP optionnels](HTTP_PROVIDERS.md)
 - [API et observabilité](API_OBSERVABILITY.md)

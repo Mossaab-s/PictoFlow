@@ -118,6 +118,11 @@ Les voix sont filtrées avec [localService](https://developer.mozilla.org/en-US/
 
 ## Validation
 
+Pour conserver le clavier, ses pages, ses photos et sa mémoire, utiliser
+l’onglet **Sauvegarde** du profil. La liste des profils propose **Restaurer une
+sauvegarde**, avec aperçu du fichier puis confirmation dans un nouveau profil.
+Voir [Sauvegarder et restaurer un profil](PROFILE_BACKUP.md).
+
 Le parcours navigateur a été vérifié sur un profil fictif dans une base jetable :
 création d'un sens et d'une touche, validation, position stable avec une case
 libre, sélection ordonnée, annulation, reprise, proposition littérale et correction.

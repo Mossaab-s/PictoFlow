@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { boundedBody } from "@/lib/proxy-body";
+import { boundedBody, bodyLimit } from "@/lib/proxy-body";
 
 const permitted = new Set(["health", "readiness", "profiles", "providers"]);
 
@@ -26,7 +26,7 @@ async function proxy(
       headers: { "Content-Type": "application/json" },
       body: ["GET", "HEAD"].includes(request.method)
         ? undefined
-        : await boundedBody(request),
+        : await boundedBody(request, bodyLimit(request.method, path)),
       signal: AbortSignal.timeout(120_000),
     });
     const headers = new Headers({
@@ -39,13 +39,30 @@ async function proxy(
     });
     const trace = response.headers.get("x-trace-id");
     if (trace) headers.set("x-trace-id", trace);
+    if (
+      path.length === 3 &&
+      path[0] === "profiles" &&
+      path[2] === "backup" &&
+      /^[0-9a-f-]{36}$/i.test(path[1])
+    )
+      headers.set(
+        "Content-Disposition",
+        `attachment; filename="pictoflow-profile-${path[1]}.json"`,
+      );
     return new Response(response.status === 204 ? null : response.body, {
       status: response.status,
       headers,
     });
   } catch (error) {
     if (error instanceof RangeError)
-      return Response.json({ detail: "Request too large" }, { status: 413 });
+      return Response.json(
+        { detail: "Request too large" },
+        {
+          status: 413,
+          // A partially consumed HTTP/1 body must not poison the next request on this socket.
+          headers: { Connection: "close" },
+        },
+      );
     return Response.json({ detail: "Backend unavailable" }, { status: 503 });
   }
 }

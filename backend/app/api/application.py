@@ -14,8 +14,10 @@ from app.ai.manager import create_provider
 from app.api.business import router as business_router
 from app.api.health import router as health_router
 from app.api.photos import router as photo_router
+from app.api.profile_archives import router as archive_router
 from app.api.router import router as api_router
 from app.application.photos import PhotoPayloadError
+from app.application.profile_archive import ArchiveError, ArchiveTooLarge, RestoreConflict
 from app.application.repositories import ProfileVersionConflict
 from app.application.semantic_space import SemanticNotFoundError
 from app.application.transient import TransientStoreUnavailable
@@ -58,6 +60,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.add_middleware(HTTPInstrumentation, telemetry=telemetry)
     application.include_router(health_router)
     application.include_router(api_router)
+    application.include_router(archive_router)
     application.include_router(business_router)
     application.include_router(photo_router)
 
@@ -68,13 +71,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 telemetry.signal("database.error", error_class=type(error).__name__)
             elif isinstance(error, TransientStoreUnavailable):
                 telemetry.signal("redis.availability", availability="unavailable")
-            return JSONResponse(status_code=status, content={"detail": message})
+            return JSONResponse(
+                status_code=status,
+                content={"detail": message},
+                headers={"Connection": "close"} if status == 413 else None,
+            )
 
         return redacted_error
 
     for error_type, status, message in (
         (RequestValidationError, 422, "Invalid request"),
         (ValidationError, 422, "Invalid value"),
+        (ArchiveTooLarge, 413, "Profile archive too large"),
+        (RestoreConflict, 409, "Restore request already used for another archive"),
+        (ArchiveError, 422, "Invalid profile archive"),
         (PhotoPayloadError, 422, "Invalid photo; use a static JPEG, PNG or WebP under 5 MiB"),
         (DomainInvariantError, 400, "Invalid PCL transition"),
         (SemanticNotFoundError, 404, "Object not found in this profile"),

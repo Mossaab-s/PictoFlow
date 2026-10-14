@@ -37,5 +37,6 @@ export const sections = {
   memory: "Mémoire",
   suggestions: "Suggestions",
   audit: "Historique",
+  backup: "Sauvegarde",
 } as const;
 export type Section = keyof typeof sections;
