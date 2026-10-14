@@ -16,6 +16,7 @@ from app.api.health import router as health_router
 from app.api.photos import router as photo_router
 from app.api.profile_archives import router as archive_router
 from app.api.router import router as api_router
+from app.application.keyboard_groups import KeyboardOrganizationConflict
 from app.application.photos import PhotoPayloadError
 from app.application.profile_archive import ArchiveError, ArchiveTooLarge, RestoreConflict
 from app.application.repositories import ProfileVersionConflict
@@ -90,6 +91,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         (SemanticNotFoundError, 404, "Object not found in this profile"),
         (IntegrityError, 409, "Conflicting persistent state"),
         (ProfileVersionConflict, 409, "Profile changed; reload before renaming"),
+        (
+            KeyboardOrganizationConflict,
+            409,
+            "Keyboard changed or place unavailable; reload and preview again",
+        ),
         (SQLAlchemyError, 503, "Persistent storage unavailable"),
         (TransientStoreUnavailable, 503, "Transient storage unavailable"),
         (ProviderUnsupportedCapability, 501, "Provider capability unavailable"),

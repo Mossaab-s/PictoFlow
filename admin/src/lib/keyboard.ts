@@ -25,7 +25,15 @@ export type Position = {
   locked: boolean;
   group_id?: string | null;
 };
-export type KeyboardGroup = { id: string; profile_id: string; label: string };
+export type KeyboardGroup = {
+  id: string;
+  profile_id: string;
+  label: string;
+  sort_order?: number;
+  status?: "active" | "archived";
+  created_at?: string;
+  updated_at?: string;
+};
 export type Representation = {
   id: string;
   profile_id: string;

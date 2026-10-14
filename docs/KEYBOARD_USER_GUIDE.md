@@ -66,7 +66,10 @@ au profil dans ce navigateur ; voir [le guide d'affichage](COMMUNICATION_DISPLAY
 
 **Les pages de mon clavier** permet de créer et renommer Personnes, Besoins ou
 vos propres pages. Dans les réglages d'une touche validée, choisir **Page** et
-**Place**, puis enregistrer. Les touches sans page restent dans **Accueil**.
+**Place**, puis **Prévisualiser le déplacement** et **Confirmer le déplacement**.
+Les touches sans page restent dans **Accueil**. **Monter/Descendre** choisit
+l’ordre des pages. **Retirer la page…** prépare un transfert vers une destination
+choisie, avec aperçu et confirmation ; les touches et l’historique sont conservés.
 Les repères stables restent visibles sur chaque page. On peut changer de page
 pendant la composition sans perdre les mots déjà choisis. Voir
 [le guide des pages](KEYBOARD_PAGES.md).

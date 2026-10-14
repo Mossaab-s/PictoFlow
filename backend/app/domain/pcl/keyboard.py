@@ -15,6 +15,11 @@ class KeyboardZone(StrEnum):
     ADAPTIVE = "adaptive"
 
 
+class KeyboardGroupStatus(StrEnum):
+    ACTIVE = "active"
+    ARCHIVED = "archived"
+
+
 @dataclass(frozen=True, kw_only=True)
 class KeyboardGroup:
     profile_id: UUID
@@ -22,10 +27,14 @@ class KeyboardGroup:
     id: UUID = field(default_factory=uuid4)
     created_at: datetime = field(default_factory=utc_now)
     updated_at: datetime = field(default_factory=utc_now)
+    sort_order: int = 0
+    status: KeyboardGroupStatus = KeyboardGroupStatus.ACTIVE
 
     def __post_init__(self):
         check.identity_and_dates(self)
         check.text(self.label, "label")
+        check.count(self.sort_order, "sort_order")
+        check.enum_field(self, "status", KeyboardGroupStatus)
         if self.label.casefold() == "accueil":
             raise check.DomainInvariantError("Accueil is reserved for ungrouped touches")
         if self.label != self.label.strip() or len(self.label) > 80:

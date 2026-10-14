@@ -700,6 +700,88 @@ textarea {
 .phrase-shortcut button {
   min-height: 48px;
 }
+
+.keyboard-page-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr));
+  gap: 16px;
+}
+.keyboard-page-card {
+  min-width: 0;
+}
+.keyboard-page-card h3 {
+  overflow-wrap: anywhere;
+}
+.keyboard-page-card .inline-form {
+  align-items: end;
+  flex-wrap: wrap;
+}
+.keyboard-page-card summary {
+  padding: 16px 0;
+  min-height: 48px;
+  cursor: pointer;
+}
+.keyboard-move-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.keyboard-move-list li {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow-wrap: anywhere;
+}
+.keyboard-move-list .touch-word {
+  font-size: 18px;
+}
+.keyboard-move-touch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 120px;
+  width: 120px;
+  text-align: center;
+}
+.keyboard-move-list li > span {
+  min-width: 0;
+  flex: 1;
+}
+.keyboard-move-list small {
+  display: block;
+  margin-top: 8px;
+}
+.removal-confirmation {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+}
+.removal-confirmation input {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+.keyboard-change-review {
+  margin-top: 16px;
+}
+.keyboard-change-review h3 {
+  font-size: 20px;
+}
+@media (max-width: 620px) {
+  .keyboard-move-list li {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .keyboard-move-touch {
+    flex-basis: auto;
+  }
+}
 .app-shell {
   display: grid;
   grid-template-columns: 240px minmax(0, 1fr);

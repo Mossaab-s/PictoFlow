@@ -285,9 +285,19 @@ class GapRow(Scoped, Base):
 class KeyboardGroupRow(Scoped, Timestamps, Base):
     __tablename__ = "keyboard_group"
     label: Mapped[str] = mapped_column(sa.Text)
+    sort_order: Mapped[int] = mapped_column(default=0, server_default="0")
+    status: Mapped[str] = mapped_column(default="active", server_default="active")
     __table_args__ = (
         sa.UniqueConstraint("profile_id", "id"),
-        sa.UniqueConstraint("profile_id", "label", name="uq_keyboard_group_profile_label"),
+        sa.Index(
+            "uq_keyboard_group_active_label",
+            "profile_id",
+            "label",
+            unique=True,
+            postgresql_where=sa.text("status = 'active'"),
+        ),
+        states("status", ("active", "archived")),
+        sa.CheckConstraint("sort_order >= 0", name="nonnegative_order"),
         sa.CheckConstraint(
             "label = trim(label) AND length(label) BETWEEN 1 AND 80 AND lower(label) != 'accueil'",
             name="bounded_label",

@@ -4,11 +4,14 @@ Le parcours métier PCL est implémenté localement, avec API REST, administrati
 initiale et providers IA optionnels. Une instance de test est déployée sur
 [10.0.0.121:3000](http://10.0.0.121:3000), avec une base persistante dédiée.
 
-Les PR #36 et #37 sont fusionnées et déployées dans la livraison `20261014-03`
-(commit `d8347db`) : sauvegarde/restauration et mémoire lisible. La prochaine
-livraison prépare les phrases habituelles et raccourcis choisis, avec lecture
-locale explicite, correction prioritaire et sauvegardes v2 compatibles avec la
-restauration v1. Voir [USUAL_PHRASES.md](USUAL_PHRASES.md).
+Les PR #36 à #38 sont fusionnées et déployées dans la livraison `20261014-04`
+(commit `dcefb9a`) : sauvegarde/restauration, mémoire lisible et phrases habituelles.
+La prochaine livraison prépare l’organisation du clavier : ordre des pages,
+déplacements avec aperçu et retrait avec transfert conservant repères, photos,
+messages et décisions. Les sauvegardes v3 conservent les pages archivées et
+l’ordre choisi ; restauration et reçus v1/v2 restent compatibles.
+Voir [KEYBOARD_PAGES.md](KEYBOARD_PAGES.md). Vérifications : 537 scénarios
+backend et 35 tests frontend, avec parcours navigateur sur base fictive.
 
 | Issues | État local |
 | --- | --- |
