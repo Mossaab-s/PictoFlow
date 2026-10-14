@@ -151,7 +151,17 @@ def test_corrupt_historical_references_are_rejected(archive):
 
 
 def test_preview_is_read_only_without_database_ai_or_redis_and_errors_are_redacted(archive):
-    with TestClient(create_app(Settings(environment="test", _env_file=None))) as client:
+    with TestClient(
+        create_app(
+            Settings(
+                environment="test",
+                database_url=None,
+                redis_url=None,
+                ai_provider="disabled",
+                _env_file=None,
+            )
+        )
+    ) as client:
         response = client.post(
             "/api/v1/profiles/restore-preview",
             content=archive.model_dump_json(),
@@ -176,7 +186,17 @@ def test_request_limits_apply_without_a_trustworthy_content_length(monkeypatch):
     import app.api.profile_archives as routes
 
     monkeypatch.setattr(routes, "MAX_ARCHIVE_BYTES", 8)
-    with TestClient(create_app(Settings(environment="test", _env_file=None))) as client:
+    with TestClient(
+        create_app(
+            Settings(
+                environment="test",
+                database_url=None,
+                redis_url=None,
+                ai_provider="disabled",
+                _env_file=None,
+            )
+        )
+    ) as client:
         for headers in ({}, {"content-length": "1"}):
             response = client.post(
                 "/api/v1/profiles/restore-preview",
