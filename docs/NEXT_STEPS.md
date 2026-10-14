@@ -22,14 +22,15 @@ Chaque point passe par une PR, puis par un déploiement après sa fusion.
    Voir [COMMUNICATION_ACCESSIBILITY.md](COMMUNICATION_ACCESSIBILITY.md).
    Le son réel, les lecteurs d’écran et le balayage/contacteur restent à
    vérifier avec les personnes concernées.
-6. **Reprise hors connexion** : premier incrément en préparation ; copie choisie
+6. **Reprise hors connexion** : PR #41 fusionnée et déployée ; copie choisie
    du clavier validé, photos et brouillon local pendant une coupure dans l’écran
    ouvert, import explicite atomique, contrôle de révision et refus des conflits.
    Voir [OFFLINE_COMMUNICATION.md](OFFLINE_COMMUNICATION.md).
    La réouverture totalement hors connexion demandera le cache de l’application
    avec HTTPS ; elle reste à livrer avec la préparation du serveur.
-7. **Qualité IA** : scénarios d’évaluation, suivi des refus/corrections et usage
-   borné des corrections validées.
+7. **Qualité IA** : incrément en préparation ; bilan par profil des tentatives,
+   refus et décisions humaines, 18 scénarios reproductibles et usage borné des
+   corrections humaines pour la même suite de touches. Voir [AI_QUALITY.md](AI_QUALITY.md).
 8. **Préparation à la production** : authentification, droits par profil, HTTPS,
    sauvegardes automatiques et essais de restauration serveur.
 

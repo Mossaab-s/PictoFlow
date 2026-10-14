@@ -5,6 +5,7 @@ from uuid import UUID
 from app.ai.contracts import InterpretationRequest, SelectedBlock, SemanticHint
 from app.ai.errors import ProviderDisabledError, ProviderPayloadError, ProviderUnavailableError
 from app.ai.protocol import AIProvider
+from app.application.ai_quality import AttemptEvidence, FallbackReason
 from app.application.communication import CommunicationService
 from app.application.pcl_repository import PCLUnits
 from app.application.phrase_fidelity import faithful_words
@@ -32,13 +33,25 @@ class InterpretationService:
         self.provider = provider
         self.telemetry = telemetry
 
-    def fallback(self, profile_id: UUID, sequence_id: UUID, reason: str):
+    def fallback(
+        self,
+        profile_id: UUID,
+        sequence_id: UUID,
+        reason: FallbackReason,
+        *,
+        received: int = 0,
+        examples: int = 0,
+    ):
         if self.telemetry:
             self.telemetry.signal(
                 "interpretation.fallback", provider=self.provider.provider_id, result_state=reason
             )
         return self.communication.propose(
-            profile_id, sequence_id, (self.literal(profile_id, sequence_id),), source="pcl"
+            profile_id,
+            sequence_id,
+            (self.literal(profile_id, sequence_id),),
+            source="pcl",
+            evidence=AttemptEvidence(self.provider.provider_id, reason, received, examples),
         )
 
     def literal(self, profile_id: UUID, sequence_id: UUID):
@@ -100,8 +113,29 @@ class InterpretationService:
                 )
                 if len(hints) == 16:
                     break
+            request = InterpretationRequest(
+                blocks=tuple(selected),
+                declared_context=declared_context,
+                semantic_hints=tuple(hints),
+            )
+            # Context supplied for this call was not recorded with older corrections.
+            # Do not assume it is equivalent. The repository also excludes changed meanings.
+            examples = (
+                ()
+                if declared_context
+                else store.correction_examples(
+                    profile_id,
+                    block_ids=sequence.block_ids,
+                    concept_ids=tuple(concepts),
+                    context_id=sequence.context_id,
+                    exclude_sequence_id=sequence.id,
+                )
+            )
+            examples = tuple(
+                dict.fromkeys(text for text in examples if faithful_words(request, text))
+            )[:3]
         return InterpretationRequest(
-            blocks=tuple(selected), declared_context=declared_context, semantic_hints=tuple(hints)
+            **request.model_dump(exclude={"correction_examples"}), correction_examples=examples
         )
 
     async def interpret(
@@ -111,10 +145,11 @@ class InterpretationService:
             return self.fallback(profile_id, sequence_id, "disabled")
         request = self.request(profile_id, sequence_id, declared_context=declared_context)
         source = self.provider.provider_id
+        examples = len(request.correction_examples)
         try:
             result = await self.provider.interpret(request)
             if result.status == "not_understood":
-                return self.fallback(profile_id, sequence_id, "model_refusal")
+                return self.fallback(profile_id, sequence_id, "model_refusal", examples=examples)
             items = tuple(
                 Interpretation(
                     profile_id=profile_id,
@@ -127,11 +162,31 @@ class InterpretationService:
                 if faithful_words(request, item.text)
             )
             if not items:
-                return self.fallback(profile_id, sequence_id, "unfaithful_words")
+                return self.fallback(
+                    profile_id,
+                    sequence_id,
+                    "unfaithful_words",
+                    received=len(result.candidates),
+                    examples=examples,
+                )
             if not self.communication.policy.decide(items).candidates:
-                return self.fallback(profile_id, sequence_id, "low_confidence")
+                return self.fallback(
+                    profile_id,
+                    sequence_id,
+                    "low_confidence",
+                    received=len(result.candidates),
+                    examples=examples,
+                )
         except (ProviderDisabledError, ProviderUnavailableError):
-            return self.fallback(profile_id, sequence_id, "unavailable")
+            return self.fallback(profile_id, sequence_id, "unavailable", examples=examples)
         except ProviderPayloadError:
-            return self.fallback(profile_id, sequence_id, "invalid_payload")
-        return self.communication.propose(profile_id, sequence_id, items, source=source)
+            return self.fallback(profile_id, sequence_id, "invalid_payload", examples=examples)
+        return self.communication.propose(
+            profile_id,
+            sequence_id,
+            items,
+            source=source,
+            evidence=AttemptEvidence(
+                source, received_candidates=len(result.candidates), correction_examples=examples
+            ),
+        )

@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_vali
 from sqlalchemy import select
 
 from app.ai.contracts import ProviderHealth
+from app.application.ai_quality import QualitySummary
 from app.application.audit import AuditService
 from app.application.blocks import BlockService, RepresentationService
 from app.application.communication import CommunicationService, PersonalMemory
@@ -40,6 +41,7 @@ from app.domain.pcl.entities import (
 from app.domain.pcl.gaps import GapPolicy, SemanticGapCandidate
 from app.domain.pcl.keyboard import KeyboardGroup, KeyboardPosition, KeyboardZone
 from app.domain.pcl.pictograms import PictogramKey
+from app.infrastructure.postgres.ai_quality import quality_summary
 from app.infrastructure.postgres.models import ProfileRow
 from app.infrastructure.postgres.repositories import PostgresProfileRepository, to_domain
 from app.infrastructure.postgres.semantic_space import PostgresSemanticUnits
@@ -263,6 +265,11 @@ def communication(request: Request):
             direct=config.confidence_direct,
         ),
     )
+
+
+@router.get("/profiles/{profile_id}/ai-quality", response_model=QualitySummary)
+def ai_quality(request: Request, profile_id: UUID):
+    return quality_summary(units(request), profile_id)
 
 
 def blocks(request: Request):

@@ -5,6 +5,7 @@ import KeyboardEditor from "@/components/keyboard-editor";
 import CommunicationScreen from "@/components/communication-screen";
 import ProfileBackup from "@/components/profile-backup";
 import ProfileMemory from "@/components/profile-memory";
+import AIQuality from "@/components/ai-quality";
 
 export default async function Page({
   params,
@@ -22,10 +23,12 @@ export default async function Page({
     return <ProfileBackup key={profileId} profileId={profileId} />;
   if (section === "memory")
     return <ProfileMemory key={profileId} profileId={profileId} />;
+  if (section === "ai-quality")
+    return <AIQuality key={profileId} profileId={profileId} />;
   return (
     <ProfileSection
       profileId={profileId}
-      section={section as Exclude<Section, "memory">}
+      section={section as Exclude<Section, "memory" | "ai-quality">}
     />
   );
 }

@@ -115,6 +115,7 @@ class InterpretationRequest(Contract):
     blocks: Annotated[tuple[SelectedBlock, ...], Field(min_length=1, max_length=32)]
     declared_context: Annotated[tuple[ShortText, ...], Field(max_length=8)] = ()
     semantic_hints: Annotated[tuple[SemanticHint, ...], Field(max_length=16)] = ()
+    correction_examples: Annotated[tuple[ShortText, ...], Field(max_length=3)] = ()
     language: Language = "fr"
 
 

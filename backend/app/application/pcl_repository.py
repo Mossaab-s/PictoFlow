@@ -59,6 +59,16 @@ class PCLRepository(Protocol):
         self, profile_id: UUID, target_id: UUID
     ) -> tuple[HistoricalFeedback, ...]: ...
 
+    def correction_examples(
+        self,
+        profile_id: UUID,
+        *,
+        block_ids: tuple[UUID, ...],
+        concept_ids: tuple[UUID, ...],
+        context_id: UUID | None,
+        exclude_sequence_id: UUID,
+    ) -> tuple[str, ...]: ...
+
     def feedback_page(
         self,
         profile_id: UUID,
