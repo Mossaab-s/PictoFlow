@@ -1,5 +1,10 @@
 # Communication, memory and human feedback
 
+The admin memory view now presents messages, current touch illustrations and
+personal relations as readable cards, keeping accepted and proposed partitions
+separate. Actual human feedback is read through a typed, scoped paginated
+endpoint; legacy missing roles are never inferred. See [READABLE_MEMORY.md](READABLE_MEMORY.md).
+
 MEM-003, SEQ-004, VAL-005 and CONF-006 are implemented by
 `app/application/communication.py`. The sequence and confidence rules are pure
 Python under `app/domain/pcl`. PostgreSQL units own state, feedback and audit

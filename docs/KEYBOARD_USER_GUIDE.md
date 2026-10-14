@@ -118,6 +118,12 @@ Les voix sont filtrées avec [localService](https://developer.mozilla.org/en-US/
 
 ## Validation
 
+L’onglet **Mémoire** présente les phrases acceptées et corrigées, leurs touches,
+les sens personnels et les relations. La recherche et le filtre permettent de
+les retrouver ; **Voir les décisions humaines** donne leurs confirmations,
+corrections ou refus. Les propositions restent dans une vue distincte et cette
+lecture ne les valide pas. Voir [Mémoire lisible](READABLE_MEMORY.md).
+
 Pour conserver le clavier, ses pages, ses photos et sa mémoire, utiliser
 l’onglet **Sauvegarde** du profil. La liste des profils propose **Restaurer une
 sauvegarde**, avec aperçu du fichier puis confirmation dans un nouveau profil.

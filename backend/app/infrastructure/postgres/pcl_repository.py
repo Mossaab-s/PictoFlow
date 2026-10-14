@@ -5,10 +5,10 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from uuid import UUID, uuid4
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, tuple_
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.application.pcl_repository import HistoricalFeedback
+from app.application.pcl_repository import FeedbackEvidence, FeedbackPage, HistoricalFeedback
 from app.application.photos import PhotoAsset
 from app.application.semantic_space import SemanticNotFoundError
 from app.domain.pcl.audit import SemanticAuditEvent
@@ -258,6 +258,45 @@ class PostgresPCLRepository:
             )
         )
         self.session.flush()
+
+    def feedback_page(self, profile_id, target_type, target_id, *, limit, before):
+        self._scope(profile_id)
+        query = select(ValidationRow).where(
+            ValidationRow.profile_id == profile_id,
+            ValidationRow.target_type == target_type,
+            ValidationRow.target_id == target_id,
+        )
+        if before is not None:
+            cursor = self.session.scalar(query.where(ValidationRow.id == before))
+            if cursor is None:
+                raise SemanticNotFoundError("Feedback cursor not found for this target")
+            query = query.where(
+                tuple_(ValidationRow.created_at, ValidationRow.id)
+                < tuple_(cursor.created_at, cursor.id)
+            )
+        rows = tuple(
+            self.session.scalars(
+                query.order_by(ValidationRow.created_at.desc(), ValidationRow.id.desc()).limit(
+                    limit + 1
+                )
+            )
+        )
+        return FeedbackPage(
+            items=tuple(
+                FeedbackEvidence(
+                    id=r.id,
+                    profile_id=r.profile_id,
+                    target_type=r.target_type,
+                    target_id=r.target_id,
+                    action=r.action,
+                    corrected_value=r.corrected_value.get("text") if r.corrected_value else None,
+                    actor_role=r.actor_role,
+                    created_at=r.created_at,
+                )
+                for r in rows[:limit]
+            ),
+            next_cursor=rows[limit - 1].id if len(rows) > limit else None,
+        )
 
     def purge(self, profile_id: UUID):
         self._scope(profile_id)
