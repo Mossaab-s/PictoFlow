@@ -9,12 +9,11 @@ export default function ProfileSection({
   section,
 }: {
   profileId: string;
-  section: Section;
+  section: Exclude<Section, "memory">;
 }) {
   const [data, setData] = useState<unknown>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [validated, setValidated] = useState(true);
   const [label, setLabel] = useState("");
   const [key, setKey] = useState("");
   const [busy, setBusy] = useState(false);
@@ -28,10 +27,9 @@ export default function ProfileSection({
     setError("");
     const endpoint = section === "semantic-space" ? "relations" : section;
     try {
-      const response = await api(
-        `${base}/${endpoint}${section === "memory" ? `?validated=${validated}` : ""}`,
-        { signal: controller.signal },
-      );
+      const response = await api(`${base}/${endpoint}`, {
+        signal: controller.signal,
+      });
       if (!controller.signal.aborted) setData(response);
     } catch (e) {
       if (!controller.signal.aborted)
@@ -39,7 +37,7 @@ export default function ProfileSection({
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
-  }, [base, section, validated]);
+  }, [base, section]);
   useEffect(() => {
     setData(null);
     void load();
@@ -118,22 +116,6 @@ export default function ProfileSection({
             Rechercher les intentions répétées
           </button>
         )}
-        {section === "memory" && (
-          <div className="tabs">
-            <button
-              className={validated ? "" : "secondary"}
-              onClick={() => setValidated(true)}
-            >
-              Mémoire validée
-            </button>
-            <button
-              className={!validated ? "" : "secondary"}
-              onClick={() => setValidated(false)}
-            >
-              Propositions
-            </button>
-          </div>
-        )}
         {error && (
           <div className="error" role="alert">
             {error}{" "}
@@ -146,9 +128,7 @@ export default function ProfileSection({
           <p role="status">Chargement…</p>
         ) : (
           <div className="data-panel">
-            {section === "memory" ? (
-              <pre>{JSON.stringify(data, null, 2)}</pre>
-            ) : rows.length ? (
+            {rows.length ? (
               <div className="table-scroll">
                 <table>
                   <thead>

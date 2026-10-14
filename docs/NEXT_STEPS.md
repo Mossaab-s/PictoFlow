@@ -4,11 +4,12 @@
 
 Chaque point passe par une PR, puis par un déploiement après sa fusion.
 
-1. **Sauvegarde et restauration d’un profil** : implémentation en préparation,
+1. **Sauvegarde et restauration d’un profil** : PR #36 fusionnée et déployée,
    voir [PROFILE_BACKUP.md](PROFILE_BACKUP.md). Fichier versionné incluant le PCL,
    clavier, pages, photos et historique ; restauration dans un nouveau profil.
-2. **Mémoire lisible** : remplacer l’affichage JSON par les messages acceptés,
-   leurs mots/dessins, les corrections, relations et décisions humaines.
+2. **Mémoire lisible** : livraison en préparation ; cartes de messages avec
+   leurs mots/dessins, corrections prioritaires, relations et décisions humaines
+   paginées, recherche et séparation des propositions. Voir [READABLE_MEMORY.md](READABLE_MEMORY.md).
 3. **Phrases habituelles** : retrouver/réutiliser un message validé et préparer
    des raccourcis explicitement choisis.
 4. **Organisation des pages** : ordre, suppression contrôlée et déplacement des

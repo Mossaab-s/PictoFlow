@@ -13,7 +13,7 @@ export type Block = {
   representation_id?: string | null;
   canonical_intent: string | null;
   label: string;
-  status: "proposed" | "validated" | "rejected";
+  status: "proposed" | "validated" | "rejected" | "archived";
   origin: string;
   stability: string;
 };

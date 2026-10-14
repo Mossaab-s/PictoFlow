@@ -26,6 +26,24 @@ class HistoricalFeedback:
     created_at: datetime
 
 
+@dataclass(frozen=True)
+class FeedbackEvidence:
+    id: UUID
+    profile_id: UUID
+    target_type: str
+    target_id: UUID
+    action: str
+    corrected_value: str | None
+    actor_role: str | None
+    created_at: datetime
+
+
+@dataclass(frozen=True)
+class FeedbackPage:
+    items: tuple[FeedbackEvidence, ...]
+    next_cursor: UUID | None
+
+
 class PCLRepository(Protocol):
     def get(self, profile_id: UUID, entity_type: type[T], entity_id: UUID) -> T: ...
 
@@ -40,6 +58,16 @@ class PCLRepository(Protocol):
     def feedback_history(
         self, profile_id: UUID, target_id: UUID
     ) -> tuple[HistoricalFeedback, ...]: ...
+
+    def feedback_page(
+        self,
+        profile_id: UUID,
+        target_type: str,
+        target_id: UUID,
+        *,
+        limit: int,
+        before: UUID | None,
+    ) -> FeedbackPage: ...
 
     def audit(
         self,

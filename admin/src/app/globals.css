@@ -9,6 +9,136 @@
   color: var(--ink);
   background: var(--bg);
 }
+.memory-page {
+  max-width: 1200px;
+}
+.memory-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-block: 24px;
+}
+.memory-counts span {
+  background: var(--soft);
+  padding: 12px 18px;
+  border-radius: 9px;
+  font-weight: 600;
+}
+.memory-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 18px;
+}
+.memory-filters label {
+  display: grid;
+  gap: 8px;
+}
+.memory-filters label:first-child {
+  flex: 1;
+  min-width: 200px;
+}
+.memory-section {
+  margin-block: 32px;
+}
+.memory-card {
+  margin-block: 16px;
+  overflow-wrap: anywhere;
+}
+.memory-card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  font-size: 13px;
+}
+.memory-phrase {
+  font-size: 24px;
+  line-height: 1.45;
+  margin-block: 20px;
+}
+.memory-original {
+  margin-block: 18px;
+}
+.memory-touch-caption {
+  color: var(--muted);
+  font-size: 13px;
+}
+.memory-touches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0;
+  list-style: none;
+}
+.memory-touches li,
+.memory-block-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+}
+.memory-touches li {
+  width: 120px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+}
+.memory-touches .pictogram,
+.memory-touches .pictogram-missing,
+.memory-touches .touch-photo {
+  width: 64px;
+  height: 64px;
+}
+.memory-touches .touch-word {
+  font-size: 16px;
+}
+.memory-blocks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 16px;
+}
+.memory-blocks .memory-card {
+  margin: 0;
+}
+.memory-blocks + .button-link {
+  margin-top: 18px;
+}
+.memory-relation {
+  font-weight: 400;
+  line-height: 1.6;
+}
+.memory-evidence {
+  border-top: 1px solid var(--line);
+  margin-top: 18px;
+  padding-top: 16px;
+}
+.memory-evidence summary {
+  cursor: pointer;
+}
+.memory-evidence ol {
+  padding-left: 20px;
+}
+.memory-evidence li {
+  margin-block: 18px;
+}
+.memory-evidence time {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 6px;
+}
+.memory-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-block: 20px;
+}
+.memory-page .notice a {
+  text-decoration: underline;
+}
 .backup-page {
   max-width: 960px;
 }

@@ -113,6 +113,14 @@ et le parcours navigateur sont vérifiés avant ouverture de la PR.
 
 ## Lire et essayer
 
+La livraison en préparation ajoute la **mémoire lisible** : cartes de messages
+acceptés/corrigés, touches illustrées, relations nommées et événements réels de
+validation paginés. Les propositions restent distinctes et la consultation ne
+modifie pas le PCL. Voir [READABLE_MEMORY.md](READABLE_MEMORY.md). Les **512 tests
+backend** avec PostgreSQL/Redis, **28 tests frontend**, Ruff, Prettier, TypeScript
+et Next.js passent. Le parcours HTTP sur une base jetable est vérifié ; la
+vérification visuelle native est limitée par l’arrêt de Computer Use.
+
 La livraison en préparation ajoute la **sauvegarde/restauration d’un profil**,
 décrite dans [PROFILE_BACKUP.md](PROFILE_BACKUP.md). L’export complet est versionné
 et la restauration crée un profil distinct dans une transaction, avec remappage
@@ -123,6 +131,7 @@ les erreurs de fichier et le rollback ; le parcours de téléchargement puis
 restauration est vérifié dans le navigateur sur une base jetable sans IA.
 
 - [Mémoire, séquences et validation](COMMUNICATION_MEMORY.md)
+- [Lire la mémoire dans l’administration](READABLE_MEMORY.md)
 - [Sauvegarder et restaurer un profil](PROFILE_BACKUP.md)
 - [Gaps, blocs, clavier, représentations et audit](ADAPTIVE_WORKFLOW.md)
 - [Providers HTTP optionnels](HTTP_PROVIDERS.md)

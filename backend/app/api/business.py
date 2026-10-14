@@ -3,7 +3,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 from sqlalchemy import select
 
@@ -11,8 +11,10 @@ from app.ai.contracts import ProviderHealth
 from app.application.audit import AuditService
 from app.application.blocks import BlockService, RepresentationService
 from app.application.communication import CommunicationService, PersonalMemory
+from app.application.feedback_history import EvidenceTarget, FeedbackHistory
 from app.application.interpretation import InterpretationService
 from app.application.keyboard_groups import KeyboardGroupService
+from app.application.pcl_repository import FeedbackPage
 from app.application.semantic_space import SemanticSpace
 from app.application.validation import RelationCorrectionService
 from app.domain.pcl.audit import SemanticAuditEvent
@@ -496,6 +498,20 @@ def memory(request: Request, profile_id: UUID, validated: bool = True):
 @router.delete("/profiles/{profile_id}/memory", status_code=204)
 async def erase_memory(request: Request, profile_id: UUID):
     await communication(request).erase(profile_id, request.app.state.transient_store)
+
+
+@router.get("/profiles/{profile_id}/feedback", response_model=FeedbackPage)
+def feedback_page(
+    request: Request,
+    profile_id: UUID,
+    target_type: EvidenceTarget,
+    target_id: UUID,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    before: UUID | None = None,
+):
+    return FeedbackHistory(units(request)).page(
+        profile_id, target_type, target_id, limit=limit, before=before
+    )
 
 
 @router.get("/profiles/{profile_id}/suggestions", response_model=tuple[SemanticGapCandidate, ...])
