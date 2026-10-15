@@ -20,6 +20,33 @@ x-backend: &backend
     options: {max-size: "10m", max-file: "3"}
 
 services:
+  https:
+    image: caddy:2-alpine
+    profiles: ["https"]
+    environment:
+      PICTOFLOW_HTTPS_ADDRESS: ${PICTOFLOW_HTTPS_ADDRESS:-127.0.0.1}
+    ports:
+      - "${PICTOFLOW_HTTPS_ADDRESS:-127.0.0.1}:80:80"
+      - "${PICTOFLOW_HTTPS_ADDRESS:-127.0.0.1}:443:443"
+      - "${PICTOFLOW_HTTPS_ADDRESS:-127.0.0.1}:${PICTOFLOW_HTTPS_LEGACY_PORT:-3000}:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - https_data:/data
+      - https_config:/config
+    init: true
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+    depends_on:
+      admin: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:2019/config/"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
   postgres:
     image: postgres:18-bookworm
     environment:
@@ -109,3 +136,5 @@ services:
 
 volumes:
   postgres_data:
+  https_data:
+  https_config:

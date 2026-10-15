@@ -33,10 +33,11 @@ Chaque point passe par une PR, puis par un déploiement après sa fusion.
    corrections humaines pour la même suite de touches. Voir [AI_QUALITY.md](AI_QUALITY.md).
 8. **Préparation à la production** : authentification, droits par profil, HTTPS,
    sauvegardes automatiques et essais de restauration serveur.
-   Le premier incrément prépare les comptes personnels, sessions révocables et
+   La PR #43, fusionnée et déployée, prépare les comptes personnels, sessions révocables et
    accès « communiquer » ou « préparer et communiquer » par profil. Voir
    [ACCESS_CONTROL.md](ACCESS_CONTROL.md). Son activation sur le serveur attend
-   le frontal HTTPS et la création explicite de l’administrateur. Les sauvegardes
+   le frontal HTTPS et la création explicite de l’administrateur, décrits dans
+   [LOCAL_HTTPS.md](LOCAL_HTTPS.md). Les sauvegardes
    automatiques et la restauration serveur restent ensuite à livrer.
 
 Les PR #31 à #35 sont fusionnées et déployées : photos, pages, communication

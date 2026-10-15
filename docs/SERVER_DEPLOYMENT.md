@@ -6,8 +6,11 @@ Seul le port de l'administration est publié. Les migrations doivent terminer
 avant le démarrage de l'API. Les quatre services redémarrent avec Docker ; la
 mémoire PCL reste dans le volume `pictoflow-server_postgres_data`.
 
-Ce déploiement est destiné à l'essai sur un réseau local de confiance : le
-prototype ne comporte pas encore d'authentification ni de TLS pour son interface.
+Le manifeste démarre par défaut en HTTP sur un réseau local de confiance.
+Les comptes personnels sont disponibles depuis la PR #43. Le profil optionnel
+`https` et la procédure de [HTTPS local](LOCAL_HTTPS.md) permettent de préparer
+leur activation sur une adresse privée, avec certificats persistants et
+redirection des anciennes adresses HTTP.
 Le mode sans IA reste la valeur par défaut du manifeste. Un provider externe se
 configure côté serveur dans `.env.server`. PRISM reste indépendant.
 Le mode multi-compte préparé dans [ACCESS_CONTROL.md](ACCESS_CONTROL.md) reste

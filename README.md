@@ -622,6 +622,8 @@ map, verification and a disposable demo. A LAN test instance is deployed on
 are documented in [docs/SERVER_DEPLOYMENT.md](docs/SERVER_DEPLOYMENT.md).
 The profile's AI quality report and synthetic evaluation command are described
 in [docs/AI_QUALITY.md](docs/AI_QUALITY.md).
+Local TLS, certificate trust and account activation are described in
+[docs/LOCAL_HTTPS.md](docs/LOCAL_HTTPS.md).
 Personal accounts, per-profile permissions and activation after HTTPS setup are
 documented in [docs/ACCESS_CONTROL.md](docs/ACCESS_CONTROL.md).
 

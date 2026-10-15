@@ -4,15 +4,15 @@ Le parcours métier PCL est implémenté localement, avec API REST, administrati
 initiale et providers IA optionnels. Une instance de test est déployée sur
 [10.0.0.121:3000](http://10.0.0.121:3000), avec une base persistante dédiée.
 
-Les PR #36 à #42 sont fusionnées et déployées dans la livraison `20261015-01`
-(commit `69a5922`) : sauvegarde/restauration, mémoire lisible, phrases habituelles
+Les PR #36 à #43 sont fusionnées et déployées dans la livraison `20261015-02`
+(commit `cad5d42`) : sauvegarde/restauration, mémoire lisible, phrases habituelles
 et organisation du clavier : ordre des pages,
 déplacements avec aperçu et retrait avec transfert conservant repères, photos,
 messages et décisions. Les sauvegardes v3 conservent les pages archivées et
 l’ordre choisi ; restauration et reçus v1/v2 restent compatibles.
 Voir [KEYBOARD_PAGES.md](KEYBOARD_PAGES.md). Vérifications de la dernière livraison :
-579 scénarios backend et 48 tests frontend, avec parcours navigateur sur base fictive.
-Déploiement vérifié : migration 0010, quatre services sains, empreintes de toutes
+599 scénarios backend et 51 tests frontend, avec parcours navigateur sur base fictive.
+Déploiement vérifié : migration 0011, quatre services sains, empreintes de toutes
 les anciennes lignes PCL conservées, 21 positions et deux photos intactes.
 Les contrôles du code installé s’exécutent dans une transaction annulée.
 
@@ -60,12 +60,14 @@ La livraison `20261015-01` est vérifiée avec les quatre services sains, le sch
 Les essais du code installé sont annulés en transaction ; l’écran Qualité IA
 est retesté au clavier sur l’instance en lecture seule.
 
-Le prochain incrément prépare les **comptes personnels et droits par profil** :
+La PR #43 apporte les **comptes personnels et droits par profil** :
 connexion, attribution des profils, sessions révocables, protection des écritures
 et gestion des comptes par l’administrateur. La migration 0011 conserve le PCL ;
 le mode multi-compte reste désactivé par défaut et son activation serveur attend
 HTTPS. Voir [ACCESS_CONTROL.md](ACCESS_CONTROL.md). Les tests couvrent les refus
 d’accès côté API et les parcours navigateur, dont la déconnexion hors réseau.
+Le profil Compose `https` prépare le frontal TLS local, une autorité persistante
+et la redirection des anciens liens ; voir [LOCAL_HTTPS.md](LOCAL_HTTPS.md).
 
 | Issues | État local |
 | --- | --- |
