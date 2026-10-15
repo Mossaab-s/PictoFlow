@@ -64,8 +64,9 @@ def snapshot(entity) -> dict | None:
 
 
 class PostgresPCLRepository:
-    def __init__(self, session: Session):
+    def __init__(self, session: Session, actor_reference: str | None = None):
         self.session = session
+        self.actor_reference = actor_reference
         self._profile: UUID | None = None
 
     def _scope(self, profile_id: UUID):
@@ -190,7 +191,7 @@ class PostgresPCLRepository:
                 **{f"{event.target_type.value}_id": event.target_id},
                 action=event.action,
                 actor_role=event.actor_role,
-                actor_reference=event.actor_reference,
+                actor_reference=self.actor_reference or event.actor_reference,
                 corrected_value={"text": event.corrected_value}
                 if event.corrected_value is not None
                 else None,
@@ -437,10 +438,11 @@ class PostgresPCLRepository:
 
 
 class PostgresPCLUnits:
-    def __init__(self, factory: sessionmaker[Session]):
+    def __init__(self, factory: sessionmaker[Session], actor_reference: str | None = None):
         self.factory = factory
+        self.actor_reference = actor_reference
 
     @contextmanager
     def __call__(self) -> Iterator[PostgresPCLRepository]:
         with transaction(self.factory) as session:
-            yield PostgresPCLRepository(session)
+            yield PostgresPCLRepository(session, self.actor_reference)

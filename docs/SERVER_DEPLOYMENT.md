@@ -10,6 +10,9 @@ Ce déploiement est destiné à l'essai sur un réseau local de confiance : le
 prototype ne comporte pas encore d'authentification ni de TLS pour son interface.
 Le mode sans IA reste la valeur par défaut du manifeste. Un provider externe se
 configure côté serveur dans `.env.server`. PRISM reste indépendant.
+Le mode multi-compte préparé dans [ACCESS_CONTROL.md](ACCESS_CONTROL.md) reste
+désactivé par défaut. Il doit être activé après installation de HTTPS et création
+de l’administrateur ; ajouter le code seul ne protège pas l’instance LAN.
 
 ## Instance validée le 12 octobre 2026
 

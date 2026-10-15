@@ -1,17 +1,17 @@
-# État du prototype V1 — 14 octobre 2026
+# État du prototype V1 — 15 octobre 2026
 
 Le parcours métier PCL est implémenté localement, avec API REST, administration
 initiale et providers IA optionnels. Une instance de test est déployée sur
 [10.0.0.121:3000](http://10.0.0.121:3000), avec une base persistante dédiée.
 
-Les PR #36 à #41 sont fusionnées et déployées dans la livraison `20261014-07`
-(commit `183249c`) : sauvegarde/restauration, mémoire lisible, phrases habituelles
+Les PR #36 à #42 sont fusionnées et déployées dans la livraison `20261015-01`
+(commit `69a5922`) : sauvegarde/restauration, mémoire lisible, phrases habituelles
 et organisation du clavier : ordre des pages,
 déplacements avec aperçu et retrait avec transfert conservant repères, photos,
 messages et décisions. Les sauvegardes v3 conservent les pages archivées et
 l’ordre choisi ; restauration et reçus v1/v2 restent compatibles.
 Voir [KEYBOARD_PAGES.md](KEYBOARD_PAGES.md). Vérifications de la dernière livraison :
-555 scénarios backend et 48 tests frontend, avec parcours navigateur sur base fictive.
+579 scénarios backend et 48 tests frontend, avec parcours navigateur sur base fictive.
 Déploiement vérifié : migration 0010, quatre services sains, empreintes de toutes
 les anciennes lignes PCL conservées, 21 positions et deux photos intactes.
 Les contrôles du code installé s’exécutent dans une transaction annulée.
@@ -40,20 +40,32 @@ l’incrément avec restauration/effacement supplémentaires (555 scénarios au 
 48 tests frontend, Ruff, Prettier, TypeScript, Next.js et parcours navigateur
 sur base fictive avec coupure réseau et réponse d’envoi perdue.
 
-Le point suivant, **Qualité IA**, ajoute un bilan par profil des nouvelles
+La PR #42, fusionnée et déployée, ajoute un bilan par profil des nouvelles
 tentatives et de leurs causes de retour littéral, ainsi que les décisions
 humaines anciennes et actuelles. Des corrections récentes sont utilisables
 comme exemples bornés pour la même suite de touches, sous contrôle de mots et
 sans validation automatique. Une évaluation synthétique reproductible couvre
 18 scénarios ; les appels réels restent explicitement choisis et isolés du PCL.
-Voir [AI_QUALITY.md](AI_QUALITY.md). Cet incrément attend sa PR puis sa fusion
-avant déploiement.
+Voir [AI_QUALITY.md](AI_QUALITY.md).
 Vérifications : 579 tests backend PostgreSQL/Redis, 48 tests frontend,
 18 scénarios d’évaluation, Ruff, Prettier, TypeScript et Next.js passent.
 Les parcours navigateur couvrent le bilan vide, les compteurs, l’actualisation
 au clavier, le changement de profil, la reprise après erreur et 320 pixels,
 avec contrôles axe A/AA. Les essais Groq utilisent uniquement des données fictives
 en mémoire, sans écriture PCL ni modification du provider en service.
+
+La livraison `20261015-01` est vérifiée avec les quatre services sains, le schéma
+0010 inchangé et toutes les empreintes des anciennes lignes conservées :
+12 profils, 77 séquences, 76 interprétations, 21 positions et deux photos.
+Les essais du code installé sont annulés en transaction ; l’écran Qualité IA
+est retesté au clavier sur l’instance en lecture seule.
+
+Le prochain incrément prépare les **comptes personnels et droits par profil** :
+connexion, attribution des profils, sessions révocables, protection des écritures
+et gestion des comptes par l’administrateur. La migration 0011 conserve le PCL ;
+le mode multi-compte reste désactivé par défaut et son activation serveur attend
+HTTPS. Voir [ACCESS_CONTROL.md](ACCESS_CONTROL.md). Les tests couvrent les refus
+d’accès côté API et les parcours navigateur, dont la déconnexion hors réseau.
 
 | Issues | État local |
 | --- | --- |

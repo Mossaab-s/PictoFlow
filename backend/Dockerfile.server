@@ -8,6 +8,7 @@ RUN python -m pip install --no-cache-dir . \
 COPY backend/migrations ./migrations
 COPY backend/alembic.ini ./alembic.ini
 COPY backend/scripts/container_entrypoint.py ./scripts/container_entrypoint.py
+COPY backend/scripts/manage_accounts.py ./scripts/manage_accounts.py
 USER pictoflow
 EXPOSE 8000
 ENTRYPOINT ["python", "scripts/container_entrypoint.py"]

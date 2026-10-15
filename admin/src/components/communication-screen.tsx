@@ -16,6 +16,8 @@ import {
 } from "@/lib/keyboard";
 import KeyboardGrid from "./keyboard-grid";
 import { HumanRoleSelector, ProfileNavigation } from "./profile-navigation";
+import { useAuthentication } from "./authentication";
+import { canPrepare } from "@/lib/access";
 import { useProfileKeyboard } from "./use-profile-keyboard";
 import { TouchContent } from "./pictogram";
 import ProfileIdentity from "./profile-identity";
@@ -37,6 +39,7 @@ export default function CommunicationScreen({
   initialPhraseId?: string | null;
 }) {
   const data = useProfileKeyboard(profileId);
+  const canEdit = canPrepare(useAuthentication(), profileId);
   const display = useDisplaySettings(profileId);
   const contrast = useContrastSetting(profileId);
   const messageHeading = useRef<HTMLHeadingElement>(null);
@@ -381,17 +384,25 @@ export default function CommunicationScreen({
                 Ouvrir l’espace de communication
               </Link>
             )}
-            <Link
-              className="button-link secondary"
-              href={`/admin/profiles/${profileId}/keyboard`}
-              aria-disabled={busy}
-              tabIndex={busy ? -1 : undefined}
-              onClick={(event) => {
-                if (busy) event.preventDefault();
-              }}
-            >
-              {standalone ? "Retour à la préparation" : "Modifier mon clavier"}
-            </Link>
+            {canEdit ? (
+              <Link
+                className="button-link secondary"
+                href={`/admin/profiles/${profileId}/keyboard`}
+                aria-disabled={busy}
+                tabIndex={busy ? -1 : undefined}
+                onClick={(event) => {
+                  if (busy) event.preventDefault();
+                }}
+              >
+                {standalone
+                  ? "Retour à la préparation"
+                  : "Modifier mon clavier"}
+              </Link>
+            ) : (
+              <Link className="button-link secondary" href="/admin/profiles">
+                Mes profils
+              </Link>
+            )}
           </div>
         </div>
         {data.error && (
@@ -563,15 +574,18 @@ export default function CommunicationScreen({
               <div className="empty">
                 <h2>Il faut d'abord préparer vos touches</h2>
                 <p>
-                  Créez et validez vos premières touches dans l'éditeur du
-                  clavier.
+                  {canEdit
+                    ? "Créez et validez vos premières touches dans l’éditeur du clavier."
+                    : "Demandez à une personne qui prépare ce profil d’ajouter les touches avec vous."}
                 </p>
-                <Link
-                  className="button-link"
-                  href={`/admin/profiles/${profileId}/keyboard`}
-                >
-                  Créer mes premières touches
-                </Link>
+                {canEdit && (
+                  <Link
+                    className="button-link"
+                    href={`/admin/profiles/${profileId}/keyboard`}
+                  >
+                    Créer mes premières touches
+                  </Link>
+                )}
               </div>
             ))}
         </section>

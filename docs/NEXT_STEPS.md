@@ -28,11 +28,16 @@ Chaque point passe par une PR, puis par un déploiement après sa fusion.
    Voir [OFFLINE_COMMUNICATION.md](OFFLINE_COMMUNICATION.md).
    La réouverture totalement hors connexion demandera le cache de l’application
    avec HTTPS ; elle reste à livrer avec la préparation du serveur.
-7. **Qualité IA** : incrément en préparation ; bilan par profil des tentatives,
+7. **Qualité IA** : PR #42 fusionnée et déployée ; bilan par profil des tentatives,
    refus et décisions humaines, 18 scénarios reproductibles et usage borné des
    corrections humaines pour la même suite de touches. Voir [AI_QUALITY.md](AI_QUALITY.md).
 8. **Préparation à la production** : authentification, droits par profil, HTTPS,
    sauvegardes automatiques et essais de restauration serveur.
+   Le premier incrément prépare les comptes personnels, sessions révocables et
+   accès « communiquer » ou « préparer et communiquer » par profil. Voir
+   [ACCESS_CONTROL.md](ACCESS_CONTROL.md). Son activation sur le serveur attend
+   le frontal HTTPS et la création explicite de l’administrateur. Les sauvegardes
+   automatiques et la restauration serveur restent ensuite à livrer.
 
 Les PR #31 à #35 sont fusionnées et déployées : photos, pages, communication
 dédiée, noms des profils et corrections de fidélité des propositions IA.

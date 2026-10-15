@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Authentication from "@/components/authentication";
 
 export const metadata: Metadata = {
   title: "PictoFlow · Administration",
@@ -11,7 +12,9 @@ export default function Layout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="fr">
-      <body>{children}</body>
+      <body>
+        <Authentication>{children}</Authentication>
+      </body>
     </html>
   );
 }

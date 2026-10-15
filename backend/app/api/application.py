@@ -2,7 +2,7 @@
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
@@ -11,6 +11,8 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app import __version__
 from app.ai.errors import ProviderError, ProviderUnavailableError, ProviderUnsupportedCapability
 from app.ai.manager import create_provider
+from app.api.access import require_access
+from app.api.access import router as access_router
 from app.api.business import router as business_router
 from app.api.health import router as health_router
 from app.api.photos import router as photo_router
@@ -25,6 +27,7 @@ from app.application.semantic_space import SemanticNotFoundError
 from app.application.transient import TransientStoreUnavailable
 from app.config import Settings
 from app.domain.pcl.invariants import DomainInvariantError
+from app.infrastructure.postgres.access import AccessConflict
 from app.infrastructure.postgres.database import create_database_engine, create_session_factory
 from app.infrastructure.postgres.pcl_repository import PostgresPCLUnits
 from app.infrastructure.redis.factory import create_transient_store
@@ -55,16 +58,30 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             telemetry.close()
 
     application = FastAPI(
-        title=config.app_name, version=__version__, debug=config.debug, lifespan=lifespan
+        title=config.app_name,
+        version=__version__,
+        debug=config.debug,
+        lifespan=lifespan,
+        docs_url=None if config.auth_enabled else "/docs",
+        redoc_url=None if config.auth_enabled else "/redoc",
+        openapi_url=None if config.auth_enabled else "/openapi.json",
     )
     application.state.settings = config
     application.state.telemetry = telemetry
     application.add_middleware(HTTPInstrumentation, telemetry=telemetry)
     application.include_router(health_router)
     application.include_router(api_router)
-    application.include_router(archive_router)
-    application.include_router(business_router)
-    application.include_router(photo_router)
+    application.include_router(access_router)
+    application.include_router(archive_router, dependencies=[Depends(require_access)])
+    application.include_router(business_router, dependencies=[Depends(require_access)])
+    application.include_router(photo_router, dependencies=[Depends(require_access)])
+
+    @application.middleware("http")
+    async def private_responses(request, call_next):
+        response = await call_next(request)
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        return response
 
     # Errors contain only technical classes. Never echo request values or driver diagnostics.
     def handler(status: int, message: str):
@@ -92,6 +109,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         (SemanticNotFoundError, 404, "Object not found in this profile"),
         (IntegrityError, 409, "Conflicting persistent state"),
         (ProfileVersionConflict, 409, "Profile changed; reload before renaming"),
+        (AccessConflict, 409, "Account or profile access changed; reload before saving"),
         (OfflineConflict, 409, "Keyboard or offline request changed; retain draft and review"),
         (OfflineSnapshotTooLarge, 413, "Offline media snapshot too large"),
         (

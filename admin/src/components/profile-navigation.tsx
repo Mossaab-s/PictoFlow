@@ -1,7 +1,10 @@
+"use client";
 import Link from "next/link";
 import { sections, type Section } from "@/lib/api";
 import type { HumanRole } from "@/lib/keyboard";
 import ProfileIdentity from "./profile-identity";
+import { useAuthentication } from "./authentication";
+import { canPrepare } from "@/lib/access";
 
 export function ProfileNavigation({
   profileId,
@@ -10,6 +13,7 @@ export function ProfileNavigation({
   profileId: string;
   section: Section;
 }) {
+  const canEdit = canPrepare(useAuthentication(), profileId);
   return (
     <>
       <header className="topbar">
@@ -17,15 +21,19 @@ export function ProfileNavigation({
         <ProfileIdentity profileId={profileId} />
       </header>
       <nav className="tabs profile-tabs" aria-label="Sections du profil">
-        {Object.entries(sections).map(([value, title]) => (
-          <Link
-            key={value}
-            aria-current={value === section ? "page" : undefined}
-            href={`/admin/profiles/${profileId}/${value}`}
-          >
-            {title}
-          </Link>
-        ))}
+        {Object.entries(sections)
+          .filter(
+            ([value]) => canEdit || ["communication", "memory"].includes(value),
+          )
+          .map(([value, title]) => (
+            <Link
+              key={value}
+              aria-current={value === section ? "page" : undefined}
+              href={`/admin/profiles/${profileId}/${value}`}
+            >
+              {title}
+            </Link>
+          ))}
       </nav>
     </>
   );

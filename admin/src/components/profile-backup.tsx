@@ -4,8 +4,11 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { APIError } from "@/lib/api";
 import { ProfileNavigation } from "./profile-navigation";
+import { useAuthentication } from "./authentication";
+import { isAdministrator } from "@/lib/access";
 
 export default function ProfileBackup({ profileId }: { profileId: string }) {
+  const administrator = isAdministrator(useAuthentication());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -90,9 +93,11 @@ export default function ProfileBackup({ profileId }: { profileId: string }) {
             La restauration crée un nouveau profil. Vous pourrez vérifier son
             clavier avant de l’utiliser.
           </p>
-          <Link className="button-link" href="/admin/restore-profile">
-            Restaurer une sauvegarde
-          </Link>
+          {administrator && (
+            <Link className="button-link" href="/admin/restore-profile">
+              Restaurer une sauvegarde
+            </Link>
+          )}
         </section>
       </section>
     </>

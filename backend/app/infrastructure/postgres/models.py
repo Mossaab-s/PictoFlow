@@ -73,6 +73,60 @@ class ProfileRow(Timestamps, Base):
     )
 
 
+class AccountRow(Timestamps, Base):
+    __tablename__ = "auth_account"
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    username: Mapped[str] = mapped_column(sa.String(80), unique=True)
+    display_name: Mapped[str] = mapped_column(sa.String(80))
+    password_hash: Mapped[str] = mapped_column(sa.Text)
+    is_admin: Mapped[bool] = mapped_column(default=False)
+    active: Mapped[bool] = mapped_column(default=True)
+    __table_args__ = (
+        sa.CheckConstraint("username ~ '^[a-z0-9][a-z0-9._-]{2,79}$'", name="valid_username"),
+        sa.CheckConstraint("length(trim(display_name)) BETWEEN 1 AND 80", name="bounded_name"),
+    )
+
+
+class AuthSessionRow(Base):
+    __tablename__ = "auth_session"
+    token_hash: Mapped[str] = mapped_column(sa.String(64), primary_key=True)
+    account_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("auth_account.id", ondelete="CASCADE"), index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), default=utc_now)
+    expires_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), index=True)
+
+
+class ProfileAccessRow(Base):
+    __tablename__ = "auth_profile_access"
+    account_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("auth_account.id", ondelete="CASCADE"), primary_key=True
+    )
+    profile_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("user_communication_profile.id", ondelete="CASCADE"), primary_key=True
+    )
+    role: Mapped[str] = mapped_column(sa.String(20))
+    __table_args__ = (states("role", ("communicator", "editor")),)
+
+
+class LoginWindowRow(Base):
+    __tablename__ = "auth_login_window"
+    key: Mapped[str] = mapped_column(sa.String(64), primary_key=True)
+    started_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True))
+    attempts: Mapped[int]
+    __table_args__ = (sa.CheckConstraint("attempts >= 0", name="nonnegative_attempts"),)
+
+
+class AccessEventRow(Base):
+    __tablename__ = "auth_access_event"
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    actor_id: Mapped[UUID | None] = mapped_column(sa.Uuid)
+    event_type: Mapped[str] = mapped_column(sa.String(64))
+    target_id: Mapped[UUID | None] = mapped_column(sa.Uuid)
+    detail: Mapped[str | None] = mapped_column(sa.String(256))
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), default=utc_now)
+
+
 class ConceptRow(Scoped, Timestamps, Base):
     __tablename__ = "concept"
     canonical_key: Mapped[str] = mapped_column(sa.Text)
