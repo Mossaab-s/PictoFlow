@@ -63,16 +63,27 @@ class PRISMProvider(HTTPProvider):
                 output_tokens=result.get("output_tokens"),
                 cost=result.get("cost"),
                 extensions={
-                    key: result[key]
-                    for key in (
-                        "classified_domain",
-                        "rq_score",
-                        "confidence_index",
-                        "execution_status",
-                        "routing_method",
-                        "routing_decision",
-                    )
-                    if result.get(key) is not None
+                    **(
+                        {
+                            "memory_reference_ids": [
+                                str(e.reference_id) for e in request.memory_examples
+                            ]
+                        }
+                        if operation == "interpret"
+                        else {}
+                    ),
+                    **{
+                        key: result[key]
+                        for key in (
+                            "classified_domain",
+                            "rq_score",
+                            "confidence_index",
+                            "execution_status",
+                            "routing_method",
+                            "routing_decision",
+                        )
+                        if result.get(key) is not None
+                    },
                 },
             )
             if status == "REFUSED" and operation == "interpret":

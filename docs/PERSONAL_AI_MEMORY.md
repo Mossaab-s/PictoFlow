@@ -25,7 +25,39 @@ références sont omises entières, sans couper une phrase. Le provider PRISM pe
 retenir moins d’exemples pour respecter sa requête native de 4 000 caractères.
 Les sélections courantes ne sont jamais raccourcies pour faire place à la mémoire.
 
-Cette première étape fournit les références au provider. L’assouplissement du
-prompt et du contrôle des hypothèses fait l’objet d’un incrément séparé. Les modes
-Suggestions « Mots » et « Phrases » continuent à lire directement la mémoire,
-sans appel IA. Aucune référence ne valide automatiquement un nouveau message.
+## Des hypothèses plus souples à vérifier
+
+Le prompt peut réordonner les touches, former plusieurs phrases courtes et
+proposer jusqu’à trois lectures. Une référence personnelle proche peut soutenir
+une paraphrase ou une intention implicite que le vocabulaire générique ne connaît
+pas. La personne garde le choix, la correction et le refus.
+
+Une hypothèse qui ne passe pas le contrôle lexical strict doit être soutenue par
+**une** référence dont au moins la moitié des touches distinctes sont communes
+dans les deux directions. Son vocabulaire supplémentaire doit venir de cette
+référence ou des sens personnels des touches actuelles. On ne mélange pas le
+vocabulaire de cinquante vieux messages pour fabriquer un message sans rapport.
+Négation, Stop, actions explicites et pronoms sélectionnés restent contrôlés.
+Ces contrôles lexicaux ne prouvent ni les rôles ni le sens de la phrase.
+
+Une telle hypothèse est plafonnée au seuil de confirmation et sa référence est
+revérifiée avant enregistrement et avant la première acceptation humaine. Un
+retrait ou une correction de la référence bloque l’acceptation en attendant un
+nouvel essai ; le refus reste possible. Un message déjà accepté devient une trace
+indépendante, sans modifier le sens global des concepts ni déplacer les touches.
+
+Dans l’écran de communication, « Sur quoi cette proposition s’appuie-t-elle ? »
+montre les références enregistrées pour cet essai. Une ancienne référence retirée
+ou modifiée n’est pas remplacée par une référence actuelle et son ancien texte
+n’est pas présenté comme encore accepté. L’historique et les sauvegardes conservent
+les liens de provenance. La limitation native de PRISM est prise en compte : une
+référence qu’il n’a pas envoyée au modèle ne peut pas justifier l’assouplissement.
+
+Exemple : six touches « Maman, Papa, Manger, Maison, Moi, Content » peuvent former
+« Maman, Papa, je voudrais manger à la maison. Je suis content. » Une mémoire
+acceptée proche « J’aime manger à la maison » peut aussi soutenir une hypothèse
+de préférence. Sans cette association personnelle, « Content » n’est pas converti
+automatiquement en « Aimer ».
+
+Les modes Suggestions « Mots » et « Phrases » continuent à lire directement la
+mémoire, sans appel IA. Aucune référence ne valide automatiquement un nouveau message.

@@ -66,6 +66,7 @@ COMMUNICATION_READS = frozenset(
         "/profiles/{profile_id}/sequences/{sequence_id}",
         "/profiles/{profile_id}/interpretations",
         "/profiles/{profile_id}/interpretations/{interpretation_id}",
+        "/profiles/{profile_id}/interpretations/{interpretation_id}/ai-context",
         "/profiles/{profile_id}/memory",
         "/profiles/{profile_id}/memory-suggestions",
         "/profiles/{profile_id}/phrases/{interpretation_id}",

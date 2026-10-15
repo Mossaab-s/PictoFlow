@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_vali
 from sqlalchemy import select
 
 from app.ai.contracts import ProviderHealth
+from app.application.ai_context import AIContext, context_for
 from app.application.ai_quality import QualitySummary
 from app.application.audit import AuditService
 from app.application.blocks import BlockService, RepresentationService
@@ -565,9 +566,12 @@ async def interpret(
         telemetry=request.app.state.telemetry,
         memory_limit=request.app.state.settings.ai_memory_examples,
     )
-    result = await service.interpret(
-        profile_id, sequence_id, declared_context=body.declared_context
-    )
+    try:
+        result = await service.interpret(
+            profile_id, sequence_id, declared_context=body.declared_context
+        )
+    except MemorySuggestionConflict as error:
+        raise HTTPException(409, str(error)) from None
     request.app.state.telemetry.signal("interpretation.result", result_state=result.state.value)
     return result
 
@@ -583,6 +587,14 @@ def interpretations(request: Request, profile_id: UUID):
 def get_interpretation(request: Request, profile_id: UUID, interpretation_id: UUID):
     with units(request)() as store:
         return store.get(profile_id, Interpretation, interpretation_id)
+
+
+@router.get(
+    "/profiles/{profile_id}/interpretations/{interpretation_id}/ai-context",
+    response_model=AIContext,
+)
+def interpretation_context(request: Request, profile_id: UUID, interpretation_id: UUID):
+    return context_for(units(request), profile_id, interpretation_id)
 
 
 @router.post(

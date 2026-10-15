@@ -31,6 +31,7 @@ import OfflineCommunication from "./offline-communication";
 import CompositionMemory from "./composition-memory";
 import { replayAvailable } from "@/lib/learning";
 import MemorySuggestions from "./memory-suggestions";
+import AIContext from "./ai-context";
 import { useMemorySuggestionMode } from "./use-memory-suggestion-mode";
 import type { MemoryProposalBody } from "@/lib/memory-suggestions";
 
@@ -876,6 +877,12 @@ function InterpretationCard({
           Vos mots sont présentés tels quels. Vous pouvez les lire ou les
           reformuler pour préciser votre message.
         </p>
+      )}
+      {["openai-compatible", "prism", "fake"].includes(candidate.source) && (
+        <AIContext
+          profileId={candidate.profile_id}
+          interpretationId={candidate.id}
+        />
       )}
       {candidate.corrected_text && (
         <details>

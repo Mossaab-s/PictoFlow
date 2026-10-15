@@ -53,12 +53,24 @@ def resolve(store, profile_id, reference: MemoryReference):
 
 
 def check_memory_provenance(store, profile_id, item):
-    if item.source != "pcl-memory" or item.validated_text is not None:
+    if item.validated_text is not None:
         return
     events = store.audit_history(
         profile_id, target_type="interpretation", target_id=item.id, limit=100
     )
-    origin = next((event for event in events if event.event_type == "memory_proposal"), None)
+    origin = next(
+        (
+            event
+            for event in events
+            if event.event_type == "memory_proposal"
+            or json.loads(event.new_state or "{}")
+            .get("presentation", {})
+            .get("personal_hypothesis")
+        ),
+        None,
+    )
+    if item.source != "pcl-memory" and origin is None:
+        return
     sources = (
         json.loads(origin.new_state or "{}").get("presentation", {}).get("memory_sources")
         if origin
