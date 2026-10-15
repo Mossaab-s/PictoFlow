@@ -24,6 +24,7 @@ Une PR en draft par tâche, dans cet ordre, sans fusion ni déploiement automati
 3. Préparer les sens personnels et utiliser le contexte de communication.
    Voir [PERSONAL_MEANINGS.md](PERSONAL_MEANINGS.md).
 4. Reprendre une communication après l'ajout d'un mot manquant.
+   Voir [MISSING_WORDS.md](MISSING_WORDS.md).
 5. Proposer des touches à partir des usages validés, avec placement choisi.
 6. Réouvrir l'écran et le clavier choisi hors connexion.
 

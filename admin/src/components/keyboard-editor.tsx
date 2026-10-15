@@ -35,7 +35,13 @@ import {
   type PictogramKey,
 } from "@/lib/pictograms";
 
-export default function KeyboardEditor({ profileId }: { profileId: string }) {
+export default function KeyboardEditor({
+  profileId,
+  resume = false,
+}: {
+  profileId: string;
+  resume?: boolean;
+}) {
   const data = useProfileKeyboard(profileId);
   const [role, setRole] = useState<HumanRole>("user");
   const [conceptId, setConceptId] = useState("");
@@ -220,6 +226,24 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
           </Link>
         </div>
         <HumanRoleSelector value={role} onChange={setRole} disabled={busy} />
+        {resume && (
+          <section className="panel" aria-label="Préparer un mot manquant">
+            <h2>Ajouter le mot qui me manque</h2>
+            <p>
+              Préparez son mot, son sens et son dessin ou sa photo, puis validez
+              la touche ci-dessous. Revenez ensuite à la communication pour la
+              choisir vous-même.
+            </p>
+            <p>
+              Votre message en cours reste sur le serveur. Dans ce même onglet,
+              son repère de reprise est conservé ; aucune nouvelle touche n’y
+              est ajoutée automatiquement.
+            </p>
+            <Link className="button-link" href={`/communication/${profileId}`}>
+              Reprendre mon message
+            </Link>
+          </section>
+        )}
         {data.error && (
           <div className="error" role="alert">
             {data.error}{" "}
