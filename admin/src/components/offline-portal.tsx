@@ -51,6 +51,7 @@ export default function OfflinePortal() {
     void load();
     const changed = () => {
       lock();
+      setBusy(false);
       setRows([]);
       setError(
         "Les accès ont changé. Fermez cet écran et reconnectez-vous avant de préparer une copie.",
@@ -66,10 +67,17 @@ export default function OfflinePortal() {
         : null;
     if (channel) channel.onmessage = changed;
     window.addEventListener("storage", storage);
+    const pageShown = (event: PageTransitionEvent) => {
+      if (event.persisted) lock();
+    };
+    window.addEventListener("pagehide", lock);
+    window.addEventListener("pageshow", pageShown);
     return () => {
       generation.current++;
       channel?.close();
       window.removeEventListener("storage", storage);
+      window.removeEventListener("pagehide", lock);
+      window.removeEventListener("pageshow", pageShown);
     };
   }, []);
   async function open(event: React.FormEvent) {
