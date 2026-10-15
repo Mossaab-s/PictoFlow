@@ -38,12 +38,21 @@ class MemoryReference:
     index: int | None = None
 
 
-def resolve(store, profile_id, reference: MemoryReference):
+def resolve(store, profile_id, reference: MemoryReference, *, require_association=False):
     item = store.get(profile_id, Interpretation, reference.interpretation_id)
     sequence = store.get(profile_id, CommunicationSequence, item.sequence_id)
     text = item.validated_text
     if sequence.status != "completed" or not text or revision(text) != reference.revision:
         raise MemorySuggestionConflict("La phrase source a changé. Actualisez les suggestions.")
+    if require_association and not store.accepted_traces(
+        profile_id,
+        block_ids=sequence.block_ids,
+        exclude_sequence_id=UUID(int=0),
+        reference_id=item.id,
+    ):
+        raise MemorySuggestionConflict(
+            "Le sens des touches source a changé. Relancez la proposition."
+        )
     if reference.index is None:
         return text
     words = tokens(text)
@@ -87,4 +96,5 @@ def check_memory_provenance(store, profile_id, item):
             MemoryReference(
                 UUID(source["interpretation_id"]), source["revision"], source.get("index")
             ),
+            require_association=item.source != "pcl-memory",
         )

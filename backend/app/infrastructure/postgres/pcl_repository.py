@@ -301,7 +301,7 @@ class PostgresPCLRepository:
         )
         return tuple(self.session.scalars(query))
 
-    def accepted_traces(self, profile_id, *, block_ids, exclude_sequence_id):
+    def accepted_traces(self, profile_id, *, block_ids, exclude_sequence_id, reference_id=None):
         """Current human acceptance only; shortlist by shared touches before recency.
 
         The bounded shortlist is 1,000 traces, not the last 1,000 profile messages.
@@ -391,7 +391,12 @@ class PostgresPCLRepository:
             .limit(1000)
         )
         return tuple(
-            AcceptedTrace(i, s, tuple(b), t, at) for i, s, b, t, at in self.session.execute(query)
+            AcceptedTrace(i, s, tuple(b), t, at)
+            for i, s, b, t, at in self.session.execute(
+                query.where(InterpretationRow.id == reference_id)
+                if reference_id is not None
+                else query
+            )
         )
 
     def audit(

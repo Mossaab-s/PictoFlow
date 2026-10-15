@@ -96,3 +96,21 @@ def test_personal_reference_provenance_survives_restore_with_new_profile_ids(com
     assert evidence.personal_hypothesis
     assert evidence.references[0].interpretation_id != source.id
     assert evidence.references[0].text == TEXT
+
+
+def test_editing_a_source_meaning_blocks_first_acceptance_and_hides_stale_reference(communication):
+    from dataclasses import replace
+
+    from app.domain.pcl.entities import Concept
+
+    service, profile, _, blocks = communication
+    source, target, ai = hypothesis(service, profile, blocks)
+    candidate = asyncio.run(ai.interpret(profile, target.id)).candidates[0]
+    with service.units() as store:
+        before = store.get(profile, Concept, blocks[0].concept_id)
+        after = replace(before, label="Un autre sens personnel")
+        store.save(profile, after)
+        store.audit(profile, "concept_renamed", before, after, "human:user")
+    assert not context_for(service.units, profile, candidate.id).references[0].available
+    with pytest.raises(MemorySuggestionConflict):
+        service.validate(event(profile, candidate, ValidationAction.CONFIRM))

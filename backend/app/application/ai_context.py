@@ -43,7 +43,7 @@ def context_for(units, profile_id, interpretation_id):
         for source in data.get("memory_sources", []):
             reference = MemoryReference(UUID(source["interpretation_id"]), source["revision"])
             try:
-                text = resolve(store, profile_id, reference)
+                text = resolve(store, profile_id, reference, require_association=True)
             except (MemorySuggestionConflict, SemanticNotFoundError):
                 text = None
             refs.append(ContextReference(reference.interpretation_id, text is not None, text))

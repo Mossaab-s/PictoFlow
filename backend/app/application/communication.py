@@ -120,6 +120,7 @@ class CommunicationService:
                             store,
                             profile_id,
                             MemoryReference(UUID(ref["interpretation_id"]), ref["revision"]),
+                            require_association=True,
                         )
                 store.add(profile_id, item)
                 store.audit(
