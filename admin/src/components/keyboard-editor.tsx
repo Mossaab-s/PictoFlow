@@ -40,6 +40,7 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
   const [role, setRole] = useState<HumanRole>("user");
   const [conceptId, setConceptId] = useState("");
   const [label, setLabel] = useState("");
+  const [meaning, setMeaning] = useState("");
   const [pictogramKey, setPictogramKey] = useState<PictogramKey | null>(null);
   const [visualMode, setVisualMode] = useState<"drawing" | "photo">("drawing");
   const [photo, setPhoto] = useState<File | null>(null);
@@ -79,6 +80,7 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
       visualMode,
       pictogramKey,
       conceptId,
+      conceptId ? null : meaning.trim(),
       photo ? [photo.name, photo.size, photo.lastModified] : null,
     ]);
     if (creation.current?.signature !== signature) {
@@ -91,6 +93,7 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
         actor_role: role,
         label: label.trim(),
         ...(conceptId ? { concept_id: conceptId } : {}),
+        ...(!conceptId && meaning.trim() ? { meaning: meaning.trim() } : {}),
         photo_base64: await photoBase64(photo),
       });
     } else
@@ -99,13 +102,18 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
         body: JSON.stringify({
           ...(conceptId
             ? { concept_id: conceptId }
-            : { request_id: creation.current.id, actor_role: role }),
+            : {
+                request_id: creation.current.id,
+                actor_role: role,
+                ...(meaning.trim() ? { meaning: meaning.trim() } : {}),
+              }),
           label: label.trim(),
           pictogram_key: pictogramKey,
         }),
       });
     creation.current = null;
     setLabel("");
+    setMeaning("");
     setConceptId("");
     setPictogramKey(null);
     setPhoto(null);
@@ -260,6 +268,22 @@ export default function KeyboardEditor({ profileId }: { profileId: string }) {
                       disabled={busy}
                     />
                   </label>
+                  {!conceptId && (
+                    <label>
+                      Ce que cette touche signifie pour moi, facultatif
+                      <input
+                        value={meaning}
+                        onChange={(event) => setMeaning(event.target.value)}
+                        maxLength={256}
+                        disabled={busy}
+                        placeholder="Par exemple : mon ours pour me rassurer"
+                      />
+                      <span className="helper">
+                        Sans précision, le mot de la touche sert de sens. Ce
+                        sens sera vérifié avec le dessin avant utilisation.
+                      </span>
+                    </label>
+                  )}
                   <details>
                     <summary>
                       Utiliser un sens déjà présent{" "}

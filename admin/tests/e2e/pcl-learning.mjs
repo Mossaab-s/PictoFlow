@@ -18,6 +18,7 @@ async function profile() {
   const block = await call(`profiles/${p}/blocks/personal`, "post", {
     request_id: crypto.randomUUID(),
     label: "Boire",
+    meaning: "Boire une boisson",
     pictogram_key: "drink",
     actor_role: "user",
   });
@@ -57,6 +58,13 @@ try {
   await page
     .getByRole("button", { name: "Terminer mon message", exact: true })
     .click();
+  await page
+    .getByText("Le sens personnel de mes touches", { exact: true })
+    .click();
+  await page.getByText("Boire une boisson", { exact: false }).first().waitFor();
+  await page
+    .getByLabel("Contexte que je souhaite préciser, facultatif")
+    .fill("À la maison");
   const learning = page.getByRole("region", {
     name: "Mon PCL et ce message",
     exact: true,

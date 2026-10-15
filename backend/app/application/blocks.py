@@ -163,9 +163,11 @@ class BlockService:
         label: str,
         pictogram_key: PictogramKey,
         actor_role: HumanRole,
+        meaning: str | None = None,
     ):
         """Create the meaning and proposed touch atomically; explicit retries share one ID."""
         label = label.strip()
+        meaning = label if meaning is None else meaning.strip()
         reference = pictogram_reference(pictogram_key)
         actor_role = HumanRole(actor_role)
         block_id = uuid5(profile_id, f"personal-touch:{request_id}")
@@ -176,7 +178,12 @@ class BlockService:
             except SemanticNotFoundError:
                 previous = None
             if previous is not None:
-                if previous.concept_id != concept_id or previous.label != label:
+                existing_concept = store.get(profile_id, Concept, previous.concept_id)
+                if (
+                    previous.concept_id != concept_id
+                    or previous.label != label
+                    or existing_concept.label != meaning
+                ):
                     raise DomainInvariantError("This creation ID already has a different touch")
                 visual = store.get(profile_id, Representation, previous.representation_id)
                 if visual.source != PICTOGRAM_SOURCE or visual.asset_reference != reference:
@@ -186,7 +193,7 @@ class BlockService:
                 id=concept_id,
                 profile_id=profile_id,
                 canonical_key=f"USER_{concept_id.hex}",
-                label=label,
+                label=meaning,
             )
             source = f"human:{actor_role.value}"
             store.add(profile_id, concept)

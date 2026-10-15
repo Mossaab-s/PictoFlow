@@ -613,6 +613,34 @@ export default function CommunicationScreen({
             </p>
           )}
         </section>
+        {chosen.length > 0 && (
+          <details className="panel">
+            <summary>Le sens personnel de mes touches</summary>
+            <p>
+              Les mots et dessins restent vos repères. Ces sens viennent du
+              profil et peuvent aider à comprendre une proposition de phrase.
+            </p>
+            <ol>
+              {sequence?.block_ids.map((id, index) => {
+                const block = data.blocks.find(
+                  (item) => item.id === id && item.profile_id === profileId,
+                );
+                const meaning =
+                  data.concepts.find(
+                    (item) =>
+                      item.id === block?.concept_id &&
+                      item.profile_id === profileId,
+                  )?.label ?? block?.canonical_intent;
+                return (
+                  <li key={index}>
+                    <strong>{block?.label ?? "Touche indisponible"}</strong> :{" "}
+                    {meaning ?? "Sens indisponible"}
+                  </li>
+                );
+              })}
+            </ol>
+          </details>
+        )}
         <MemorySuggestions
           key={`suggestions:${profileId}`}
           profileId={profileId}
@@ -719,6 +747,11 @@ export default function CommunicationScreen({
                 placeholder="Par exemple : je suis à la maison"
               />
             </label>
+            <p className="helper">
+              Cette précision aide seulement la proposition actuelle. Elle ne
+              change pas le sens de vos touches et n’ajoute aucun mot aux
+              suggestions de mémoire.
+            </p>
             <button onClick={() => void perform(propose)} disabled={pending}>
               Proposer une phrase
             </button>
