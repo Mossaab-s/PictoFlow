@@ -32,6 +32,7 @@ export default function PhraseLibrary({
   speech,
   disabled,
   initialPhraseId = null,
+  choiceRevision = 0,
   revision,
 }: {
   profileId: string;
@@ -40,6 +41,7 @@ export default function PhraseLibrary({
   speech: Speech;
   disabled: boolean;
   initialPhraseId?: string | null;
+  choiceRevision?: number;
   revision: unknown;
 }) {
   const [memory, setMemory] = useState<Memory | null>(null);
@@ -114,7 +116,7 @@ export default function PhraseLibrary({
       request.abort();
       chosenRequest.current?.abort();
     };
-  }, [base, profileId, initialPhraseId]);
+  }, [base, profileId, initialPhraseId, choiceRevision]);
   function changed(item: Interpretation) {
     setMemory((previous) =>
       previous

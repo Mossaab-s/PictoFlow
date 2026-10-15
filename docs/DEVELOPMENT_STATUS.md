@@ -1,5 +1,11 @@
 # État du prototype V1 — 15 octobre 2026
 
+Priorité actuelle : valider le concept par le parcours de communication et de
+mémoire, décrit dans [POC_VALIDATION.md](POC_VALIDATION.md). La PR #45 est fusionnée,
+mais ses outils d'exploitation ne sont pas activés sur l'instance. Le prochain
+incrément rend visibles le sens retenu et les souvenirs retrouvés pour les mêmes
+touches, avec un nouvel essai explicite et sans nouvelle validation automatique.
+
 Le parcours métier PCL est implémenté localement, avec API REST, administration
 initiale et providers IA optionnels. Une instance de test est déployée sur
 [10.0.0.121](https://10.0.0.121), avec une base persistante dédiée.

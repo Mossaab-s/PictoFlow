@@ -64,6 +64,7 @@ export function blockRepresentation(
 export type Sequence = {
   id: string;
   profile_id: string;
+  context_id?: string | null;
   block_ids: string[];
   status: "in_progress" | "completed" | "cancelled";
 };
