@@ -281,6 +281,25 @@ engine.dispose()
             else:
                 raise AssertionError("Wrong recovery identity accepted")
             assert not (root / "wrong-key-report.json").exists()
+            # A same-size damaged copy is not counted toward good retention slots.
+            damaged = destination / "pictoflow-20990101T000000Z-ffffffff"
+            damaged.mkdir(mode=0o700)
+            (damaged / "backup.age").write_bytes(
+                original[:-1] + bytes([original[-1] ^ 1])
+            )
+            backup.write_json(
+                damaged / "receipt.json",
+                {
+                    **latest,
+                    "id": damaged.name,
+                    "created_at": "2099-01-01T00:00:00+00:00",
+                },
+            )
+            backup.prune(destination, 2)
+            assert all((item / "backup.age").exists() for item in completed)
+            (damaged / "backup.age").unlink()
+            (damaged / "receipt.json").unlink()
+            damaged.rmdir()
             # A failed source export must retain the last successful backup and expose failure.
             source.rename(source.with_suffix(".missing"))
             try:

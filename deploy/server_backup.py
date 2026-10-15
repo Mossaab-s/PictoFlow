@@ -289,9 +289,7 @@ def prune(destination, retain):
     for directory in destination.iterdir():
         if NAME.fullmatch(directory.name):
             try:
-                created = datetime.fromisoformat(
-                    receipt(directory, verify=False)["created_at"]
-                )
+                created = datetime.fromisoformat(receipt(directory)["created_at"])
             except (BackupError, OSError, ValueError, KeyError):
                 continue  # Never remove unknown, incomplete or manually altered directories.
             candidates.append((created, directory))
