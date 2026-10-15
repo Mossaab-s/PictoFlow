@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import { api, setCSRFToken } from "@/lib/api";
+import { api, APIError, setCSRFToken } from "@/lib/api";
 import { type AuthSession, pathPermitted } from "@/lib/access";
 
 const AuthContext = createContext<AuthSession | null>(null);
@@ -159,7 +159,11 @@ export default function Authentication({
       channel.current?.postMessage("changed");
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Connexion impossible.",
+        error instanceof APIError && error.status === 401
+          ? "Identifiant ou mot de passe incorrect."
+          : error instanceof Error
+            ? error.message
+            : "Connexion impossible.",
       );
     } finally {
       gate.current = false;
