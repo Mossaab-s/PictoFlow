@@ -9,14 +9,22 @@ import AIQuality from "@/components/ai-quality";
 
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: Promise<{ profileId: string; section: string }>;
+  searchParams: Promise<{ resume?: string | string[] }>;
 }) {
   const { profileId, section } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(profileId) || !Object.hasOwn(sections, section))
     notFound();
   if (section === "keyboard")
-    return <KeyboardEditor key={profileId} profileId={profileId} />;
+    return (
+      <KeyboardEditor
+        key={profileId}
+        profileId={profileId}
+        resume={(await searchParams).resume === "1"}
+      />
+    );
   if (section === "communication")
     return <CommunicationScreen key={profileId} profileId={profileId} />;
   if (section === "backup")

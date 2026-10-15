@@ -696,6 +696,30 @@ export default function CommunicationScreen({
           tabIndex={-1}
           aria-label="Mon clavier de communication"
         >
+          {canEdit ? (
+            <Link
+              className="button-link secondary"
+              href={`/admin/profiles/${profileId}/keyboard?resume=1`}
+              aria-disabled={pending}
+              onClick={(event) => {
+                if (pending) event.preventDefault();
+              }}
+            >
+              Il me manque un mot
+            </Link>
+          ) : (
+            <p className="helper">
+              Il vous manque un mot ? Une personne autorisée à préparer ce
+              profil peut ajouter une touche avec vous.
+            </p>
+          )}
+          {completed && canEdit && (
+            <p className="helper">
+              Ce message est terminé. Après l’ajout d’une touche, choisissez «
+              Refaire un essai avec les mêmes touches » ou « Nouveau message »
+              pour l’utiliser.
+            </p>
+          )}
           <p className="keyboard-help">
             Au clavier : Tab pour parcourir, Entrée ou Espace pour choisir.
             Échap arrête la lecture. Les cases libres sont ignorées.
