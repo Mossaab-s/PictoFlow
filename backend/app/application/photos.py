@@ -113,8 +113,10 @@ class PhotoService:
         photo: NormalizedPhoto,
         actor_role: HumanRole,
         concept_id: UUID | None = None,
+        meaning: str | None = None,
     ):
         label = label.strip()
+        meaning = label if meaning is None else meaning.strip()
         actor_role = HumanRole(actor_role)
         block_id = uuid5(profile_id, f"photo-touch:{request_id}")
         visual_id = uuid5(block_id, "photo")
@@ -132,6 +134,7 @@ class PhotoService:
                     or previous.concept_id != concept_id
                     or previous.representation_id != visual_id
                     or asset.digest != photo.digest
+                    or (new_concept and store.get(profile_id, Concept, concept_id).label != meaning)
                 ):
                     raise DomainInvariantError("Creation ID already used for another photo touch")
                 return previous
@@ -140,7 +143,7 @@ class PhotoService:
                     id=concept_id,
                     profile_id=profile_id,
                     canonical_key=f"USER_{concept_id.hex}",
-                    label=label,
+                    label=meaning,
                 )
                 store.add(profile_id, concept)
                 store.audit(
