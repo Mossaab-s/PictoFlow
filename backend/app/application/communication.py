@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from app.application.ai_quality import AttemptEvidence
+from app.application.memory_vocabulary import check_memory_provenance
 from app.application.pcl_repository import PCLUnits
 from app.application.transient import JsonObject, TransientKind, TransientStore
 from app.domain.pcl.confidence import ConfidenceDecision, ConfidencePolicy, HandlingState
@@ -128,6 +129,8 @@ class CommunicationService:
             sequence = store.get(event.profile_id, CommunicationSequence, previous.sequence_id)
             if sequence.status != SequenceStatus.COMPLETED:
                 raise DomainInvariantError("Only completed communication can be validated")
+            if event.action != "reject":
+                check_memory_provenance(store, event.profile_id, previous)
             # Selecting one hypothesis prevents contradictory accepted meanings per event.
             current = apply_interpretation_feedback(previous, event)
             if current.validated_text is not None:

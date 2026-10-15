@@ -30,6 +30,9 @@ import { useContrastSetting } from "./use-contrast-setting";
 import OfflineCommunication from "./offline-communication";
 import CompositionMemory from "./composition-memory";
 import { replayAvailable } from "@/lib/learning";
+import MemorySuggestions from "./memory-suggestions";
+import { useMemorySuggestionMode } from "./use-memory-suggestion-mode";
+import type { MemoryProposalBody } from "@/lib/memory-suggestions";
 
 export default function CommunicationScreen({
   profileId,
@@ -44,6 +47,7 @@ export default function CommunicationScreen({
   const canEdit = canPrepare(useAuthentication(), profileId);
   const display = useDisplaySettings(profileId);
   const contrast = useContrastSetting(profileId);
+  const suggestions = useMemorySuggestionMode(profileId);
   const messageHeading = useRef<HTMLHeadingElement>(null);
   const [sequence, setSequence] = useState<Sequence | null>(null);
   const [decision, setDecision] = useState<Decision | null>(null);
@@ -302,6 +306,41 @@ export default function CommunicationScreen({
       );
     }
   }
+  async function proposeFromMemory(body: MemoryProposalBody) {
+    let succeeded = false;
+    await perform(async () => {
+      const active = current.current;
+      if (!active || active.status !== "completed") return;
+      let result: Decision;
+      try {
+        result = await api<Decision>(
+          `${base}/sequences/${active.id}/memory-proposals`,
+          {
+            method: "POST",
+            body: JSON.stringify(body),
+          },
+        );
+      } catch (error) {
+        if (error instanceof APIError && error.status === 409)
+          throw new Error(
+            "Cette suggestion a changé ou n’est plus disponible. Actualisez les suggestions, puis vérifiez votre choix.",
+          );
+        if (error instanceof TypeError)
+          throw new Error(
+            "La connexion a été interrompue. Réessayez la même proposition.",
+          );
+        throw error;
+      }
+      if (alive.current && current.current?.id === active.id) {
+        remember(active, result);
+        setNotice(
+          "Cette proposition vient uniquement de vos phrases acceptées. Choisissez si elle exprime votre message.",
+        );
+        succeeded = true;
+      }
+    });
+    return succeeded;
+  }
   async function newMessage() {
     if (current.current?.status === "in_progress")
       await api(`${base}/sequences/${current.current.id}/selection`, {
@@ -379,6 +418,7 @@ export default function CommunicationScreen({
     restoreFailed ||
     !display.ready ||
     !contrast.ready ||
+    !suggestions.ready ||
     !speech.ready;
   return (
     <>
@@ -573,6 +613,17 @@ export default function CommunicationScreen({
             </p>
           )}
         </section>
+        <MemorySuggestions
+          key={profileId}
+          profileId={profileId}
+          sequence={sequence}
+          mode={suggestions.mode}
+          onModeChange={suggestions.change}
+          temporary={suggestions.temporary}
+          disabled={pending || accepted}
+          revision={decision}
+          onPropose={proposeFromMemory}
+        />
         {completed && sequence && (
           <CompositionMemory
             key={sequence.id}
@@ -650,7 +701,7 @@ export default function CommunicationScreen({
               </div>
             ))}
         </section>
-        {completed && !decision && (
+        {completed && !decision && suggestions.mode === "off" && (
           <section className="panel interpretation-panel">
             <h2>Une proposition de phrase ?</h2>
             <p>
@@ -672,51 +723,56 @@ export default function CommunicationScreen({
             </button>
           </section>
         )}
-        {decision && (
-          <section className="review-section">
-            <h2>Vérifier ce que je veux dire</h2>
-            <HumanRoleSelector
-              value={role}
-              onChange={setRole}
-              disabled={pending}
-            />
-            {decision.state === "not_understood" ? (
-              <div className="notice">
-                <p>
-                  Aucune interprétation fiable n'a été trouvée. Vos mots restent
-                  disponibles et peuvent être lus tels quels.
-                </p>
-              </div>
-            ) : (
-              <>
-                <p>
-                  Choisissez une proposition, corrigez-la si besoin, ou
-                  écartez-la. Aucune proposition n'entre seule dans la mémoire
-                  validée.
-                </p>
-                {decision.candidates.map((candidate) => (
-                  <InterpretationCard
-                    key={candidate.id}
-                    candidate={candidate}
-                    disabled={
-                      pending || (accepted && candidate.status === "proposed")
-                    }
-                    read={speech.available ? speech.read : undefined}
-                    feedback={(action, text) =>
-                      perform(() => feedback(candidate, action, text))
-                    }
-                  />
-                ))}
-              </>
-            )}
-            <Link
-              className="text-link"
-              href={`/admin/profiles/${profileId}/memory`}
-            >
-              Consulter la mémoire de ce profil →
-            </Link>
-          </section>
-        )}
+        {decision &&
+          (suggestions.mode === "off" ||
+            accepted ||
+            decision.candidates.some(
+              (item) => item.source === "pcl-memory",
+            )) && (
+            <section className="review-section">
+              <h2>Vérifier ce que je veux dire</h2>
+              <HumanRoleSelector
+                value={role}
+                onChange={setRole}
+                disabled={pending}
+              />
+              {decision.state === "not_understood" ? (
+                <div className="notice">
+                  <p>
+                    Aucune interprétation fiable n'a été trouvée. Vos mots
+                    restent disponibles et peuvent être lus tels quels.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p>
+                    Choisissez une proposition, corrigez-la si besoin, ou
+                    écartez-la. Aucune proposition n'entre seule dans la mémoire
+                    validée.
+                  </p>
+                  {decision.candidates.map((candidate) => (
+                    <InterpretationCard
+                      key={candidate.id}
+                      candidate={candidate}
+                      disabled={
+                        pending || (accepted && candidate.status === "proposed")
+                      }
+                      read={speech.available ? speech.read : undefined}
+                      feedback={(action, text) =>
+                        perform(() => feedback(candidate, action, text))
+                      }
+                    />
+                  ))}
+                </>
+              )}
+              <Link
+                className="text-link"
+                href={`/admin/profiles/${profileId}/memory`}
+              >
+                Consulter la mémoire de ce profil →
+              </Link>
+            </section>
+          )}
       </section>
     </>
   );
@@ -751,6 +807,12 @@ function InterpretationCard({
             : "Proposition à vérifier"}
       </span>
       <p className="proposed-phrase">{text}</p>
+      {candidate.source === "pcl-memory" && (
+        <p className="helper">
+          Proposition issue uniquement des phrases acceptées de ce profil. Elle
+          reste à vérifier pour ce message.
+        </p>
+      )}
       {candidate.source === "pcl" && !candidate.corrected_text && (
         <p className="notice">
           Vos mots sont présentés tels quels. Vous pouvez les lire ou les
