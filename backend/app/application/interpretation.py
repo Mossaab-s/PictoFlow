@@ -8,6 +8,7 @@ from app.ai.protocol import AIProvider
 from app.application.ai_quality import AttemptEvidence, FallbackReason
 from app.application.communication import CommunicationService
 from app.application.pcl_repository import PCLUnits
+from app.application.personal_examples import select_examples
 from app.application.phrase_fidelity import faithful_words
 from app.domain.pcl.entities import (
     CommunicationBlock,
@@ -27,11 +28,13 @@ class InterpretationService:
         communication: CommunicationService,
         provider: AIProvider,
         telemetry=None,
+        memory_limit=50,
     ):
         self.units = units
         self.communication = communication
         self.provider = provider
         self.telemetry = telemetry
+        self.memory_limit = memory_limit
 
     def fallback(
         self,
@@ -41,6 +44,7 @@ class InterpretationService:
         *,
         received: int = 0,
         examples: int = 0,
+        memory_examples: int = 0,
     ):
         if self.telemetry:
             self.telemetry.signal(
@@ -51,7 +55,9 @@ class InterpretationService:
             sequence_id,
             (self.literal(profile_id, sequence_id),),
             source="pcl",
-            evidence=AttemptEvidence(self.provider.provider_id, reason, received, examples),
+            evidence=AttemptEvidence(
+                self.provider.provider_id, reason, received, examples, memory_examples
+            ),
         )
 
     def literal(self, profile_id: UUID, sequence_id: UUID):
@@ -134,8 +140,11 @@ class InterpretationService:
             examples = tuple(
                 dict.fromkeys(text for text in examples if faithful_words(request, text))
             )[:3]
+            memory = select_examples(store, profile_id, sequence, limit=self.memory_limit)
         return InterpretationRequest(
-            **request.model_dump(exclude={"correction_examples"}), correction_examples=examples
+            **request.model_dump(exclude={"correction_examples", "memory_examples"}),
+            correction_examples=examples,
+            memory_examples=memory,
         )
 
     async def interpret(
@@ -146,10 +155,17 @@ class InterpretationService:
         request = self.request(profile_id, sequence_id, declared_context=declared_context)
         source = self.provider.provider_id
         examples = len(request.correction_examples)
+        memory = len(request.memory_examples)
         try:
             result = await self.provider.interpret(request)
             if result.status == "not_understood":
-                return self.fallback(profile_id, sequence_id, "model_refusal", examples=examples)
+                return self.fallback(
+                    profile_id,
+                    sequence_id,
+                    "model_refusal",
+                    examples=examples,
+                    memory_examples=memory,
+                )
             items = tuple(
                 Interpretation(
                     profile_id=profile_id,
@@ -168,6 +184,7 @@ class InterpretationService:
                     "unfaithful_words",
                     received=len(result.candidates),
                     examples=examples,
+                    memory_examples=memory,
                 )
             if not self.communication.policy.decide(items).candidates:
                 return self.fallback(
@@ -176,17 +193,29 @@ class InterpretationService:
                     "low_confidence",
                     received=len(result.candidates),
                     examples=examples,
+                    memory_examples=memory,
                 )
         except (ProviderDisabledError, ProviderUnavailableError):
-            return self.fallback(profile_id, sequence_id, "unavailable", examples=examples)
+            return self.fallback(
+                profile_id, sequence_id, "unavailable", examples=examples, memory_examples=memory
+            )
         except ProviderPayloadError:
-            return self.fallback(profile_id, sequence_id, "invalid_payload", examples=examples)
+            return self.fallback(
+                profile_id,
+                sequence_id,
+                "invalid_payload",
+                examples=examples,
+                memory_examples=memory,
+            )
         return self.communication.propose(
             profile_id,
             sequence_id,
             items,
             source=source,
             evidence=AttemptEvidence(
-                source, received_candidates=len(result.candidates), correction_examples=examples
+                source,
+                received_candidates=len(result.candidates),
+                correction_examples=examples,
+                memory_examples=memory,
             ),
         )

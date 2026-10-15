@@ -149,6 +149,10 @@ class MemoryUnits:
         assert profile_id == self.profile
         return ()
 
+    def accepted_traces(self, profile_id, **kwargs):
+        assert profile_id == self.profile
+        return ()
+
     def audit(self, *args, **kwargs):
         pass
 

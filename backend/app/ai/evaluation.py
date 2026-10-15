@@ -116,6 +116,9 @@ SCENARIOS = (
 class SyntheticUnits:
     """One fresh synthetic profile per scenario; no production storage access."""
 
+    def accepted_traces(self, profile, **kwargs):
+        return ()
+
     def __init__(self, scenario):
         self.profile = uuid5(NAMESPACE_URL, "pictoflow:evaluation:" + scenario.name)
         self.blocks = tuple(

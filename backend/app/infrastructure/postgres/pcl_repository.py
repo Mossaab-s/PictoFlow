@@ -5,11 +5,16 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from uuid import UUID, uuid4
 
-from sqlalchemy import delete, func, select, tuple_
+from sqlalchemy import any_, delete, func, select, tuple_
 from sqlalchemy.dialects.postgresql import aggregate_order_by, array
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.application.pcl_repository import FeedbackEvidence, FeedbackPage, HistoricalFeedback
+from app.application.pcl_repository import (
+    AcceptedTrace,
+    FeedbackEvidence,
+    FeedbackPage,
+    HistoricalFeedback,
+)
 from app.application.photos import PhotoAsset
 from app.application.semantic_space import SemanticNotFoundError
 from app.domain.pcl.audit import SemanticAuditEvent
@@ -295,6 +300,99 @@ class PostgresPCLRepository:
             .limit(10)
         )
         return tuple(self.session.scalars(query))
+
+    def accepted_traces(self, profile_id, *, block_ids, exclude_sequence_id):
+        """Current human acceptance only; shortlist by shared touches before recency.
+
+        The bounded shortlist is 1,000 traces, not the last 1,000 profile messages.
+        Ranking and duplicate frequency are refined by the application layer.
+        """
+        self._scope(profile_id)
+        latest = (
+            select(ValidationRow.id)
+            .where(
+                ValidationRow.profile_id == profile_id,
+                ValidationRow.target_type == "interpretation",
+                ValidationRow.target_id == InterpretationRow.id,
+            )
+            .order_by(ValidationRow.created_at.desc(), ValidationRow.id.desc())
+            .limit(1)
+            .correlate(InterpretationRow)
+            .scalar_subquery()
+        )
+        selections = (
+            select(
+                SequenceItemRow.sequence_id.label("sequence_id"),
+                func.array_agg(
+                    aggregate_order_by(SequenceItemRow.block_id, SequenceItemRow.position)
+                ).label("block_ids"),
+                func.count(func.distinct(SequenceItemRow.block_id))
+                .filter(SequenceItemRow.block_id.in_(block_ids))
+                .label("overlap"),
+            )
+            .where(SequenceItemRow.profile_id == profile_id)
+            .group_by(SequenceItemRow.sequence_id)
+            .subquery()
+        )
+        text = func.coalesce(InterpretationRow.corrected_text, InterpretationRow.text)
+        changed = (
+            select(AuditRow.id)
+            .where(
+                AuditRow.profile_id == profile_id,
+                AuditRow.target_type.in_(("communication_block", "concept")),
+                AuditRow.created_at >= ValidationRow.created_at,
+                (AuditRow.target_id == any_(selections.c.block_ids))
+                | AuditRow.target_id.in_(
+                    select(BlockRow.concept_id).where(
+                        BlockRow.profile_id == profile_id,
+                        BlockRow.id == any_(selections.c.block_ids),
+                    )
+                ),
+            )
+            .correlate(ValidationRow, selections)
+            .exists()
+        )
+        query = (
+            select(
+                InterpretationRow.id,
+                InterpretationRow.sequence_id,
+                selections.c.block_ids,
+                text,
+                ValidationRow.created_at,
+            )
+            .join(ValidationRow, ValidationRow.id == latest)
+            .join(
+                SequenceRow,
+                (SequenceRow.profile_id == profile_id)
+                & (SequenceRow.id == InterpretationRow.sequence_id),
+            )
+            .join(selections, selections.c.sequence_id == SequenceRow.id)
+            .where(
+                InterpretationRow.profile_id == profile_id,
+                InterpretationRow.sequence_id != exclude_sequence_id,
+                InterpretationRow.status.in_(("confirmed", "corrected")),
+                SequenceRow.status == "completed",
+                selections.c.overlap > 0,
+                ~changed,
+                func.char_length(text).between(1, 4000),
+                ValidationRow.actor_role.in_(("user", "caregiver", "professional")),
+                (
+                    (InterpretationRow.status == "confirmed") & (ValidationRow.action == "confirm")
+                    | (InterpretationRow.status == "corrected")
+                    & (ValidationRow.action == "correct")
+                    & (ValidationRow.corrected_value["text"].astext == text)
+                ),
+            )
+            .order_by(
+                selections.c.overlap.desc(),
+                ValidationRow.created_at.desc(),
+                InterpretationRow.id.desc(),
+            )
+            .limit(1000)
+        )
+        return tuple(
+            AcceptedTrace(i, s, tuple(b), t, at) for i, s, b, t, at in self.session.execute(query)
+        )
 
     def audit(
         self,

@@ -563,6 +563,7 @@ async def interpret(
         communication(request),
         request.app.state.ai_provider,
         telemetry=request.app.state.telemetry,
+        memory_limit=request.app.state.settings.ai_memory_examples,
     )
     result = await service.interpret(
         profile_id, sequence_id, declared_context=body.declared_context

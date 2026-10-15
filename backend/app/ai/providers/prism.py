@@ -31,6 +31,11 @@ class PRISMProvider(HTTPProvider):
         if operation not in self.capabilities:
             raise ProviderUnsupportedCapability("PRISM operation is not configured as supported")
         query = instruction(operation, request, compact=True)
+        # Keep the current selection intact; reduce only the ranked personal examples
+        # for PRISM's smaller native envelope. Never truncate a reference mid-phrase.
+        while len(query) > 4000 and operation == "interpret" and request.memory_examples:
+            request = request.model_copy(update={"memory_examples": request.memory_examples[:-1]})
+            query = instruction(operation, request, compact=True)
         if len(query) > 4000:
             raise ProviderPayloadError("Bounded PictoFlow request exceeds PRISM's query limit")
         result = await self.exchange(
