@@ -170,6 +170,11 @@ export default function CommunicationScreen({
   }, [base, profileId, storageKey, data.setError]);
 
   useEffect(() => {
+    setObserveRhythm(false);
+    lastSelection.current = null;
+  }, [profileId]);
+
+  useEffect(() => {
     const reset = () => {
       if (document.hidden) lastSelection.current = null;
     };
