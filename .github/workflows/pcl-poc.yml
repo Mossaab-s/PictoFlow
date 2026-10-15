@@ -55,6 +55,7 @@ jobs:
           node tests/e2e/missing-word.mjs
           node tests/e2e/keyboard-usage.mjs
           node tests/e2e/offline-reopen.mjs
+          node tests/e2e/selection-rhythm.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -64,3 +65,4 @@ jobs:
             admin/.local/memory-suggestions/*.png
             admin/.local/keyboard-usage/*.png
             admin/.local/offline-reopen/*.png
+            admin/.local/selection-rhythm/*.png

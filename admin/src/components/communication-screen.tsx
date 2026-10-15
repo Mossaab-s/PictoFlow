@@ -32,6 +32,12 @@ import CompositionMemory from "./composition-memory";
 import { replayAvailable } from "@/lib/learning";
 import MemorySuggestions from "./memory-suggestions";
 import AIContext from "./ai-context";
+import SelectionRhythm from "./selection-rhythm";
+import {
+  selectionObservation,
+  type InputMethod,
+  type SelectionMark,
+} from "@/lib/selection-rhythm";
 import { useMemorySuggestionMode } from "./use-memory-suggestion-mode";
 import type { MemoryProposalBody } from "@/lib/memory-suggestions";
 
@@ -53,6 +59,9 @@ export default function CommunicationScreen({
   const [sequence, setSequence] = useState<Sequence | null>(null);
   const [decision, setDecision] = useState<Decision | null>(null);
   const [context, setContext] = useState("");
+  const [observeRhythm, setObserveRhythm] = useState(false);
+  const lastSelection = useRef<SelectionMark | null>(null);
+  const inputMethod = useRef<InputMethod>("unknown");
   const [role, setRole] = useState<HumanRole>("user");
   const [busy, setBusy] = useState(false);
   const [restoring, setRestoring] = useState(true);
@@ -160,6 +169,14 @@ export default function CommunicationScreen({
     };
   }, [base, profileId, storageKey, data.setError]);
 
+  useEffect(() => {
+    const reset = () => {
+      if (document.hidden) lastSelection.current = null;
+    };
+    document.addEventListener("visibilitychange", reset);
+    return () => document.removeEventListener("visibilitychange", reset);
+  }, []);
+
   async function perform(task: () => Promise<void>) {
     if (gate.current) return;
     const origin =
@@ -173,6 +190,7 @@ export default function CommunicationScreen({
     try {
       await task();
     } catch (error) {
+      lastSelection.current = null;
       if (alive.current) {
         data.setError(
           error instanceof Error ? error.message : "Action impossible.",
@@ -228,7 +246,7 @@ export default function CommunicationScreen({
       }
     }
   }
-  async function select(tile: Tile) {
+  async function select(tile: Tile, clickedAt = performance.now()) {
     let active = current.current;
     if (!active) {
       active = await api<Sequence>(`${base}/sequences`, {
@@ -243,13 +261,32 @@ export default function CommunicationScreen({
       `${base}/sequences/${active.id}/selection`,
       {
         method: "POST",
-        body: JSON.stringify({ action: "append", block_id: tile.block_id }),
+        body: JSON.stringify({
+          action: "append",
+          block_id: tile.block_id,
+          ...(observeRhythm
+            ? {
+                observation: selectionObservation(
+                  lastSelection.current,
+                  active.id,
+                  clickedAt,
+                  inputMethod.current,
+                ),
+              }
+            : {}),
+        }),
       },
     );
-    if (alive.current) remember(result, null);
+    if (alive.current) {
+      lastSelection.current = observeRhythm
+        ? { sequenceId: active.id, clickedAt, releasedAt: performance.now() }
+        : null;
+      remember(result, null);
+    }
   }
   async function selection(action: "undo" | "clear" | "complete") {
     if (!current.current) return;
+    lastSelection.current = null;
     const result = await api<Sequence>(
       `${base}/sequences/${current.current.id}/selection`,
       { method: "POST", body: JSON.stringify({ action }) },
@@ -694,6 +731,13 @@ export default function CommunicationScreen({
         <section
           className="communication-keyboard"
           id="communication-keyboard"
+          onPointerDownCapture={() => {
+            inputMethod.current = "pointer";
+          }}
+          onKeyDownCapture={(event) => {
+            if (event.key === "Enter" || event.key === " ")
+              inputMethod.current = "keyboard";
+          }}
           tabIndex={-1}
           aria-label="Mon clavier de communication"
         >
@@ -732,7 +776,10 @@ export default function CommunicationScreen({
                 profileId={profileId}
                 groups={data.groups}
                 tiles={tiles}
-                onSelect={(tile) => perform(() => select(tile))}
+                onSelect={(tile) => {
+                  const clickedAt = performance.now();
+                  return perform(() => select(tile, clickedAt));
+                }}
                 disabled={pending || Boolean(completed) || chosen.length >= 32}
                 displaySize={display.size}
               />
@@ -755,6 +802,17 @@ export default function CommunicationScreen({
               </div>
             ))}
         </section>
+        <SelectionRhythm
+          key={`rhythm:${profileId}:${sequence?.id ?? "new"}`}
+          profileId={profileId}
+          sequenceId={sequence?.id ?? null}
+          enabled={observeRhythm}
+          disabled={pending}
+          onChange={(enabled) => {
+            setObserveRhythm(enabled);
+            lastSelection.current = null;
+          }}
+        />
         {completed && !decision && suggestions.mode === "off" && (
           <section className="panel interpretation-panel">
             <h2>Une proposition de phrase ?</h2>

@@ -337,6 +337,18 @@ summary:focus-visible {
   color: var(--ink);
   font-size: 14px;
 }
+.rhythm-panel .rhythm-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  cursor: pointer;
+}
+.rhythm-panel .rhythm-choice input {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+}
 .panel button {
   justify-self: start;
 }

@@ -6,6 +6,7 @@ from uuid import UUID
 from app.application.ai_quality import AttemptEvidence
 from app.application.memory_vocabulary import MemoryReference, check_memory_provenance, resolve
 from app.application.pcl_repository import PCLUnits
+from app.application.selection_rhythm import SelectionObservation
 from app.application.transient import JsonObject, TransientKind, TransientStore
 from app.domain.pcl.confidence import ConfidenceDecision, ConfidencePolicy, HandlingState
 from app.domain.pcl.entities import (
@@ -47,8 +48,17 @@ class CommunicationService:
         return sequence
 
     def select(
-        self, profile_id: UUID, sequence_id: UUID, action: str, block_id: UUID | None = None
+        self,
+        profile_id: UUID,
+        sequence_id: UUID,
+        action: str,
+        block_id: UUID | None = None,
+        observation: SelectionObservation | None = None,
     ):
+        if observation is not None:
+            observation = SelectionObservation.model_validate(observation)
+            if action != "append":
+                raise DomainInvariantError("Only an explicit selection can carry an observation")
         with self.units() as store:
             previous = store.get(profile_id, CommunicationSequence, sequence_id)
             if action == "append":
@@ -57,7 +67,16 @@ class CommunicationService:
                     raise DomainInvariantError("Only validated blocks can be selected")
             current = edit_sequence(previous, action, block_id)
             store.save(profile_id, current)
-            store.audit(profile_id, f"sequence_{action}", previous, current, "human")
+            store.audit(
+                profile_id,
+                f"sequence_{action}",
+                previous,
+                current,
+                "human",
+                new_details={"selection_observation": observation.model_dump()}
+                if observation
+                else None,
+            )
         return current
 
     def history(self, profile_id: UUID):

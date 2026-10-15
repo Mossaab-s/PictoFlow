@@ -55,7 +55,12 @@ class AcceptedTrace:
 
 class PCLRepository(Protocol):
     def accepted_traces(
-        self, profile_id: UUID, *, block_ids: tuple[UUID, ...], exclude_sequence_id: UUID
+        self,
+        profile_id: UUID,
+        *,
+        block_ids: tuple[UUID, ...],
+        exclude_sequence_id: UUID,
+        reference_id: UUID | None = None,
     ) -> tuple[AcceptedTrace, ...]: ...
 
     def get(self, profile_id: UUID, entity_type: type[T], entity_id: UUID) -> T: ...
