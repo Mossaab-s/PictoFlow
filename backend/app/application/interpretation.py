@@ -7,8 +7,10 @@ from app.ai.errors import ProviderDisabledError, ProviderPayloadError, ProviderU
 from app.ai.protocol import AIProvider
 from app.application.ai_quality import AttemptEvidence, FallbackReason
 from app.application.communication import CommunicationService
+from app.application.memory_vocabulary import revision
 from app.application.pcl_repository import PCLUnits
 from app.application.personal_examples import select_examples
+from app.application.personal_hypotheses import grounding
 from app.application.phrase_fidelity import faithful_words
 from app.domain.pcl.entities import (
     CommunicationBlock,
@@ -166,17 +168,56 @@ class InterpretationService:
                     examples=examples,
                     memory_examples=memory,
                 )
-            items = tuple(
-                Interpretation(
+            # Some adapters reduce examples to fit their native envelope. Only
+            # references actually sent can ground a relaxed hypothesis.
+            sent = (
+                result.metadata.extensions.get("memory_reference_ids") if result.metadata else None
+            )
+            if isinstance(sent, list):
+                request = request.model_copy(
+                    update={
+                        "memory_examples": tuple(
+                            e for e in request.memory_examples if str(e.reference_id) in sent
+                        )
+                    }
+                )
+            details, items, texts = {}, [], set()
+            for item in result.candidates:
+                support = grounding(request, item.text)
+                if support is None or item.text.casefold().strip() in texts:
+                    continue
+                texts.add(item.text.casefold().strip())
+                candidate = Interpretation(
                     profile_id=profile_id,
                     sequence_id=sequence_id,
                     text=item.text,
-                    confidence=item.confidence,
+                    confidence=min(item.confidence, self.communication.policy.confirmation)
+                    if support
+                    else item.confidence,
                     source=source,
                 )
-                for item in result.candidates
-                if faithful_words(request, item.text)
-            )
+                refs = support or request.memory_examples
+                details[candidate.id] = {
+                    "personal_hypothesis": bool(support),
+                    "memory_examples_selected": memory,
+                    "memory_examples_sent": len(request.memory_examples),
+                    **(
+                        {
+                            "memory_sources": [
+                                {
+                                    "interpretation_id": str(e.reference_id),
+                                    "revision": revision(e.text),
+                                    "index": None,
+                                }
+                                for e in refs
+                            ]
+                        }
+                        if refs
+                        else {}
+                    ),
+                }
+                items.append(candidate)
+            items = tuple(items)
             if not items:
                 return self.fallback(
                     profile_id,
@@ -218,4 +259,5 @@ class InterpretationService:
                 correction_examples=examples,
                 memory_examples=memory,
             ),
+            proposal_details=details,
         )

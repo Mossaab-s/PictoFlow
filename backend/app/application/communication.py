@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from app.application.ai_quality import AttemptEvidence
-from app.application.memory_vocabulary import check_memory_provenance
+from app.application.memory_vocabulary import MemoryReference, check_memory_provenance, resolve
 from app.application.pcl_repository import PCLUnits
 from app.application.transient import JsonObject, TransientKind, TransientStore
 from app.domain.pcl.confidence import ConfidenceDecision, ConfidencePolicy, HandlingState
@@ -76,6 +76,7 @@ class CommunicationService:
         *,
         source: str,
         evidence: AttemptEvidence | None = None,
+        proposal_details: dict | None = None,
     ) -> ConfidenceDecision:
         identifier(profile_id, "profile_id")
         identifier(sequence_id, "sequence_id")
@@ -112,9 +113,23 @@ class CommunicationService:
             for item in selected:
                 if item.source != source:
                     raise DomainInvariantError("Proposal source does not match provenance")
+                detail = (proposal_details or {}).get(item.id, {})
+                if detail.get("personal_hypothesis"):
+                    for ref in detail.get("memory_sources", []):
+                        resolve(
+                            store,
+                            profile_id,
+                            MemoryReference(UUID(ref["interpretation_id"]), ref["revision"]),
+                            require_association=True,
+                        )
                 store.add(profile_id, item)
                 store.audit(
-                    profile_id, f"interpretation_{decision.state.value}", None, item, source
+                    profile_id,
+                    f"interpretation_{decision.state.value}",
+                    None,
+                    item,
+                    source,
+                    new_details=(proposal_details or {}).get(item.id),
                 )
         return decision
 
