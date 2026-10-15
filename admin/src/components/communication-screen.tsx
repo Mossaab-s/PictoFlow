@@ -630,6 +630,7 @@ export default function CommunicationScreen({
             profileId={profileId}
             sequence={sequence}
             revision={decision}
+            decision={decision}
             disabled={pending}
             canReplay={replayAvailable(profileId, sequence, data.blocks)}
             onReplay={() => void perform(replay)}

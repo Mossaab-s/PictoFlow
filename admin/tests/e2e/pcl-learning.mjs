@@ -79,6 +79,15 @@ try {
     .getByText("Votre correction est conservée", { exact: true })
     .waitFor();
   await learning.getByText("Je veux boire encore.", { exact: true }).waitFor();
+  await learning.getByText("Ce que ce choix a changé", { exact: true }).click();
+  await learning
+    .getByText("Votre correction remplace", { exact: false })
+    .waitFor();
+  await learning
+    .getByText("Voir les décisions humaines", { exact: true })
+    .click();
+  await learning.getByText("Correction", { exact: true }).waitFor();
+  await learning.getByText("Personne utilisatrice", { exact: false }).waitFor();
   const retained = await call(`profiles/${p}/memory?validated=true`);
   assert.equal(retained.interpretations.length, 1);
   const meaning = retained.interpretations[0];
@@ -108,6 +117,12 @@ try {
     () => document.activeElement?.textContent === "Mon message terminé",
   );
   assert.equal(interpretations, 1);
+  await learning
+    .getByText("Pourquoi ce souvenir revient", { exact: true })
+    .click();
+  await learning
+    .getByText("Votre correction humaine est prioritaire", { exact: false })
+    .waitFor();
   assert.equal(
     await learning
       .getByText("Votre correction est conservée", { exact: true })
