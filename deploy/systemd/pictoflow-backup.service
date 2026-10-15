@@ -1,0 +1,20 @@
+[Unit]
+Description=Encrypted PictoFlow server backup
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=root
+UMask=0077
+ExecStart=/usr/bin/python3 /home/mossaab/pictoflow/current/deploy/server_backup.py backup --root /home/mossaab/pictoflow
+TimeoutStartSec=30min
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/mossaab/pictoflow/backups/automatic
+PrivateTmp=true
+

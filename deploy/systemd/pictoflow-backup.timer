@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily encrypted PictoFlow server backup
+
+[Timer]
+OnCalendar=*-*-* 03:00:00 Europe/Paris
+RandomizedDelaySec=10min
+Persistent=true
+Unit=pictoflow-backup.service
+
+[Install]
+WantedBy=timers.target
