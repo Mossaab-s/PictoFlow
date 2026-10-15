@@ -4,6 +4,9 @@ La priorité actuelle est la validation fonctionnelle du POC. Le parcours doit
 permettre de constater ce que le PCL conserve après un choix humain, sans
 confondre un souvenir personnel et une nouvelle proposition de l'IA.
 
+Pour élargir l'essai aux demandes, refus, émotions, répétitions et messages
+ambigus, voir [les scénarios et résultats comparés](POC_SCENARIOS.md).
+
 ## Un essai simple
 
 1. Préparer un profil fictif avec quelques touches et leurs dessins, puis les

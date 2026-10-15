@@ -2,9 +2,18 @@
 
 Priorité actuelle : valider le concept par le parcours de communication et de
 mémoire, décrit dans [POC_VALIDATION.md](POC_VALIDATION.md). La PR #45 est fusionnée,
-mais ses outils d'exploitation ne sont pas activés sur l'instance. Le prochain
-incrément rend visibles le sens retenu et les souvenirs retrouvés pour les mêmes
-touches, avec un nouvel essai explicite et sans nouvelle validation automatique.
+mais ses outils d'exploitation ne sont pas activés sur l'instance. La PR #46 est
+fusionnée et déployée dans `20261015-04` : sens retenu et souvenirs retrouvés
+pour les mêmes touches, avec nouvel essai explicite sans nouvelle validation
+automatique. HTTPS, comptes, clavier, photos et anciennes données sont conservés.
+
+L'incrément suivant vérifie plusieurs scénarios fonctionnels :
+[POC_SCENARIOS.md](POC_SCENARIOS.md). Il corrige le rejet abusif de Moi/je et
+rend le prompt plus prudent face aux rôles ambigus de plusieurs personnes.
+Les essais Groq restent synthétiques en mémoire ; les choix humains et leur
+mémorisation sont vérifiés séparément via l'API et PostgreSQL jetable. La
+validation d'utilité avec les personnes reste à faire. Ces corrections attendent
+la revue et le déploiement ; l'instance conserve la version de la PR #46.
 
 Le parcours métier PCL est implémenté localement, avec API REST, administration
 initiale et providers IA optionnels. Une instance de test est déployée sur

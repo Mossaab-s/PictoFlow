@@ -36,6 +36,18 @@ GRAMMAR = frozenset(
     "besoin "
     "ne n svp sil si plait please".split()
 )
+# An explicitly selected person is content, even when its French form changes
+# from a stressed pronoun (Moi) to a subject (je / j'). Other grammar-only labels
+# still require the verbatim selection; this is not general sentence analysis.
+SELECTED_PERSON = {
+    "moi": "je",
+    "je": "je",
+    "j": "je",
+    "toi": "tu",
+    "tu": "tu",
+    "nous": "nous",
+    "vous": "vous",
+}
 
 
 def words(text: str) -> tuple[str, ...]:
@@ -56,12 +68,17 @@ def faithful_words(request: InterpretationRequest, text: str) -> bool:
     if request.language.split("-")[0].casefold() != "fr":
         return False
     required: Counter[str] = Counter()
+    required_persons: Counter[str] = Counter()
     allowed: set[str] = set()
     for block in request.blocks:
+        tokens = words(block.label)
         selected = content(block.label)
-        if not selected:
+        if not selected and not (len(tokens) == 1 and tokens[0] in SELECTED_PERSON):
             # A free-form sentence or non-textual label is safe only verbatim.
             return text == " → ".join(item.label for item in request.blocks)
+        required_persons.update(
+            SELECTED_PERSON[token] for token in tokens if token in SELECTED_PERSON
+        )
         required.update(selected)
         allowed.update(selected)
         # Meanings are validated PCL concept labels, never relation targets/context.
@@ -73,6 +90,11 @@ def faithful_words(request: InterpretationRequest, text: str) -> bool:
         allowed.add("aller")
     actual = content(text)
     if required - actual or set(actual) - allowed:
+        return False
+    actual_persons = Counter(
+        SELECTED_PERSON[token] for token in words(text) if token in SELECTED_PERSON
+    )
+    if required_persons - actual_persons:
         return False
     # A negative selection must stay negative; do not introduce negation either.
     negatives = {"non", "pas", "ne", "n", "jamais", "aucun", "aucune", "sans"}

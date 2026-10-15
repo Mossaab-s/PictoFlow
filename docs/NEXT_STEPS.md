@@ -6,6 +6,10 @@ Le parcours fonctionnel prioritaire est **composer → choisir/corriger un sens 
 constater sa mémorisation → retrouver ce souvenir**. Voir [POC_VALIDATION.md](POC_VALIDATION.md).
 Le panneau de communication rend la mémoire visible et permet de refaire un essai
 avec les mêmes touches, sans nouvel appel IA ni validation automatique.
+La PR #46 est fusionnée et déployée. L'étape suivante vérifie des demandes,
+refus, émotions, répétitions et messages ambigus ; voir [POC_SCENARIOS.md](POC_SCENARIOS.md)
+pour les essais synthétiques Groq, les corrections et les observations d'usage
+qui restent à recueillir avec la personne.
 Les travaux d'exploitation sont mis de côté : la PR #45 est fusionnée et ses
 outils sont prêts, mais le timer n'est pas installé sur l'instance active.
 
@@ -38,7 +42,7 @@ Chaque point passe par une PR, puis par un déploiement après sa fusion.
    La réouverture totalement hors connexion demandera le cache de l’application
    avec HTTPS ; elle reste à livrer avec la préparation du serveur.
 7. **Qualité IA** : PR #42 fusionnée et déployée ; bilan par profil des tentatives,
-   refus et décisions humaines, 18 scénarios reproductibles et usage borné des
+   refus et décisions humaines, 22 scénarios reproductibles et usage borné des
    corrections humaines pour la même suite de touches. Voir [AI_QUALITY.md](AI_QUALITY.md).
 8. **Préparation à la production** : authentification, droits par profil, HTTPS,
    sauvegardes automatiques et essais de restauration serveur.
