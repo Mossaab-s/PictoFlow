@@ -94,6 +94,10 @@ try {
     .locator(".communication-keyboard")
     .getByRole("button", { name: "Eau", exact: true })
     .click();
+  await page
+    .locator(".message-panel")
+    .getByText("Eau", { exact: true })
+    .waitFor();
   assert.equal(
     (await call(base + `/sequences/${before.id}`)).block_ids.length,
     2,
