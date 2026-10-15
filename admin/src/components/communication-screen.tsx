@@ -614,7 +614,7 @@ export default function CommunicationScreen({
           )}
         </section>
         <MemorySuggestions
-          key={profileId}
+          key={`suggestions:${profileId}`}
           profileId={profileId}
           sequence={sequence}
           mode={suggestions.mode}
