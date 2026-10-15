@@ -20,10 +20,12 @@ confirmés : hypothèses souples guidées par la mémoire de la personne, jusqu�
 références pertinentes avec fréquence et récence, observation du rythme avant
 toute association avec un état confirmé. Une PR en draft par étape.
 
-La première étape ajoute les références acceptées au contrat provider ; voir
-[PERSONAL_AI_MEMORY.md](PERSONAL_AI_MEMORY.md). Viennent ensuite les hypothèses
-plus souples, leur explication et la mesure facultative du rythme. Les choix,
-corrections et refus restent explicites ; aucun changement automatique du clavier.
+Les PR #55 puis #56 préparent les références acceptées, les hypothèses plus souples
+et leur explication ; voir [PERSONAL_AI_MEMORY.md](PERSONAL_AI_MEMORY.md).
+La troisième étape ajoute l’observation facultative du rythme, sans l’envoyer
+à l’IA ni lui attribuer d’émotion ; voir [SELECTION_RHYTHM.md](SELECTION_RHYTHM.md).
+Les choix, corrections et refus restent explicites ; aucun changement automatique
+du clavier. Les PR ont main pour base et se relisent/fusionnent dans cet ordre.
 
 ## Incréments fonctionnels livrés (#48–#54)
 

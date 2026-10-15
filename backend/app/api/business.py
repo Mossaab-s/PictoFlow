@@ -22,6 +22,7 @@ from app.application.memory_vocabulary import MemoryReference, MemorySuggestionC
 from app.application.offline_communication import CommunicationSnapshot, OfflineCommunication
 from app.application.pcl_repository import FeedbackPage
 from app.application.phrases import PhraseConflict, PhraseService, ReusablePhrase
+from app.application.selection_rhythm import RhythmReport, SelectionObservation, rhythm_report
 from app.application.semantic_space import SemanticSpace
 from app.application.validation import RelationCorrectionService
 from app.domain.pcl.audit import SemanticAuditEvent
@@ -139,6 +140,7 @@ class SequenceBody(Body):
 class SelectionBody(Body):
     action: str = Field(pattern="^(append|undo|clear|complete|cancel)$")
     block_id: UUID | None = None
+    observation: SelectionObservation | None = None
 
 
 class InterpretationBody(Body):
@@ -550,7 +552,14 @@ def start_sequence(request: Request, profile_id: UUID, body: SequenceBody):
     "/profiles/{profile_id}/sequences/{sequence_id}/selection", response_model=CommunicationSequence
 )
 def selection(request: Request, profile_id: UUID, sequence_id: UUID, body: SelectionBody):
-    return communication(request).select(profile_id, sequence_id, body.action, body.block_id)
+    return communication(request).select(
+        profile_id, sequence_id, body.action, body.block_id, body.observation
+    )
+
+
+@router.get("/profiles/{profile_id}/sequences/{sequence_id}/rhythm", response_model=RhythmReport)
+def selection_rhythm(request: Request, profile_id: UUID, sequence_id: UUID):
+    return rhythm_report(units(request), profile_id, sequence_id)
 
 
 @router.post(
