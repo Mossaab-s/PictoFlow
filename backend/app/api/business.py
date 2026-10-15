@@ -173,11 +173,17 @@ class BlockFeedbackBody(FeedbackBody):
     confirm_representation: bool = Field(default=False, strict=True)
 
 
+PersonalMeaning = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=256)
+]
+
+
 class PersonalBlockBody(Body):
     request_id: UUID
     label: str = Field(min_length=1, max_length=256)
     pictogram_key: PictogramKey
     actor_role: HumanRole
+    meaning: PersonalMeaning | None = None
 
 
 class PictogramSelectionBody(Body):

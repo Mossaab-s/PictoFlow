@@ -22,6 +22,7 @@ import { TouchContent } from "./pictogram";
 import { HumanRoleSelector } from "./profile-navigation";
 import type { DisplaySize } from "@/lib/display";
 import type { useLocalSpeech } from "./use-local-speech";
+import OfflineReopenSetup from "./offline-reopen-setup";
 
 export default function OfflineCommunication({
   profileId,
@@ -213,8 +214,8 @@ export default function OfflineCommunication({
         le serveur.
       </p>
       <p className="helper">
-        Gardez cet écran ouvert pendant une coupure. La réouverture complète
-        sans réseau n’est pas encore disponible.
+        Cette copie sert dans l’écran ouvert. Pour réouvrir sans réseau,
+        préparez aussi une copie protégée ci-dessous.
       </p>
       <p role="status">
         {online
@@ -266,6 +267,12 @@ export default function OfflineCommunication({
       </div>
       {snapshot && (
         <>
+          {!temporary && (
+            <OfflineReopenSetup
+              record={record}
+              disabled={disabled || !online}
+            />
+          )}
           <p>
             Copie préparée le{" "}
             {new Date(snapshot.captured_at).toLocaleString("fr-FR")}. Elle peut

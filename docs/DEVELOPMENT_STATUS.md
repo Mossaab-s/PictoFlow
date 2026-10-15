@@ -7,12 +7,13 @@ formulation prudente des messages ambigus. Voir [POC_VALIDATION.md](POC_VALIDATI
 et [POC_SCENARIOS.md](POC_SCENARIOS.md). HTTPS, comptes et anciennes données sont
 conservés. Les outils d'exploitation de la PR #45 restent désactivés.
 
-L'incrément en revue ajoute les suggestions **Mots / Phrases**, exclusivement
-issues des phrases acceptées du profil, avec choix puis validation humaine.
-Il est décrit dans [MEMORY_SUGGESTIONS.md](MEMORY_SUGGESTIONS.md).
-Vérification locale : 632 tests backend, 57 tests frontend, Ruff, Prettier,
-TypeScript et compilation Next.js. Les parcours navigateur sont exécutés sur
-l'instance CI jetable. Ce travail reste en draft, sans déploiement.
+Les PR #48 à #53 sont en draft : suggestions **Mots / Phrases** depuis les seules
+phrases acceptées, apprentissage expliqué, sens personnels, reprise après ajout
+d'un mot, usages du clavier et réouverture protégée hors connexion.
+Le [guide de revue](REVIEW_FUNCTIONAL_POC.md) donne l'ordre et les essais par tâche.
+Vérification locale de l'ensemble : 636 tests backend, 63 tests frontend, Ruff,
+Prettier, TypeScript et compilation Next.js. Les parcours navigateur sont
+exécutés sur l'instance CI jetable. Aucun de ces incréments n'est déployé.
 
 Le parcours métier PCL est implémenté localement, avec API REST, administration
 initiale et providers IA optionnels. Une instance de test est déployée sur

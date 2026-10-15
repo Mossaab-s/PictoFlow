@@ -4,12 +4,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { compositionMemory } from "@/lib/learning";
 import { messageText, scopedMemory, type Memory } from "@/lib/memory";
-import type { Sequence } from "@/lib/keyboard";
+import type { Decision, Sequence } from "@/lib/keyboard";
+import MemoryEvidence, { memoryDate } from "./memory-evidence";
 
 export default function CompositionMemory({
   profileId,
   sequence,
   revision,
+  decision,
   disabled,
   canReplay,
   onReplay,
@@ -18,6 +20,7 @@ export default function CompositionMemory({
   profileId: string;
   sequence: Sequence;
   revision: unknown;
+  decision: Decision | null;
   disabled: boolean;
   canReplay: boolean;
   onReplay: () => void;
@@ -55,6 +58,9 @@ export default function CompositionMemory({
     return () => controller.current?.abort();
   }, [load, revision]);
   const result = memory ? compositionMemory(profileId, sequence, memory) : null;
+  const candidates = (decision?.candidates ?? []).filter(
+    (item) => item.profile_id === profileId && item.sequence_id === sequence.id,
+  );
   return (
     <section
       className="panel composition-memory"
@@ -93,6 +99,32 @@ export default function CompositionMemory({
                 profil. Vous pourrez retrouver cette phrase sans nouvelle
                 proposition IA.
               </p>
+              <details>
+                <summary>Ce que ce choix a changé</summary>
+                <p>
+                  {result.retained.status === "corrected"
+                    ? "Votre correction remplace la formulation initiale dans la mémoire acceptée et dans les suggestions de mots et de phrases."
+                    : "Votre confirmation rend cette phrase disponible dans la mémoire acceptée et dans les suggestions de mots et de phrases."}
+                </p>
+                {result.retained.status === "corrected" && (
+                  <p>Formulation initiale : {result.retained.text}</p>
+                )}
+                <p>
+                  Aucun sens de touche, dessin ou emplacement du clavier n’a été
+                  changé. Ce choix ne crée pas de relation sémantique et
+                  n’entraîne pas le modèle IA.
+                </p>
+              </details>
+              <MemoryEvidence
+                key={
+                  result.retained.id +
+                  result.retained.status +
+                  result.retained.corrected_text
+                }
+                profileId={profileId}
+                type="interpretation"
+                targetId={result.retained.id}
+              />
               <button disabled={disabled || !canReplay} onClick={onReplay}>
                 Refaire un essai avec les mêmes touches
               </button>
@@ -104,10 +136,25 @@ export default function CompositionMemory({
               )}
             </div>
           ) : (
-            <p>
-              Ce nouveau message n’a pas encore de sens validé. Une proposition
-              seule n’entre pas dans votre mémoire validée.
-            </p>
+            <div>
+              <p>
+                Ce nouveau message n’a pas encore de sens validé. Une
+                proposition seule n’entre pas dans votre mémoire validée.
+              </p>
+              {candidates.some((item) => item.status === "rejected") && (
+                <p role="status">
+                  Le refus est enregistré dans l’historique humain. La phrase
+                  écartée n’alimente plus les souvenirs acceptés ni leurs mots.
+                  Les autres souvenirs du profil sont conservés.
+                </p>
+              )}
+              {candidates.some((item) => item.status === "proposed") && (
+                <p>
+                  La proposition attend votre choix. Elle n’ajoute encore aucun
+                  mot à vos suggestions de mémoire.
+                </p>
+              )}
+            </div>
           )}
           {result.previous.length ? (
             <div className="composition-recalled">
@@ -123,6 +170,26 @@ export default function CompositionMemory({
                   <span className="tag">
                     Souvenir validé · sans nouvel appel IA
                   </span>
+                  <details>
+                    <summary>Pourquoi ce souvenir revient</summary>
+                    <p>
+                      Message créé le {memoryDate(item.created_at)}, puis
+                      accepté pour les mêmes touches, dans le même ordre, avec
+                      les mêmes répétitions. Le contexte libre précisé pour une
+                      demande de phrase peut être différent aujourd’hui.
+                      {item.status === "corrected" &&
+                        " Votre correction humaine est prioritaire sur la formulation initiale."}
+                    </p>
+                    <p>
+                      Ce rapprochement retrouve un ancien choix ; le sens de ce
+                      nouveau message reste à choisir.
+                    </p>
+                    <MemoryEvidence
+                      profileId={profileId}
+                      type="interpretation"
+                      targetId={item.id}
+                    />
+                  </details>
                   <button disabled={disabled} onClick={() => onChoose(item.id)}>
                     Retrouver cette phrase
                   </button>

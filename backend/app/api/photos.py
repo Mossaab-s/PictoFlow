@@ -3,10 +3,10 @@
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request, Response
-from pydantic import Field
+from pydantic import Field, model_validator
 from starlette.concurrency import run_in_threadpool
 
-from app.api.business import Body, units
+from app.api.business import Body, PersonalMeaning, units
 from app.application.photos import MAX_ENCODED_LENGTH, PhotoService, decode_photo
 from app.domain.pcl.entities import CommunicationBlock, HumanRole
 from app.infrastructure.photos import normalize_photo
@@ -23,6 +23,13 @@ class PhotoBody(Body):
 class PhotoTouchBody(PhotoBody):
     label: str = Field(min_length=1, max_length=256)
     concept_id: UUID | None = None
+    meaning: PersonalMeaning | None = None
+
+    @model_validator(mode="after")
+    def existing_meaning(self):
+        if self.concept_id is not None and self.meaning is not None:
+            raise ValueError("Choose an existing concept or a new personal meaning")
+        return self
 
 
 async def body(request: Request, model):
@@ -75,6 +82,7 @@ async def create_photo_touch(request: Request, profile_id: UUID):
         photo,
         value.actor_role,
         value.concept_id,
+        value.meaning,
     )
 
 

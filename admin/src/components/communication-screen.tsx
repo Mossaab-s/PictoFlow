@@ -613,6 +613,34 @@ export default function CommunicationScreen({
             </p>
           )}
         </section>
+        {chosen.length > 0 && (
+          <details className="panel">
+            <summary>Le sens personnel de mes touches</summary>
+            <p>
+              Les mots et dessins restent vos repères. Ces sens viennent du
+              profil et peuvent aider à comprendre une proposition de phrase.
+            </p>
+            <ol>
+              {sequence?.block_ids.map((id, index) => {
+                const block = data.blocks.find(
+                  (item) => item.id === id && item.profile_id === profileId,
+                );
+                const meaning =
+                  data.concepts.find(
+                    (item) =>
+                      item.id === block?.concept_id &&
+                      item.profile_id === profileId,
+                  )?.label ?? block?.canonical_intent;
+                return (
+                  <li key={index}>
+                    <strong>{block?.label ?? "Touche indisponible"}</strong> :{" "}
+                    {meaning ?? "Sens indisponible"}
+                  </li>
+                );
+              })}
+            </ol>
+          </details>
+        )}
         <MemorySuggestions
           key={`suggestions:${profileId}`}
           profileId={profileId}
@@ -630,6 +658,7 @@ export default function CommunicationScreen({
             profileId={profileId}
             sequence={sequence}
             revision={decision}
+            decision={decision}
             disabled={pending}
             canReplay={replayAvailable(profileId, sequence, data.blocks)}
             onReplay={() => void perform(replay)}
@@ -667,6 +696,30 @@ export default function CommunicationScreen({
           tabIndex={-1}
           aria-label="Mon clavier de communication"
         >
+          {canEdit ? (
+            <Link
+              className="button-link secondary"
+              href={`/admin/profiles/${profileId}/keyboard?resume=1`}
+              aria-disabled={pending}
+              onClick={(event) => {
+                if (pending) event.preventDefault();
+              }}
+            >
+              Il me manque un mot
+            </Link>
+          ) : (
+            <p className="helper">
+              Il vous manque un mot ? Une personne autorisée à préparer ce
+              profil peut ajouter une touche avec vous.
+            </p>
+          )}
+          {completed && canEdit && (
+            <p className="helper">
+              Ce message est terminé. Après l’ajout d’une touche, choisissez «
+              Refaire un essai avec les mêmes touches » ou « Nouveau message »
+              pour l’utiliser.
+            </p>
+          )}
           <p className="keyboard-help">
             Au clavier : Tab pour parcourir, Entrée ou Espace pour choisir.
             Échap arrête la lecture. Les cases libres sont ignorées.
@@ -718,6 +771,11 @@ export default function CommunicationScreen({
                 placeholder="Par exemple : je suis à la maison"
               />
             </label>
+            <p className="helper">
+              Cette précision aide seulement la proposition actuelle. Elle ne
+              change pas le sens de vos touches et n’ajoute aucun mot aux
+              suggestions de mémoire.
+            </p>
             <button onClick={() => void perform(propose)} disabled={pending}>
               Proposer une phrase
             </button>
