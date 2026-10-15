@@ -145,8 +145,8 @@ try {
     .getByRole("button", { name: "Proposer cette phrase de mots", exact: true })
     .click();
   await page
-    .locator(".interpretation-card")
-    .getByText("Je veux boire de l’eau", { exact: true })
+    .locator(".interpretation-card .proposed-phrase")
+    .filter({ hasText: "Je veux boire de l’eau" })
     .waitFor();
   assert.deepEqual(await call(own.base + "/memory"), before);
   await page
@@ -159,8 +159,8 @@ try {
     .getByRole("button", { name: "Proposer cette phrase", exact: true })
     .click();
   await page
-    .locator(".interpretation-card")
-    .getByText("Je veux boire de l’eau.", { exact: true })
+    .locator(".interpretation-card .proposed-phrase")
+    .filter({ hasText: "Je veux boire de l’eau." })
     .waitFor();
   assert.deepEqual(await call(own.base + "/memory"), before);
   await page
@@ -235,8 +235,8 @@ try {
     .getByRole("button", { name: "Proposer cette phrase", exact: true })
     .click();
   await page
-    .locator(".interpretation-card")
-    .getByText("Je veux boire de l’eau.", { exact: true })
+    .locator(".interpretation-card .proposed-phrase")
+    .filter({ hasText: "Je veux boire de l’eau." })
     .waitFor();
   assert.deepEqual(await call(own.base + "/interpretations"), afterLost);
   await page.unroute("**/memory-proposals");
