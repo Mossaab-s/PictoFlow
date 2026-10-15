@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { api, APIError, setCSRFToken } from "@/lib/api";
 import { type AuthSession, pathPermitted } from "@/lib/access";
+import { vaultDatabase } from "@/lib/offline-vault";
+import { shellPrefix } from "@/lib/offline-shell";
 
 const AuthContext = createContext<AuthSession | null>(null);
 const lockKey = "pictoflow:explicit-logout";
@@ -23,16 +25,29 @@ async function forgetLocalCommunication() {
   } catch {
     referencesBlocked = true;
   }
-  await new Promise<void>((resolve, reject) => {
-    const request = indexedDB.deleteDatabase("pictoflow-offline-v1");
-    request.onsuccess = () => resolve();
-    request.onerror = () =>
-      reject(new Error("Les copies locales n’ont pas pu être effacées."));
-    request.onblocked = () =>
-      reject(
-        new Error("Fermez les autres onglets pour effacer les copies locales."),
-      );
-  });
+  await Promise.all(
+    ["pictoflow-offline-v1", vaultDatabase].map(
+      (name) =>
+        new Promise<void>((resolve, reject) => {
+          const request = indexedDB.deleteDatabase(name);
+          request.onsuccess = () => resolve();
+          request.onerror = () =>
+            reject(new Error("Les copies locales n’ont pas pu être effacées."));
+          request.onblocked = () =>
+            reject(
+              new Error(
+                "Fermez les autres onglets pour effacer les copies locales.",
+              ),
+            );
+        }),
+    ),
+  );
+  if ("caches" in globalThis)
+    await Promise.all(
+      (await caches.keys())
+        .filter((name) => name.startsWith(shellPrefix))
+        .map((name) => caches.delete(name)),
+    );
   if (referencesBlocked)
     throw new Error(
       "Les claviers locaux ont été effacés, mais les références de message ne sont pas accessibles dans ce navigateur.",
@@ -69,6 +84,7 @@ export default function Authentication({
   }, [session?.enabled, session?.account?.id]);
   useEffect(() => {
     let cancelled = false;
+    if (path === "/offline") return;
     api<AuthSession>("auth/session")
       .then((value) => {
         if (!cancelled) {
@@ -202,6 +218,7 @@ export default function Authentication({
       setBusy(false);
     }
   }
+  if (path === "/offline") return <>{children}</>;
   if (!session)
     return (
       <main className="page auth-page">
