@@ -1,0 +1,21 @@
+{
+	skip_install_trust
+	auto_https disable_redirects
+	# IP clients do not necessarily send SNI; select the configured IP certificate.
+	default_sni {$PICTOFLOW_HTTPS_ADDRESS:127.0.0.1}
+}
+
+https://{$PICTOFLOW_HTTPS_ADDRESS:127.0.0.1} {
+	tls internal
+	header {
+		Strict-Transport-Security "max-age=86400"
+		X-Content-Type-Options nosniff
+	}
+	reverse_proxy admin:3000
+}
+
+# Fixed destination: never construct a redirect from an untrusted Host header.
+# Port 3000 on the LAN also reaches this listener for old bookmarks.
+http://:80 {
+	redir https://{$PICTOFLOW_HTTPS_ADDRESS:127.0.0.1}{uri} 308
+}

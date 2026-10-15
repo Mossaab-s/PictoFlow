@@ -3,7 +3,8 @@
 Cet incrément prépare le mode multi-compte demandé. Il est désactivé par défaut
 pour conserver l’instance de test pendant sa préparation. **Il ne protège le
 serveur qu’une fois activé**, après configuration de HTTPS et création du premier
-administrateur. Le déploiement actuel de la PR #42 reste en mode LAN sans connexion.
+administrateur. La PR #43 est déployée ; le frontal et sa procédure d'activation
+sont décrits dans [LOCAL_HTTPS.md](LOCAL_HTTPS.md).
 
 ## Parcours
 
