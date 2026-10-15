@@ -6,12 +6,26 @@ Le parcours fonctionnel prioritaire est **composer → choisir/corriger un sens 
 constater sa mémorisation → retrouver ce souvenir**. Voir [POC_VALIDATION.md](POC_VALIDATION.md).
 Le panneau de communication rend la mémoire visible et permet de refaire un essai
 avec les mêmes touches, sans nouvel appel IA ni validation automatique.
-La PR #46 est fusionnée et déployée. L'étape suivante vérifie des demandes,
+Les PR #46 et #47 sont fusionnées et déployées. Les scénarios couvrent demandes,
 refus, émotions, répétitions et messages ambigus ; voir [POC_SCENARIOS.md](POC_SCENARIOS.md)
 pour les essais synthétiques Groq, les corrections et les observations d'usage
 qui restent à recueillir avec la personne.
 Les travaux d'exploitation sont mis de côté : la PR #45 est fusionnée et ses
 outils sont prêts, mais le timer n'est pas installé sur l'instance active.
+
+## Incréments fonctionnels en cours de revue
+
+Une PR en draft par tâche, dans cet ordre, sans fusion ni déploiement automatique :
+
+1. Suggestions de mots et phrases uniquement depuis la mémoire acceptée du profil.
+   Voir [MEMORY_SUGGESTIONS.md](MEMORY_SUGGESTIONS.md).
+2. Expliquer ce qui est appris après chaque choix humain et pourquoi un souvenir revient.
+3. Préparer les sens personnels et utiliser le contexte de communication.
+4. Reprendre une communication après l'ajout d'un mot manquant.
+5. Proposer des touches à partir des usages validés, avec placement choisi.
+6. Réouvrir l'écran et le clavier choisi hors connexion.
+
+Les PR dépendantes précisent leur base ; la revue et la fusion suivent cet ordre.
 
 ## Ordre de travail actuel, après la PR #35
 

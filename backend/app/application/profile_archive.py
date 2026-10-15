@@ -3,6 +3,7 @@
 import base64
 import hashlib
 import json
+import re
 from dataclasses import fields, replace
 from datetime import datetime
 from typing import Annotated, Literal
@@ -404,6 +405,32 @@ def remap_archive(archive: ProfileArchive, profile: UserCommunicationProfile) ->
             elif key == "presentation":
                 if item is not None:
                     decoded[key] = json.loads(state(json.dumps(item), "positions"))
+            elif key == "memory_sources":
+                if (
+                    not isinstance(item, list)
+                    or not item
+                    or any(
+                        not isinstance(ref, dict)
+                        or set(ref) != {"interpretation_id", "revision", "index"}
+                        or not isinstance(ref.get("revision"), str)
+                        or not re.fullmatch(r"[a-f0-9]{64}", ref["revision"])
+                        or (
+                            ref["index"] is not None
+                            and (type(ref["index"]) is not int or not 0 <= ref["index"] <= 4000)
+                        )
+                        for ref in item
+                    )
+                ):
+                    raise ArchiveError("Invalid memory suggestion sources")
+                decoded[key] = [
+                    {
+                        **ref,
+                        "interpretation_id": str(
+                            identity("interpretations", ref["interpretation_id"])
+                        ),
+                    }
+                    for ref in item
+                ]
         return json.dumps(decoded, ensure_ascii=False, allow_nan=False)
 
     collections = {}

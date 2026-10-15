@@ -1,19 +1,18 @@
 # État du prototype V1 — 15 octobre 2026
 
-Priorité actuelle : valider le concept par le parcours de communication et de
-mémoire, décrit dans [POC_VALIDATION.md](POC_VALIDATION.md). La PR #45 est fusionnée,
-mais ses outils d'exploitation ne sont pas activés sur l'instance. La PR #46 est
-fusionnée et déployée dans `20261015-04` : sens retenu et souvenirs retrouvés
-pour les mêmes touches, avec nouvel essai explicite sans nouvelle validation
-automatique. HTTPS, comptes, clavier, photos et anciennes données sont conservés.
+Priorité actuelle : valider le concept par la communication et la mémoire.
+Les PR #46 et #47 sont fusionnées et déployées dans `20261015-05` :
+mémoire visible pour les mêmes touches, reprise explicite, correction Moi/je et
+formulation prudente des messages ambigus. Voir [POC_VALIDATION.md](POC_VALIDATION.md)
+et [POC_SCENARIOS.md](POC_SCENARIOS.md). HTTPS, comptes et anciennes données sont
+conservés. Les outils d'exploitation de la PR #45 restent désactivés.
 
-L'incrément suivant vérifie plusieurs scénarios fonctionnels :
-[POC_SCENARIOS.md](POC_SCENARIOS.md). Il corrige le rejet abusif de Moi/je et
-rend le prompt plus prudent face aux rôles ambigus de plusieurs personnes.
-Les essais Groq restent synthétiques en mémoire ; les choix humains et leur
-mémorisation sont vérifiés séparément via l'API et PostgreSQL jetable. La
-validation d'utilité avec les personnes reste à faire. Ces corrections attendent
-la revue et le déploiement ; l'instance conserve la version de la PR #46.
+L'incrément en revue ajoute les suggestions **Mots / Phrases**, exclusivement
+issues des phrases acceptées du profil, avec choix puis validation humaine.
+Il est décrit dans [MEMORY_SUGGESTIONS.md](MEMORY_SUGGESTIONS.md).
+Vérification locale : 632 tests backend, 57 tests frontend, Ruff, Prettier,
+TypeScript et compilation Next.js. Les parcours navigateur sont exécutés sur
+l'instance CI jetable. Ce travail reste en draft, sans déploiement.
 
 Le parcours métier PCL est implémenté localement, avec API REST, administration
 initiale et providers IA optionnels. Une instance de test est déployée sur

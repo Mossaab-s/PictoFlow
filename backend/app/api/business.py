@@ -1,6 +1,6 @@
 """REST adapter with profile scope in every personal operation."""
 
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Request
@@ -16,6 +16,8 @@ from app.application.feedback_history import EvidenceTarget, FeedbackHistory
 from app.application.interpretation import InterpretationService
 from app.application.keyboard_groups import KeyboardGroupService
 from app.application.keyboard_organization import KeyboardChangePreview, KeyboardOrganization
+from app.application.memory_suggestions import MemorySuggestions, SuggestionPage
+from app.application.memory_vocabulary import MemoryReference, MemorySuggestionConflict
 from app.application.offline_communication import CommunicationSnapshot, OfflineCommunication
 from app.application.pcl_repository import FeedbackPage
 from app.application.phrases import PhraseConflict, PhraseService, ReusablePhrase
@@ -140,6 +142,18 @@ class SelectionBody(Body):
 
 class InterpretationBody(Body):
     declared_context: tuple[str, ...] = Field(default=(), max_length=8)
+
+
+class MemoryReferenceBody(Body):
+    interpretation_id: UUID
+    revision: str = Field(pattern=r"^[a-f0-9]{64}$")
+    index: int | None = Field(default=None, ge=0, le=4000, strict=True)
+
+
+class MemoryProposalBody(Body):
+    request_id: UUID
+    references: Annotated[tuple[MemoryReferenceBody, ...], Field(min_length=1, max_length=32)]
+    actor_role: HumanRole
 
 
 class ShortcutBody(Body):
@@ -571,19 +585,54 @@ def get_interpretation(request: Request, profile_id: UUID, interpretation_id: UU
 def interpretation_feedback(
     request: Request, profile_id: UUID, interpretation_id: UUID, body: FeedbackBody
 ):
-    return communication(request).validate(
-        ValidationEvent(
-            profile_id=profile_id,
-            target_type=TargetType.INTERPRETATION,
-            target_id=interpretation_id,
-            **body.model_dump(),
+    try:
+        return communication(request).validate(
+            ValidationEvent(
+                profile_id=profile_id,
+                target_type=TargetType.INTERPRETATION,
+                target_id=interpretation_id,
+                **body.model_dump(),
+            )
         )
-    )
+    except MemorySuggestionConflict as error:
+        raise HTTPException(409, str(error)) from None
 
 
 @router.get("/profiles/{profile_id}/memory", response_model=PersonalMemory)
 def memory(request: Request, profile_id: UUID, validated: bool = True):
     return communication(request).memory(profile_id, validated=validated)
+
+
+@router.get("/profiles/{profile_id}/memory-suggestions", response_model=SuggestionPage)
+def memory_suggestions(
+    request: Request,
+    profile_id: UUID,
+    mode: Literal["words", "phrases"] = "words",
+    q: str = Query(default="", max_length=100),
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=12, ge=1, le=24),
+):
+    return MemorySuggestions(units(request)).page(profile_id, mode, q, offset, limit)
+
+
+@router.post(
+    "/profiles/{profile_id}/sequences/{sequence_id}/memory-proposals",
+    response_model=ConfidenceDecision,
+)
+def memory_proposal(
+    request: Request, profile_id: UUID, sequence_id: UUID, body: MemoryProposalBody
+):
+    service = MemorySuggestions(units(request), communication(request).policy)
+    try:
+        return service.propose(
+            profile_id,
+            sequence_id,
+            body.request_id,
+            tuple(MemoryReference(**ref.model_dump()) for ref in body.references),
+            body.actor_role,
+        )
+    except MemorySuggestionConflict as error:
+        raise HTTPException(409, str(error)) from None
 
 
 @router.get("/profiles/{profile_id}/phrases/{interpretation_id}", response_model=ReusablePhrase)
