@@ -20,6 +20,7 @@ Une PR en draft par tâche, dans cet ordre, sans fusion ni déploiement automati
 1. Suggestions de mots et phrases uniquement depuis la mémoire acceptée du profil.
    Voir [MEMORY_SUGGESTIONS.md](MEMORY_SUGGESTIONS.md).
 2. Expliquer ce qui est appris après chaque choix humain et pourquoi un souvenir revient.
+   Voir [LEARNING_EXPLANATIONS.md](LEARNING_EXPLANATIONS.md).
 3. Préparer les sens personnels et utiliser le contexte de communication.
 4. Reprendre une communication après l'ajout d'un mot manquant.
 5. Proposer des touches à partir des usages validés, avec placement choisi.
