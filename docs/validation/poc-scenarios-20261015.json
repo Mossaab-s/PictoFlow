@@ -1,0 +1,309 @@
+{
+  "version": 1,
+  "date": "2026-10-15",
+  "provider": "Groq via openai-compatible",
+  "model": "qwen/qwen3.8-27b",
+  "response_format": "json_schema",
+  "temperature": 0.2,
+  "baseline_commit": "ff2a4851f0745d6478c78859cdbfacb7dce24134",
+  "candidate_source_sha256_lf": {
+    "backend/app/application/phrase_fidelity.py": "d0e5ada58f48874a6f443dd59cb85f62878eb7fa90a4f8dba6d0d23fe8f350ae",
+    "backend/app/ai/providers/http.py": "25bd845bcc51d5ce2bea81ed36fa38c70c7888392617a96b6056416606b5f748",
+    "backend/app/ai/evaluation.py": "21987cd4cb8acbf8d44d867f801e5b0ba2a4832f570b8612d1e50e3299eb5acb"
+  },
+  "synthetic_only": true,
+  "production_pcl_writes": false,
+  "automatic_validation": false,
+  "requires_human_semantic_review": true,
+  "semantic_accuracy_measured": false,
+  "live_calls": {
+    "baseline": 9,
+    "pronoun_fix_intermediate": 9,
+    "expanded_prompt_intermediate": 9,
+    "final_prompt_and_filter": 9
+  },
+  "method": "Separate docker exec Python process, synthetic in-memory units, candidate modules loaded only in that process; application files, provider settings and running services unchanged.",
+  "scenarios": [
+    {
+      "scenario": "personne_besoin",
+      "selected_words": [
+        "Maman",
+        "Boire",
+        "Eau"
+      ],
+      "review_focus": "Le message exprime-t-il le sens voulu, sans ajout ni omission ?",
+      "before": {
+        "provider_texts": [
+          "Maman, je voudrais boire de l’eau."
+        ],
+        "proposed_texts": [
+          "Maman, je voudrais boire de l’eau."
+        ],
+        "fallback_reason": null,
+        "all_unvalidated": true
+      },
+      "after": {
+        "provider_texts": [
+          "Maman, je voudrais boire de l’eau."
+        ],
+        "proposed_texts": [
+          "Maman, je voudrais boire de l’eau."
+        ],
+        "fallback_reason": null,
+        "candidate_sources": [
+          "openai-compatible"
+        ],
+        "all_unvalidated": true
+      }
+    },
+    {
+      "scenario": "negation",
+      "selected_words": [
+        "Non",
+        "Manger"
+      ],
+      "review_focus": "Le message exprime-t-il le sens voulu, sans ajout ni omission ?",
+      "before": {
+        "provider_texts": [
+          "Je ne veux pas manger."
+        ],
+        "proposed_texts": [
+          "Je ne veux pas manger."
+        ],
+        "fallback_reason": null,
+        "all_unvalidated": true
+      },
+      "after": {
+        "provider_texts": [
+          "Je ne veux pas manger."
+        ],
+        "proposed_texts": [
+          "Je ne veux pas manger."
+        ],
+        "fallback_reason": null,
+        "candidate_sources": [
+          "openai-compatible"
+        ],
+        "all_unvalidated": true
+      }
+    },
+    {
+      "scenario": "repetition",
+      "selected_words": [
+        "Boire",
+        "Boire"
+      ],
+      "review_focus": "Le message exprime-t-il le sens voulu, sans ajout ni omission ?",
+      "before": {
+        "provider_texts": [
+          "Boire, boire !"
+        ],
+        "proposed_texts": [
+          "Boire, boire !"
+        ],
+        "fallback_reason": null,
+        "all_unvalidated": true
+      },
+      "after": {
+        "provider_texts": [
+          "Boire, boire !"
+        ],
+        "proposed_texts": [
+          "Boire, boire !"
+        ],
+        "fallback_reason": null,
+        "candidate_sources": [
+          "openai-compatible"
+        ],
+        "all_unvalidated": true
+      }
+    },
+    {
+      "scenario": "deux_personnes",
+      "selected_words": [
+        "Maman",
+        "Manger",
+        "Papa"
+      ],
+      "review_focus": "Qui mange ? Les mots seuls ne permettent pas d'attribuer ce rôle.",
+      "before": {
+        "provider_texts": [
+          "Maman, Papa, je voudrais manger."
+        ],
+        "proposed_texts": [
+          "Maman, Papa, je voudrais manger."
+        ],
+        "fallback_reason": null,
+        "all_unvalidated": true
+      },
+      "after": {
+        "provider_texts": [
+          "Maman, manger, Papa."
+        ],
+        "proposed_texts": [
+          "Maman, manger, Papa."
+        ],
+        "fallback_reason": null,
+        "candidate_sources": [
+          "openai-compatible"
+        ],
+        "all_unvalidated": true
+      }
+    },
+    {
+      "scenario": "emotion_choisie",
+      "selected_words": [
+        "Content"
+      ],
+      "review_focus": "Le message exprime-t-il le sens voulu, sans ajout ni omission ?",
+      "before": {
+        "provider_texts": [
+          "Je suis content."
+        ],
+        "proposed_texts": [
+          "Je suis content."
+        ],
+        "fallback_reason": null,
+        "all_unvalidated": true
+      },
+      "after": {
+        "provider_texts": [
+          "Je suis content."
+        ],
+        "proposed_texts": [
+          "Je suis content."
+        ],
+        "fallback_reason": null,
+        "candidate_sources": [
+          "openai-compatible"
+        ],
+        "all_unvalidated": true
+      }
+    },
+    {
+      "scenario": "demande_moi",
+      "selected_words": [
+        "Moi",
+        "Boire",
+        "Eau"
+      ],
+      "review_focus": "Le message exprime-t-il le sens voulu, sans ajout ni omission ?",
+      "before": {
+        "provider_texts": [
+          "Je voudrais boire de l'eau."
+        ],
+        "proposed_texts": [
+          "Moi → Boire → Eau"
+        ],
+        "fallback_reason": "unfaithful_words",
+        "all_unvalidated": true
+      },
+      "after": {
+        "provider_texts": [
+          "Je voudrais boire de l’eau."
+        ],
+        "proposed_texts": [
+          "Je voudrais boire de l’eau."
+        ],
+        "fallback_reason": null,
+        "candidate_sources": [
+          "openai-compatible"
+        ],
+        "all_unvalidated": true
+      }
+    },
+    {
+      "scenario": "refus_seul",
+      "selected_words": [
+        "Non"
+      ],
+      "review_focus": "Le message exprime-t-il le sens voulu, sans ajout ni omission ?",
+      "before": {
+        "provider_texts": [
+          "Non."
+        ],
+        "proposed_texts": [
+          "Non."
+        ],
+        "fallback_reason": null,
+        "all_unvalidated": true
+      },
+      "after": {
+        "provider_texts": [
+          "Non."
+        ],
+        "proposed_texts": [
+          "Non."
+        ],
+        "fallback_reason": null,
+        "candidate_sources": [
+          "openai-compatible"
+        ],
+        "all_unvalidated": true
+      }
+    },
+    {
+      "scenario": "accord_action",
+      "selected_words": [
+        "Oui",
+        "Manger"
+      ],
+      "review_focus": "Le message exprime-t-il le sens voulu, sans ajout ni omission ?",
+      "before": {
+        "provider_texts": [
+          "Oui, je voudrais manger."
+        ],
+        "proposed_texts": [
+          "Oui, je voudrais manger."
+        ],
+        "fallback_reason": null,
+        "all_unvalidated": true
+      },
+      "after": {
+        "provider_texts": [
+          "Oui, je voudrais manger."
+        ],
+        "proposed_texts": [
+          "Oui, je voudrais manger."
+        ],
+        "fallback_reason": null,
+        "candidate_sources": [
+          "openai-compatible"
+        ],
+        "all_unvalidated": true
+      }
+    },
+    {
+      "scenario": "ambiguite_relation",
+      "selected_words": [
+        "Maman",
+        "Aimer",
+        "Papa"
+      ],
+      "review_focus": "Qui aime qui ? Une phrase grammaticalement correcte peut imposer un rôle.",
+      "before": {
+        "provider_texts": [
+          "Maman, j'aime Papa."
+        ],
+        "proposed_texts": [
+          "Maman, j'aime Papa."
+        ],
+        "fallback_reason": null,
+        "all_unvalidated": true
+      },
+      "after": {
+        "provider_texts": [
+          "Maman, aimer, Papa."
+        ],
+        "proposed_texts": [
+          "Maman, aimer, Papa."
+        ],
+        "fallback_reason": null,
+        "candidate_sources": [
+          "openai-compatible"
+        ],
+        "all_unvalidated": true
+      }
+    }
+  ]
+}

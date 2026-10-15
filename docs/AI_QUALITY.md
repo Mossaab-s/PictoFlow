@@ -85,7 +85,7 @@ Depuis `backend/`, dans l’environnement Python installé :
 python -m app.ai.evaluation --output ../.local/ai-evaluation.json
 ```
 
-Les **18 scénarios déterministes** traversent le constructeur de requêtes,
+Les **22 scénarios déterministes** traversent le constructeur de requêtes,
 les providers Fake, le contrôle de mots, la politique de confiance et les
 propositions littérales : demandes simples, personnes, lieu, négation,
 répétition, aide, émotion choisie, correction, omissions, émotion inventée,
@@ -99,7 +99,7 @@ Pour une évaluation réelle **choisie**, avec la configuration privée du backe
 python -m app.ai.evaluation --live --interval 10 --output ../.local/ai-live.json
 ```
 
-Cela effectue dix appels synthétiques au provider compatible ou PRISM configuré,
+Cela effectue quatorze appels synthétiques au provider compatible ou PRISM configuré,
 espacés de dix secondes par défaut. `--interval` accepte 0 à 60 secondes.
 Le mode hors ligne ignore la configuration externe ; le mode réel peut consommer
 du quota. Il ne charge et ne modifie aucun profil réel. Ne pas placer une clé
@@ -111,6 +111,12 @@ est une sortie protégée, pas une preuve de réussite sémantique. Le rapport
 indique toujours qu’une revue humaine du sens est nécessaire. En mode réel,
 le code de sortie ne déclare pas une précision du modèle ; vérifier le bilan
 et les phrases synthétiques.
+
+`--scenario` sélectionne un scénario et peut être répété pour limiter les appels.
+Le rapport affiche aussi l'état de décision, la source des candidats et le point
+à examiner humainement. Les essais du 15 octobre, la correction Moi/je et les
+formulations prudentes pour plusieurs personnes sont détaillés dans
+[POC_SCENARIOS.md](POC_SCENARIOS.md), avec une comparaison synthétique avant/après.
 
 ## Essais réels du 14 octobre 2026
 

@@ -627,12 +627,16 @@ def restore_check(directory, identity, report):
                 )
                 deadline = time.monotonic() + 60
                 while True:
+                    # The image first starts a socket-only initialization server.
+                    # Wait for the final TCP listener, after that server restarts.
                     probe = subprocess.run(
                         [
                             "docker",
                             "exec",
                             name,
                             "pg_isready",
+                            "-h",
+                            "127.0.0.1",
                             "-U",
                             "pictoflow",
                             "-d",

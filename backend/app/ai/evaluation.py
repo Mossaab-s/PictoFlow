@@ -38,6 +38,7 @@ class Scenario:
     expected_reason: str | None = None
     live_probe: bool = True
     correction: str | None = None
+    review_focus: str = "Le message exprime-t-il le sens voulu, sans ajout ni omission ?"
 
 
 SCENARIOS = (
@@ -46,10 +47,24 @@ SCENARIOS = (
     Scenario("lieu", ("Papa", "Toilettes"), "Papa, j’ai besoin d’aller aux toilettes."),
     Scenario("negation", ("Non", "Manger"), "Je ne veux pas manger."),
     Scenario("repetition", ("Boire", "Boire"), "Boire, boire !"),
-    Scenario("deux_personnes", ("Maman", "Manger", "Papa"), "Maman, Papa, je voudrais manger."),
+    Scenario(
+        "deux_personnes",
+        ("Maman", "Manger", "Papa"),
+        "Maman, manger, Papa.",
+        review_focus="Qui mange ? Les mots seuls ne permettent pas d'attribuer ce rôle.",
+    ),
     Scenario("arret", ("Stop",), "Stop."),
     Scenario("aide", ("Mal", "Aide", "Stop"), "J’ai mal, aidez-moi : stop."),
     Scenario("emotion_choisie", ("Content",), "Je suis content."),
+    Scenario("demande_moi", ("Moi", "Boire", "Eau"), "Je voudrais boire de l’eau."),
+    Scenario("refus_seul", ("Non",), "Non."),
+    Scenario("accord_action", ("Oui", "Manger"), "Oui, je voudrais manger."),
+    Scenario(
+        "ambiguite_relation",
+        ("Maman", "Aimer", "Papa"),
+        "Maman, aimer, Papa.",
+        review_focus="Qui aime qui ? Une phrase grammaticalement correcte peut imposer un rôle.",
+    ),
     Scenario(
         "correction_bornee",
         ("Papa", "Dormir"),
@@ -202,9 +217,14 @@ class RecordingProvider:
         return result
 
 
-async def evaluate(provider=None, *, interval_seconds: float = 0) -> dict:
+async def evaluate(provider=None, *, interval_seconds: float = 0, scenario_names=()) -> dict:
+    unknown = set(scenario_names) - {item.name for item in SCENARIOS}
+    if unknown:
+        raise ValueError("Unknown evaluation scenario")
     results = []
     for scenario in SCENARIOS:
+        if scenario_names and scenario.name not in scenario_names:
+            continue
         if provider is not None and not scenario.live_probe:
             continue
         units = SyntheticUnits(scenario)
@@ -223,12 +243,15 @@ async def evaluate(provider=None, *, interval_seconds: float = 0) -> dict:
             {
                 "scenario": scenario.name,
                 "selected_words": list(scenario.labels),
+                "review_focus": scenario.review_focus,
+                "decision_state": decision.state.value,
                 "fallback_reason": receipt["fallback_reason"],
                 "received_candidates": receipt["received_candidates"],
                 "retained_candidates": receipt["retained_candidates"],
                 "correction_examples": receipt["correction_examples"],
                 "proposed_texts": [item.text for item in decision.candidates],
                 "provider_texts": recorder.texts,
+                "candidate_sources": [item.source for item in decision.candidates],
                 "all_unvalidated": all(item.validated_text is None for item in decision.candidates),
                 "fixture_passed": (receipt["fallback_reason"] == scenario.expected_reason)
                 if provider is None
@@ -247,15 +270,21 @@ async def evaluate(provider=None, *, interval_seconds: float = 0) -> dict:
     }
 
 
-async def run(live: bool, *, interval_seconds: float = 10):
+async def run(live: bool, *, interval_seconds: float = 10, scenario_names=()):
     if not live:
-        return await evaluate()
+        return await evaluate(scenario_names=scenario_names)
+    if scenario_names and not any(
+        item.name in scenario_names and item.live_probe for item in SCENARIOS
+    ):
+        raise ValueError("No live scenario selected")
     settings = Settings()
     if settings.ai_provider not in ("openai-compatible", "prism"):
         raise ProviderConfigurationError("Live evaluation requires a configured external provider")
     provider = create_provider(settings)
     try:
-        return await evaluate(provider, interval_seconds=interval_seconds)
+        return await evaluate(
+            provider, interval_seconds=interval_seconds, scenario_names=scenario_names
+        )
     finally:
         await provider.aclose()
 
@@ -263,7 +292,14 @@ async def run(live: bool, *, interval_seconds: float = 10):
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--live", action="store_true", help="Call the configured provider (10 probes)"
+        "--live", action="store_true", help="Call the configured provider for live scenarios"
+    )
+    parser.add_argument(
+        "--scenario",
+        action="append",
+        choices=[item.name for item in SCENARIOS],
+        default=[],
+        help="Select a scenario (repeatable); default: all applicable scenarios",
     )
     parser.add_argument("--output", type=Path, help="Save the synthetic report as JSON")
     parser.add_argument(
@@ -275,8 +311,16 @@ def main() -> int:
     args = parser.parse_args()
     if not 0 <= args.interval <= 60:
         parser.error("Interval must be finite and between 0 and 60 seconds")
+    if (
+        args.live
+        and args.scenario
+        and not any(item.name in args.scenario and item.live_probe for item in SCENARIOS)
+    ):
+        parser.error("Select at least one live scenario")
     try:
-        report = asyncio.run(run(args.live, interval_seconds=args.interval))
+        report = asyncio.run(
+            run(args.live, interval_seconds=args.interval, scenario_names=args.scenario)
+        )
     except ProviderConfigurationError:
         parser.exit(2, "External provider configuration is invalid or missing.\n")
     encoded = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
