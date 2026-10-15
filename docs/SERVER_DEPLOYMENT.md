@@ -109,6 +109,11 @@ mot de passe existant et sauvegarder la base avant toute migration.
 
 ## Exploitation
 
+Pour les sauvegardes complètes chiffrées, le timer quotidien et la répétition de
+restauration isolée, voir [SERVER_BACKUPS.md](SERVER_BACKUPS.md). Les commandes
+manuelles ci-dessous restent utiles avant une intervention ; leurs dumps ne sont
+pas chiffrés et doivent rester privés.
+
 Depuis le répertoire de livraison actif, avec les droits Docker :
 
 ```sh

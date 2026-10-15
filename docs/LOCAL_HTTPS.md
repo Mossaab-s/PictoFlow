@@ -93,6 +93,8 @@ redémarrages. Le volume `https_data` contient les clés de l'autorité : le sau
 chiffré, avec accès opérateur uniquement, séparément des exports de profils.
 Sa perte exige une nouvelle installation de confiance sur les appareils.
 Ne pas employer `down --volumes` sur le projet serveur.
+La [sauvegarde serveur chiffrée](SERVER_BACKUPS.md) inclut ce volume et vérifie
+les paires certificat/clé pendant une répétition de restauration.
 
 Une sauvegarde PostgreSQL complète inclut les comptes et les droits ; un export
 de profil PCL ne les inclut pas. Après activation, garder les comptes activés lors

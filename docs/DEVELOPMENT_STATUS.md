@@ -2,7 +2,7 @@
 
 Le parcours métier PCL est implémenté localement, avec API REST, administration
 initiale et providers IA optionnels. Une instance de test est déployée sur
-[10.0.0.121:3000](http://10.0.0.121:3000), avec une base persistante dédiée.
+[10.0.0.121](https://10.0.0.121), avec une base persistante dédiée.
 
 Les PR #36 à #43 sont fusionnées et déployées dans la livraison `20261015-02`
 (commit `cad5d42`) : sauvegarde/restauration, mémoire lisible, phrases habituelles
@@ -66,8 +66,12 @@ et gestion des comptes par l’administrateur. La migration 0011 conserve le PCL
 le mode multi-compte reste désactivé par défaut et son activation serveur attend
 HTTPS. Voir [ACCESS_CONTROL.md](ACCESS_CONTROL.md). Les tests couvrent les refus
 d’accès côté API et les parcours navigateur, dont la déconnexion hors réseau.
-Le profil Compose `https` prépare le frontal TLS local, une autorité persistante
-et la redirection des anciens liens ; voir [LOCAL_HTTPS.md](LOCAL_HTTPS.md).
+La PR #44 est fusionnée. Le profil Compose `https` est actif dans la livraison
+`20261015-03` : frontal TLS local, autorité persistante, redirection des anciens
+liens et comptes activés. Les images applicatives restent celles de la PR #43.
+Voir [LOCAL_HTTPS.md](LOCAL_HTTPS.md). La sauvegarde automatique chiffrée et la
+répétition de restauration serveur sont préparées dans [SERVER_BACKUPS.md](SERVER_BACKUPS.md) ;
+leur installation attend la fusion de cet incrément.
 
 | Issues | État local |
 | --- | --- |

@@ -35,10 +35,13 @@ Chaque point passe par une PR, puis par un déploiement après sa fusion.
    sauvegardes automatiques et essais de restauration serveur.
    La PR #43, fusionnée et déployée, prépare les comptes personnels, sessions révocables et
    accès « communiquer » ou « préparer et communiquer » par profil. Voir
-   [ACCESS_CONTROL.md](ACCESS_CONTROL.md). Son activation sur le serveur attend
-   le frontal HTTPS et la création explicite de l’administrateur, décrits dans
-   [LOCAL_HTTPS.md](LOCAL_HTTPS.md). Les sauvegardes
-   automatiques et la restauration serveur restent ensuite à livrer.
+   [ACCESS_CONTROL.md](ACCESS_CONTROL.md). La PR #44 est fusionnée : HTTPS et les
+   comptes sont activés sur [l'instance locale](https://10.0.0.121), avec un
+   administrateur et une autorité locale persistante. Voir [LOCAL_HTTPS.md](LOCAL_HTTPS.md).
+   L'incrément suivant prépare les sauvegardes chiffrées quotidiennes et une
+   répétition de restauration isolée, décrites dans [SERVER_BACKUPS.md](SERVER_BACKUPS.md).
+   Son timer sera installé après fusion ; la copie indépendante hors du serveur
+   reste à configurer avec un emplacement choisi par l'opérateur.
 
 Les PR #31 à #35 sont fusionnées et déployées : photos, pages, communication
 dédiée, noms des profils et corrections de fidélité des propositions IA.
