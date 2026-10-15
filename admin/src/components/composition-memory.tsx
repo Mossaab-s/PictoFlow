@@ -175,7 +175,8 @@ export default function CompositionMemory({
                     <p>
                       Message créé le {memoryDate(item.created_at)}, puis
                       accepté pour les mêmes touches, dans le même ordre, avec
-                      les mêmes répétitions et le même contexte déclaré.
+                      les mêmes répétitions. Le contexte libre précisé pour une
+                      demande de phrase peut être différent aujourd’hui.
                       {item.status === "corrected" &&
                         " Votre correction humaine est prioritaire sur la formulation initiale."}
                     </p>
