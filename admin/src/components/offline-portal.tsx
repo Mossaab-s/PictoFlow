@@ -138,6 +138,7 @@ export default function OfflinePortal() {
             <label>
               Copie enregistrée
               <select
+                aria-label="Copie enregistrée"
                 value={selected}
                 onChange={(event) => {
                   setSelected(event.target.value);
