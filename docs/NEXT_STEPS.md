@@ -26,6 +26,7 @@ Une PR en draft par tâche, dans cet ordre, sans fusion ni déploiement automati
 4. Reprendre une communication après l'ajout d'un mot manquant.
    Voir [MISSING_WORDS.md](MISSING_WORDS.md).
 5. Proposer des touches à partir des usages validés, avec placement choisi.
+   Voir [KEYBOARD_USAGE.md](KEYBOARD_USAGE.md).
 6. Réouvrir l'écran et le clavier choisi hors connexion.
 
 Les PR dépendantes précisent leur base ; la revue et la fusion suivent cet ordre.

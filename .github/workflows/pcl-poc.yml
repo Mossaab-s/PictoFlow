@@ -53,6 +53,7 @@ jobs:
           node tests/e2e/pcl-learning.mjs
           node tests/e2e/memory-suggestions.mjs
           node tests/e2e/missing-word.mjs
+          node tests/e2e/keyboard-usage.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -60,3 +61,4 @@ jobs:
           path: |
             admin/.local/pcl-learning/*.png
             admin/.local/memory-suggestions/*.png
+            admin/.local/keyboard-usage/*.png

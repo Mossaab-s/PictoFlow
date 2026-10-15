@@ -23,6 +23,7 @@ import PictogramPicker from "./pictogram-picker";
 import PhotoPicker from "./photo-picker";
 import KeyboardPageManager from "./keyboard-page-manager";
 import KeyboardChangeReview from "./keyboard-change-review";
+import KeyboardUsage from "./keyboard-usage";
 import {
   scopedPreview,
   type KeyboardChangePreview,
@@ -268,6 +269,13 @@ export default function KeyboardEditor({
           <p role="status">Chargement du clavier…</p>
         ) : (
           <>
+            <KeyboardUsage
+              key={`usage:${profileId}`}
+              profileId={profileId}
+              blocks={data.blocks}
+              positions={data.positions}
+              visuals={data.representations}
+            />
             <div className="touch-creator">
               <section className="panel">
                 <h2>1. Préparer une touche</h2>
@@ -768,7 +776,7 @@ function BlockControls({
       ? pictogramFromReference(representation.asset_reference)?.key
       : undefined;
   return (
-    <section className="panel">
+    <section className="panel" id={`touch-${block.id}`} tabIndex={-1}>
       <h3>{block.label}</h3>
       <div className="touch-sample">
         <TouchContent label={block.label} representation={representation} />
