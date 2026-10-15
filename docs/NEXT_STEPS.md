@@ -1,5 +1,14 @@
 # Suite du développement après la bibliothèque de dessins
 
+## Priorité actuelle : valider le POC
+
+Le parcours fonctionnel prioritaire est **composer → choisir/corriger un sens →
+constater sa mémorisation → retrouver ce souvenir**. Voir [POC_VALIDATION.md](POC_VALIDATION.md).
+Le panneau de communication rend la mémoire visible et permet de refaire un essai
+avec les mêmes touches, sans nouvel appel IA ni validation automatique.
+Les travaux d'exploitation sont mis de côté : la PR #45 est fusionnée et ses
+outils sont prêts, mais le timer n'est pas installé sur l'instance active.
+
 ## Ordre de travail actuel, après la PR #35
 
 Chaque point passe par une PR, puis par un déploiement après sa fusion.
@@ -38,10 +47,9 @@ Chaque point passe par une PR, puis par un déploiement après sa fusion.
    [ACCESS_CONTROL.md](ACCESS_CONTROL.md). La PR #44 est fusionnée : HTTPS et les
    comptes sont activés sur [l'instance locale](https://10.0.0.121), avec un
    administrateur et une autorité locale persistante. Voir [LOCAL_HTTPS.md](LOCAL_HTTPS.md).
-   L'incrément suivant prépare les sauvegardes chiffrées quotidiennes et une
+   La PR #45 fusionnée prépare les sauvegardes chiffrées quotidiennes et une
    répétition de restauration isolée, décrites dans [SERVER_BACKUPS.md](SERVER_BACKUPS.md).
-   Son timer sera installé après fusion ; la copie indépendante hors du serveur
-   reste à configurer avec un emplacement choisi par l'opérateur.
+   Leur activation reste mise de côté pendant les essais fonctionnels du POC.
 
 Les PR #31 à #35 sont fusionnées et déployées : photos, pages, communication
 dédiée, noms des profils et corrections de fidélité des propositions IA.

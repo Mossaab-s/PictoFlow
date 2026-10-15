@@ -28,6 +28,8 @@ import PhraseLibrary from "./phrase-library";
 import SpeechSettings from "./speech-settings";
 import { useContrastSetting } from "./use-contrast-setting";
 import OfflineCommunication from "./offline-communication";
+import CompositionMemory from "./composition-memory";
+import { replayAvailable } from "@/lib/learning";
 
 export default function CommunicationScreen({
   profileId,
@@ -51,6 +53,10 @@ export default function CommunicationScreen({
   const [restoring, setRestoring] = useState(true);
   const [restoreFailed, setRestoreFailed] = useState(false);
   const [notice, setNotice] = useState("");
+  const [phraseChoice, setPhraseChoice] = useState<{
+    id: string;
+    version: number;
+  } | null>(null);
   const current = useRef<Sequence | null>(null);
   const gate = useRef(false);
   const alive = useRef(true);
@@ -175,9 +181,11 @@ export default function CommunicationScreen({
             if (alive.current) {
               if (restored.status === "cancelled") remember(null, null);
               else {
-                const candidates = decision
+                const matchingDecision =
+                  sequence?.id === restored.id ? decision : null;
+                const candidates = matchingDecision
                   ? await Promise.all(
-                      decision.candidates.map((candidate) =>
+                      matchingDecision.candidates.map((candidate) =>
                         api<Interpretation>(
                           `${base}/interpretations/${candidate.id}`,
                         ),
@@ -187,7 +195,9 @@ export default function CommunicationScreen({
                 if (alive.current)
                   remember(
                     restored,
-                    decision ? { ...decision, candidates } : null,
+                    matchingDecision
+                      ? { ...matchingDecision, candidates }
+                      : null,
                   );
               }
             }
@@ -203,12 +213,11 @@ export default function CommunicationScreen({
         requestAnimationFrame(() => {
           if (
             !alive.current ||
-            !origin?.isConnected ||
             (document.activeElement !== document.body &&
               document.activeElement !== origin)
           )
             return;
-          if (!origin.disabled) origin.focus();
+          if (origin?.isConnected && !origin.disabled) origin.focus();
           else messageHeading.current?.focus();
         });
       }
@@ -304,6 +313,39 @@ export default function CommunicationScreen({
       remember(null, null);
       setContext("");
       setNotice("Vous pouvez composer un nouveau message.");
+    }
+  }
+  async function replay() {
+    const previous = current.current;
+    if (!previous || !replayAvailable(profileId, previous, data.blocks)) return;
+    speech.stop();
+    let active = await api<Sequence>(`${base}/sequences`, {
+      method: "POST",
+      body: JSON.stringify({
+        session_id: newIdentity(),
+        context_id: previous.context_id ?? null,
+      }),
+    });
+    if (!alive.current) return;
+    remember(active, null);
+    setContext("");
+    for (const blockId of previous.block_ids) {
+      active = await api<Sequence>(`${base}/sequences/${active.id}/selection`, {
+        method: "POST",
+        body: JSON.stringify({ action: "append", block_id: blockId }),
+      });
+      if (!alive.current) return;
+      remember(active, null);
+    }
+    active = await api<Sequence>(`${base}/sequences/${active.id}/selection`, {
+      method: "POST",
+      body: JSON.stringify({ action: "complete" }),
+    });
+    if (alive.current) {
+      remember(active, null);
+      setNotice(
+        "Les mêmes touches composent un nouveau message. Retrouvez vos choix précédents dans le PCL, puis choisissez ce que vous voulez dire.",
+      );
     }
   }
   const tiles = joinKeyboard(
@@ -453,7 +495,8 @@ export default function CommunicationScreen({
           visuals={data.representations}
           speech={speech}
           disabled={pending}
-          initialPhraseId={initialPhraseId}
+          initialPhraseId={phraseChoice?.id ?? initialPhraseId}
+          choiceRevision={phraseChoice?.version ?? 0}
           revision={decision}
         />
         <section
@@ -530,6 +573,24 @@ export default function CommunicationScreen({
             </p>
           )}
         </section>
+        {completed && sequence && (
+          <CompositionMemory
+            key={sequence.id}
+            profileId={profileId}
+            sequence={sequence}
+            revision={decision}
+            disabled={pending}
+            canReplay={replayAvailable(profileId, sequence, data.blocks)}
+            onReplay={() => void perform(replay)}
+            onChoose={(id) => {
+              speech.stop();
+              setPhraseChoice((previous) => ({
+                id,
+                version: (previous?.version ?? 0) + 1,
+              }));
+            }}
+          />
+        )}
         <DisplaySettings
           size={display.size}
           onChange={display.change}

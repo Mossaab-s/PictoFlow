@@ -624,6 +624,8 @@ The profile's AI quality report and synthetic evaluation command are described
 in [docs/AI_QUALITY.md](docs/AI_QUALITY.md).
 Local TLS, certificate trust and account activation are described in
 [docs/LOCAL_HTTPS.md](docs/LOCAL_HTTPS.md).
+The functional POC walkthrough (compose, correct, remember and recall) is in
+[docs/POC_VALIDATION.md](docs/POC_VALIDATION.md).
 Encrypted server backups and isolated recovery rehearsals are described in
 [docs/SERVER_BACKUPS.md](docs/SERVER_BACKUPS.md).
 Personal accounts, per-profile permissions and activation after HTTPS setup are

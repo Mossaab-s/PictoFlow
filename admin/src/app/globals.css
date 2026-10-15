@@ -57,6 +57,17 @@
   line-height: 1.45;
   margin-block: 20px;
 }
+.composition-memory {
+  margin-block: 24px;
+  overflow-wrap: anywhere;
+}
+.composition-retained {
+  border-left: 4px solid var(--accent);
+  padding-left: 16px;
+}
+.composition-recalled {
+  margin-top: 24px;
+}
 .memory-original {
   margin-block: 18px;
 }
