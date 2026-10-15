@@ -213,12 +213,11 @@ export default function CommunicationScreen({
         requestAnimationFrame(() => {
           if (
             !alive.current ||
-            !origin?.isConnected ||
             (document.activeElement !== document.body &&
               document.activeElement !== origin)
           )
             return;
-          if (!origin.disabled) origin.focus();
+          if (origin?.isConnected && !origin.disabled) origin.focus();
           else messageHeading.current?.focus();
         });
       }

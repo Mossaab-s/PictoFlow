@@ -103,6 +103,9 @@ try {
   const repeated = await call(`profiles/${p}/sequences/${cached.sequence_id}`);
   assert.equal(repeated.status, "completed");
   assert.deepEqual(repeated.block_ids, [block.id, block.id]);
+  await page.waitForFunction(
+    () => document.activeElement?.textContent === "Mon message terminé",
+  );
   assert.equal(interpretations, 1);
   assert.equal(
     await learning
@@ -252,6 +255,9 @@ try {
   );
   assert.notEqual(partial.sequence_id, sequence.id);
   assert.equal(partial.decision, undefined);
+  await page.waitForFunction(
+    () => document.activeElement?.textContent === "Mon message",
+  );
   assert.deepEqual(
     (await call(`${base}/sequences/${partial.sequence_id}`)).block_ids,
     [second.block.id],
