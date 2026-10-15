@@ -61,20 +61,21 @@ and [Structured Outputs guide](https://developers.openai.com/api/docs/guides/str
 Output schemas omit provider-owned metadata while retaining **all transitively
 referenced `$defs`**. Dropping the scalar aliases used by candidate fields creates
 dangling references and can result in an empty or invalid provider proposal,
-which the API rejects with 502. Regression tests resolve every reference for all
+which cannot be used as a provider proposal. Regression tests resolve every reference for all
 three operations. In strict mode, all object properties are required and objects
 are closed. Nullable scalars use explicit type unions. Interpretation uses a
 transport-only `result` union to encode both allowed outcomes: a proposal with
 one to three candidates, or a refusal with none. Pydantic still validates the
 unwrapped proposal, including confidence bounds and prohibition of validation
-commands. A malformed reply creates no interpretation or validated memory; the
-completed selection remains available. The UI explains an unusable AI response
-without displaying provider payloads.
+commands. For interpretation, a malformed reply returns a literal, unvalidated
+proposal of the selected words. Simplification and representation operations
+still reject invalid responses with 502. Provider payloads are not displayed.
 
 Transport is bounded by timeout and a 1 MiB response limit, does not retry,
 follow redirects, inherit proxy environment settings or log payloads. Base URLs
 cannot contain credentials, queries or fragments. Errors contain static messages
-with no raw response or secret URL. A malformed output creates no PCL state.
+with no raw response or secret URL. A malformed output never creates validated
+semantic state.
 
 PRISM maps `model_response` into the same contracts, translates an interpretation
 refusal to `not_understood`, and preserves available technical metadata: trace,
@@ -87,8 +88,9 @@ and optional token/cost fields. Routing confidence is never PCL validation.
 within the active profile; contracts limit selections to 32 and declared context
 to 8 items. A disabled/unavailable provider may fall back to literal selected
 labels at .5 confidence. This is an unvalidated communication proposal, not an
-inference about the person's intended meaning. Invalid provider output fails
-explicitly instead of falling back into guessed knowledge.
+inference about the person's intended meaning. Invalid provider output also
+falls back to these literal labels, without guessing knowledge. The refusal
+threshold remains a lower bound for the literal proposal's confidence.
 
 The compatible adapter puts application rules in a system message and the
 bounded request in a user message. In strict mode the output schema is sent only
@@ -115,7 +117,10 @@ PostgreSQL and are not exposed as semantic vocabulary. Block UUIDs still identif
 the selected touches. A corrected touch label and its personal concept label can
 differ; both are preserved. Proposed, rejected and foreign-profile relations
 remain excluded. Only the bounded selected vocabulary and relevant validated
-hints are sent, not the profile's complete memory.
+hints are sent, not the profile's complete memory. Up to three short, current
+human corrections for the exact selected sequence may be included as bounded
+formulation examples. They do not expand allowed vocabulary or confer validation.
+See [AI_QUALITY.md](AI_QUALITY.md) for selection, durable counters and evaluations.
 
 The prompt lives in `backend/app/ai/providers/http.py`. Its interpretation
 examples include Boire → « Je voudrais boire. », Maman + Boire + Eau →

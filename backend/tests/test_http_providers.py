@@ -225,6 +225,42 @@ def test_prism_refusal_unsupported_operation_and_unavailability(fixtures):
     asyncio.run(scenario())
 
 
+def test_prism_sends_short_corrections_and_refuses_oversized_requests_without_trimming(fixtures):
+    from app.ai.contracts import InterpretationRequest
+
+    data = fixtures.interpretations[0].request.model_dump(exclude={"correction_examples"})
+    request = InterpretationRequest(
+        **data,
+        correction_examples=(
+            "Bruit, stop, partir.",
+            "Bruit ! Stop ! Partir !",
+            "Bruit, stop : je veux partir.",
+        ),
+    )
+    calls = []
+
+    def respond(http_request):
+        body = json.loads(http_request.content)
+        assert len(body["query"]) <= 4000
+        sent = json.loads(body["query"].rsplit("\n", 1)[-1])["request"]
+        assert sent == request.model_dump(mode="json")
+        calls.append(body)
+        return httpx.Response(200, json={"execution_status": "REFUSED"})
+
+    async def scenario():
+        provider = PRISMProvider("http://example.test", transport=httpx.MockTransport(respond))
+        try:
+            assert (await provider.interpret(request)).status == "not_understood"
+            oversized = InterpretationRequest(**data, correction_examples=("X" * 256,) * 3)
+            with pytest.raises(ProviderPayloadError):
+                await provider.interpret(oversized)
+            assert len(calls) == 1
+        finally:
+            await provider.aclose()
+
+    asyncio.run(scenario())
+
+
 @pytest.mark.parametrize(
     "url", ["ftp://example.test", "https://secret@example.test", "http://example.test?key=secret"]
 )

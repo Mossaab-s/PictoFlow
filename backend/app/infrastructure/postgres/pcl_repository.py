@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from uuid import UUID, uuid4
 
 from sqlalchemy import delete, func, select, tuple_
+from sqlalchemy.dialects.postgresql import aggregate_order_by, array
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.application.pcl_repository import FeedbackEvidence, FeedbackPage, HistoricalFeedback
@@ -220,6 +221,79 @@ class PostgresPCLRepository:
             )
             for row in rows
         )
+
+    def correction_examples(
+        self,
+        profile_id,
+        *,
+        block_ids,
+        concept_ids,
+        context_id,
+        exclude_sequence_id,
+    ):
+        self._scope(profile_id)
+        # Ordered array equality preserves repetitions. Every subquery is profile scoped.
+        selected = (
+            select(
+                func.array_agg(
+                    aggregate_order_by(SequenceItemRow.block_id, SequenceItemRow.position)
+                )
+            )
+            .where(
+                SequenceItemRow.profile_id == profile_id,
+                SequenceItemRow.sequence_id == SequenceRow.id,
+            )
+            .correlate(SequenceRow)
+            .scalar_subquery()
+        )
+        latest_feedback = (
+            select(ValidationRow.id)
+            .where(
+                ValidationRow.profile_id == profile_id,
+                ValidationRow.target_type == "interpretation",
+                ValidationRow.target_id == InterpretationRow.id,
+            )
+            .order_by(ValidationRow.created_at.desc(), ValidationRow.id.desc())
+            .limit(1)
+            .correlate(InterpretationRow)
+            .scalar_subquery()
+        )
+        changed_meaning = (
+            select(AuditRow.id)
+            .where(
+                AuditRow.profile_id == profile_id,
+                AuditRow.target_id.in_((*block_ids, *concept_ids)),
+                AuditRow.target_type.in_(("communication_block", "concept")),
+                AuditRow.created_at >= ValidationRow.created_at,
+            )
+            .correlate(ValidationRow)
+            .exists()
+        )
+        query = (
+            select(InterpretationRow.corrected_text)
+            .join(
+                SequenceRow,
+                (SequenceRow.profile_id == profile_id)
+                & (SequenceRow.id == InterpretationRow.sequence_id),
+            )
+            .join(ValidationRow, ValidationRow.id == latest_feedback)
+            .where(
+                InterpretationRow.profile_id == profile_id,
+                InterpretationRow.status == "corrected",
+                SequenceRow.status == "completed",
+                SequenceRow.id != exclude_sequence_id,
+                SequenceRow.context_id.is_not_distinct_from(context_id),
+                selected == array(list(block_ids)),
+                ValidationRow.action == "correct",
+                ValidationRow.actor_role.in_(("user", "caregiver", "professional")),
+                ValidationRow.corrected_value["text"].astext == InterpretationRow.corrected_text,
+                func.char_length(InterpretationRow.corrected_text).between(1, 256),
+                ~changed_meaning,
+            )
+            .order_by(ValidationRow.created_at.desc(), ValidationRow.id.desc())
+            .limit(10)
+        )
+        return tuple(self.session.scalars(query))
 
     def audit(
         self,

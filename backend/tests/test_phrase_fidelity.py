@@ -130,7 +130,11 @@ class MemoryUnits:
         assert profile_id == item.profile_id == self.profile
         self.values[item.id] = item
 
-    def audit(self, *args):
+    def correction_examples(self, profile_id, **kwargs):
+        assert profile_id == self.profile
+        return ()
+
+    def audit(self, *args, **kwargs):
         pass
 
 

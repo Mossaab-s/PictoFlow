@@ -620,6 +620,8 @@ See [docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md) for the acceptance
 map, verification and a disposable demo. A LAN test instance is deployed on
 [10.0.0.121:3000](http://10.0.0.121:3000). Server deployment and backup commands
 are documented in [docs/SERVER_DEPLOYMENT.md](docs/SERVER_DEPLOYMENT.md).
+The profile's AI quality report and synthetic evaluation command are described
+in [docs/AI_QUALITY.md](docs/AI_QUALITY.md).
 
 Current priorities:
 - validate the semantic model;

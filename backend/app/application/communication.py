@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from uuid import UUID
 
+from app.application.ai_quality import AttemptEvidence
 from app.application.pcl_repository import PCLUnits
 from app.application.transient import JsonObject, TransientKind, TransientStore
 from app.domain.pcl.confidence import ConfidenceDecision, ConfidencePolicy, HandlingState
@@ -73,6 +74,7 @@ class CommunicationService:
         candidates: tuple[Interpretation, ...],
         *,
         source: str,
+        evidence: AttemptEvidence | None = None,
     ) -> ConfidenceDecision:
         identifier(profile_id, "profile_id")
         identifier(sequence_id, "sequence_id")
@@ -96,6 +98,15 @@ class CommunicationService:
                         source=source,
                         status=InterpretationStatus.NOT_UNDERSTOOD,
                     ),
+                )
+            if evidence is not None:
+                store.audit(
+                    profile_id,
+                    "interpretation_attempt",
+                    None,
+                    sequence,
+                    evidence.provider,
+                    new_details=evidence.snapshot(len(selected)),
                 )
             for item in selected:
                 if item.source != source:

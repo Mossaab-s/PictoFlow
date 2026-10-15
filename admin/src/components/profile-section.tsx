@@ -9,7 +9,7 @@ export default function ProfileSection({
   section,
 }: {
   profileId: string;
-  section: Exclude<Section, "memory">;
+  section: Exclude<Section, "memory" | "ai-quality">;
 }) {
   const [data, setData] = useState<unknown>(null);
   const [loading, setLoading] = useState(true);

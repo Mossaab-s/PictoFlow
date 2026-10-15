@@ -35,6 +35,7 @@ export const sections = {
   keyboard: "Clavier",
   communication: "Communiquer",
   memory: "Mémoire",
+  "ai-quality": "Qualité IA",
   suggestions: "Suggestions",
   audit: "Historique",
   backup: "Sauvegarde",

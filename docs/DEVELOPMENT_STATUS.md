@@ -4,14 +4,14 @@ Le parcours métier PCL est implémenté localement, avec API REST, administrati
 initiale et providers IA optionnels. Une instance de test est déployée sur
 [10.0.0.121:3000](http://10.0.0.121:3000), avec une base persistante dédiée.
 
-Les PR #36 à #40 sont fusionnées et déployées dans la livraison `20261014-06`
-(commit `cdb1753`) : sauvegarde/restauration, mémoire lisible, phrases habituelles
+Les PR #36 à #41 sont fusionnées et déployées dans la livraison `20261014-07`
+(commit `183249c`) : sauvegarde/restauration, mémoire lisible, phrases habituelles
 et organisation du clavier : ordre des pages,
 déplacements avec aperçu et retrait avec transfert conservant repères, photos,
 messages et décisions. Les sauvegardes v3 conservent les pages archivées et
 l’ordre choisi ; restauration et reçus v1/v2 restent compatibles.
-Voir [KEYBOARD_PAGES.md](KEYBOARD_PAGES.md). Vérifications : 537 scénarios
-backend et 35 tests frontend, avec parcours navigateur sur base fictive.
+Voir [KEYBOARD_PAGES.md](KEYBOARD_PAGES.md). Vérifications de la dernière livraison :
+555 scénarios backend et 48 tests frontend, avec parcours navigateur sur base fictive.
 Déploiement vérifié : migration 0010, quatre services sains, empreintes de toutes
 les anciennes lignes PCL conservées, 21 positions et deux photos intactes.
 Les contrôles du code installé s’exécutent dans une transaction annulée.
@@ -29,7 +29,7 @@ choisis pendant la bascule sont vérifiés par leur audit et leurs empreintes,
 avec tous les autres champs conservés. Les nouvelles séquences et validations
 restent présentes ; aucune restauration de base n’est effectuée.
 
-La livraison en préparation ajoute une copie choisie du clavier validé et ses
+La PR #41, fusionnée et déployée, ajoute une copie choisie du clavier validé et ses
 photos, un brouillon local séparé, et un import explicite atomique sans doublon,
 avec refus des copies périmées et protection contre l’écrasement entre onglets.
 Ce premier mode fonctionne dans l’écran ouvert pendant une coupure ; la
@@ -39,6 +39,21 @@ Vérifications : suite complète de 553 tests backend, puis 18 contrôles de
 l’incrément avec restauration/effacement supplémentaires (555 scénarios au total),
 48 tests frontend, Ruff, Prettier, TypeScript, Next.js et parcours navigateur
 sur base fictive avec coupure réseau et réponse d’envoi perdue.
+
+Le point suivant, **Qualité IA**, ajoute un bilan par profil des nouvelles
+tentatives et de leurs causes de retour littéral, ainsi que les décisions
+humaines anciennes et actuelles. Des corrections récentes sont utilisables
+comme exemples bornés pour la même suite de touches, sous contrôle de mots et
+sans validation automatique. Une évaluation synthétique reproductible couvre
+18 scénarios ; les appels réels restent explicitement choisis et isolés du PCL.
+Voir [AI_QUALITY.md](AI_QUALITY.md). Cet incrément attend sa PR puis sa fusion
+avant déploiement.
+Vérifications : 579 tests backend PostgreSQL/Redis, 48 tests frontend,
+18 scénarios d’évaluation, Ruff, Prettier, TypeScript et Next.js passent.
+Les parcours navigateur couvrent le bilan vide, les compteurs, l’actualisation
+au clavier, le changement de profil, la reprise après erreur et 320 pixels,
+avec contrôles axe A/AA. Les essais Groq utilisent uniquement des données fictives
+en mémoire, sans écriture PCL ni modification du provider en service.
 
 | Issues | État local |
 | --- | --- |
