@@ -1,3 +1,6 @@
+> Une réouverture protégée est préparée dans une PR en draft :
+> [OFFLINE_REOPEN.md](OFFLINE_REOPEN.md). Le serveur actif conserve le premier mode.
+
 # Composer pendant une coupure
 
 Dans les deux vues de communication, ouvrir **Mon clavier pour les coupures**,
