@@ -38,6 +38,10 @@ try {
     .locator(".communication-keyboard")
     .getByRole("button", { name: "Boire", exact: true })
     .click();
+  await page
+    .locator(".message-panel")
+    .getByText("Boire", { exact: true })
+    .waitFor();
   const reference = await page.evaluate(
     (key) => JSON.parse(sessionStorage.getItem(key)),
     `pictoflow:sequence:${p}`,
