@@ -1,5 +1,6 @@
 // Bound request allocation even when Content-Length is absent or untrustworthy.
 export function bodyLimit(method: string, path: string[]) {
+  if (path[0] === "auth") return 8 * 1024;
   if (method === "POST" && path.length === 2 && path[0] === "profiles") {
     if (path[1] === "restore-preview") return 32 * 1024 * 1024;
     if (path[1] === "restore") return 32 * 1024 * 1024 + 1024;

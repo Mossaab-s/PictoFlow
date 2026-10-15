@@ -45,3 +45,42 @@ def test_temperature_is_bounded_and_can_be_omitted(monkeypatch):
     for value in (-0.01, 2.01, float("nan"), float("inf")):
         with pytest.raises(ValidationError):
             Settings(provider_temperature=value, _env_file=None)
+
+
+@pytest.mark.parametrize("origin", ["http://10.0.0.121:3000", "http://localhost:3000"])
+def test_authenticated_production_requires_https(origin):
+    with pytest.raises(ValidationError):
+        Settings(environment="production", auth_enabled=True, auth_origin=origin, _env_file=None)
+
+
+def test_auth_origin_is_canonical_and_http_is_limited_to_development_loopback():
+    assert (
+        Settings(auth_origin="HTTPS://PictoFlow.TEST:443/", _env_file=None).auth_origin
+        == "https://pictoflow.test"
+    )
+    assert Settings(
+        auth_enabled=True, auth_origin="http://127.0.0.1:3130", _env_file=None
+    ).auth_enabled
+    for origin in (
+        "https://user:secret@example.test",
+        "https://@example.test",
+        "https://example.test/path",
+        "https://example.test:wrong",
+        "https://example.test?secret=1",
+    ):
+        with pytest.raises(ValidationError):
+            Settings(auth_enabled=True, auth_origin=origin, _env_file=None)
+    with pytest.raises(ValidationError):
+        Settings(auth_enabled=True, auth_origin="https://example.test", debug=True, _env_file=None)
+
+
+def test_invalid_authenticated_configuration_does_not_echo_other_credentials():
+    with pytest.raises(ValidationError) as error:
+        Settings(
+            environment="production",
+            auth_enabled=True,
+            auth_origin="http://localhost:3000",
+            provider_api_key="never-echo-this-private-value",
+            _env_file=None,
+        )
+    assert "never-echo-this-private-value" not in str(error.value)

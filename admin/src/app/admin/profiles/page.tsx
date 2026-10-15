@@ -4,8 +4,11 @@ import { api, type Profile } from "@/lib/api";
 import { matchingProfiles, profileTitle } from "@/lib/profiles";
 import ProfileCard from "@/components/profile-card";
 import Link from "next/link";
+import { useAuthentication } from "@/components/authentication";
+import { isAdministrator } from "@/lib/access";
 
 export default function Profiles() {
+  const administrator = isAdministrator(useAuthentication());
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -94,35 +97,42 @@ export default function Profiles() {
             </p>
           </div>
         </div>
-        <section className="panel profile-create">
-          <h2>Créer un profil</h2>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              void create();
-            }}
-          >
-            <label>
-              Nom du profil, facultatif
-              <input
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                maxLength={80}
-                disabled={creating || loading}
-                placeholder="Un prénom ou un surnom"
-                autoComplete="off"
-              />
-            </label>
-            <button disabled={creating || loading}>
-              {creating ? "Création…" : "+ Nouveau profil"}
-            </button>
-          </form>
-        </section>
-        <p>
-          <Link className="button-link secondary" href="/admin/restore-profile">
-            Restaurer une sauvegarde
-          </Link>
-        </p>
+        {administrator && (
+          <section className="panel profile-create">
+            <h2>Créer un profil</h2>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void create();
+              }}
+            >
+              <label>
+                Nom du profil, facultatif
+                <input
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  maxLength={80}
+                  disabled={creating || loading}
+                  placeholder="Un prénom ou un surnom"
+                  autoComplete="off"
+                />
+              </label>
+              <button disabled={creating || loading}>
+                {creating ? "Création…" : "+ Nouveau profil"}
+              </button>
+            </form>
+          </section>
+        )}
+        {administrator && (
+          <p>
+            <Link
+              className="button-link secondary"
+              href="/admin/restore-profile"
+            >
+              Restaurer une sauvegarde
+            </Link>
+          </p>
+        )}
         {error && (
           <div className="error" role="alert">
             {error}{" "}

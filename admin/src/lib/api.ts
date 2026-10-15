@@ -1,24 +1,58 @@
+let csrfToken: string | null = null;
+export function setCSRFToken(value: string | null) {
+  csrfToken = value;
+}
+
 export class APIError extends Error {
-  constructor(public readonly status: number) {
+  readonly status: number;
+  constructor(status: number) {
     super(
-      status === 503
-        ? "Le service est indisponible."
-        : status === 502
-          ? "Le modèle IA n'a pas renvoyé de proposition exploitable. Vos mots sont conservés ; vous pouvez réessayer."
-          : `La requête a échoué (${status}).`,
+      status === 401
+        ? "Reconnectez-vous pour continuer."
+        : status === 403
+          ? "Cet accès ne permet pas cette action."
+          : status === 429
+            ? "Trop de tentatives. Réessayez dans quinze minutes."
+            : status === 503
+              ? "Le service est indisponible."
+              : status === 502
+                ? "Le modèle IA n'a pas renvoyé de proposition exploitable. Vos mots sont conservés ; vous pouvez réessayer."
+                : `La requête a échoué (${status}).`,
     );
+    this.status = status;
   }
 }
 
 export async function api<T>(path: string, options?: RequestInit): Promise<T> {
+  const requestedToken = csrfToken;
   const response = await fetch(`/api/pictoflow/${path}`, {
     ...options,
     cache: "no-store",
-    headers: { "Content-Type": "application/json", ...options?.headers },
+    headers: {
+      "Content-Type": "application/json",
+      ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
+      ...options?.headers,
+    },
   });
-  if (!response.ok) throw new APIError(response.status);
+  if (requestedToken !== csrfToken)
+    throw new Error("Votre accès a changé. Rechargez cet écran.");
+  if (!response.ok) {
+    if (
+      [403, 404].includes(response.status) &&
+      csrfToken &&
+      !path.startsWith("auth/") &&
+      typeof window !== "undefined"
+    )
+      window.dispatchEvent(new Event("pictoflow:access-changed"));
+    if (response.status === 401 && typeof window !== "undefined")
+      window.dispatchEvent(new Event("pictoflow:session-expired"));
+    throw new APIError(response.status);
+  }
   if (response.status === 204) return undefined as T;
-  return response.json() as Promise<T>;
+  const result = (await response.json()) as T;
+  if (requestedToken !== csrfToken)
+    throw new Error("Votre accès a changé. Rechargez cet écran.");
+  return result;
 }
 
 export type Profile = {

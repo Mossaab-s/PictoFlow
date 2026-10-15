@@ -3,6 +3,8 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { api, APIError, type Profile } from "@/lib/api";
 import { profileTitle } from "@/lib/profiles";
+import { useAuthentication } from "./authentication";
+import { canPrepare } from "@/lib/access";
 
 export default function ProfileCard({
   profile,
@@ -11,6 +13,7 @@ export default function ProfileCard({
   profile: Profile;
   onUpdate: (profile: Profile) => void;
 }) {
+  const canEdit = canPrepare(useAuthentication(), profile.id);
   const [name, setName] = useState(profile.display_name ?? "");
   const [busy, setBusy] = useState(false);
   const [blocked, setBlocked] = useState(false);
@@ -72,67 +75,77 @@ export default function ProfileCard({
       </div>
       <span className="tag">Personnel</span>
       <h2>
-        <Link href={`/admin/profiles/${profile.id}/concepts`}>
+        <Link
+          href={
+            canEdit
+              ? `/admin/profiles/${profile.id}/concepts`
+              : `/communication/${profile.id}`
+          }
+        >
           {profileTitle(profile)}
         </Link>
       </h2>
       <p className="identifier">{profile.id}</p>
       <div className="profile-actions">
-        <Link
-          className="button-link secondary"
-          href={`/admin/profiles/${profile.id}/keyboard`}
-        >
-          Préparer le clavier
-        </Link>
+        {canEdit && (
+          <Link
+            className="button-link secondary"
+            href={`/admin/profiles/${profile.id}/keyboard`}
+          >
+            Préparer le clavier
+          </Link>
+        )}
         <Link className="button-link" href={`/communication/${profile.id}`}>
           Communiquer
         </Link>
       </div>
-      <details className="profile-name-editor">
-        <summary>Renommer le profil</summary>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            void rename();
-          }}
-        >
-          <label>
-            Nom de ce profil
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              maxLength={80}
-              disabled={busy || blocked}
-              autoComplete="off"
-            />
-          </label>
-          <p className="helper">
-            Laisser le nom vide retire le nom affiché. Le clavier et les
-            messages sont conservés.
-          </p>
-          <button ref={saveButton} disabled={busy || blocked}>
-            {busy ? "Enregistrement…" : "Enregistrer le nom"}
-          </button>
-        </form>
-        {error && (
-          <p className="error" role="alert">
-            {error}
-          </p>
-        )}
-        {blocked && (
-          <button
-            className="secondary"
-            onClick={() => window.location.reload()}
+      {canEdit && (
+        <details className="profile-name-editor">
+          <summary>Renommer le profil</summary>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void rename();
+            }}
           >
-            Actualiser les profils
-          </button>
-        )}
-        {notice && (
-          <p className="notice" role="status">
-            {notice}
-          </p>
-        )}
-      </details>
+            <label>
+              Nom de ce profil
+              <input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                maxLength={80}
+                disabled={busy || blocked}
+                autoComplete="off"
+              />
+            </label>
+            <p className="helper">
+              Laisser le nom vide retire le nom affiché. Le clavier et les
+              messages sont conservés.
+            </p>
+            <button ref={saveButton} disabled={busy || blocked}>
+              {busy ? "Enregistrement…" : "Enregistrer le nom"}
+            </button>
+          </form>
+          {error && (
+            <p className="error" role="alert">
+              {error}
+            </p>
+          )}
+          {blocked && (
+            <button
+              className="secondary"
+              onClick={() => window.location.reload()}
+            >
+              Actualiser les profils
+            </button>
+          )}
+          {notice && (
+            <p className="notice" role="status">
+              {notice}
+            </p>
+          )}
+        </details>
+      )}
       <div className="card-footer">
         <span>Version {profile.version}</span>
       </div>

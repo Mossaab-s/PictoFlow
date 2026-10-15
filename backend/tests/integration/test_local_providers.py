@@ -80,7 +80,9 @@ def test_fake_proposal_and_provider_replacement_do_not_mutate_pcl_state(session)
         for table in Base.metadata.sorted_tables:
             # These are test data only, read back from PostgreSQL rather than the identity map.
             statement = sa.select(table)
-            if "profile_id" in table.c:
+            if table.name.startswith("auth_"):
+                pass  # Account/session state is not profile-owned and has different primary keys.
+            elif "profile_id" in table.c:
                 statement = statement.where(table.c.profile_id == profile.id)
             else:
                 statement = statement.where(table.c.id == profile.id)

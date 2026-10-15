@@ -1,7 +1,13 @@
 import { NextRequest } from "next/server";
 import { boundedBody, bodyLimit } from "@/lib/proxy-body";
 
-const permitted = new Set(["health", "readiness", "profiles", "providers"]);
+const permitted = new Set([
+  "health",
+  "readiness",
+  "profiles",
+  "providers",
+  "auth",
+]);
 
 async function proxy(
   request: NextRequest,
@@ -23,7 +29,18 @@ async function proxy(
       method: request.method,
       cache: "no-store",
       redirect: "error",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(request.headers.get("cookie")
+          ? { Cookie: request.headers.get("cookie")! }
+          : {}),
+        ...(request.headers.get("origin")
+          ? { Origin: request.headers.get("origin")! }
+          : {}),
+        ...(request.headers.get("x-csrf-token")
+          ? { "X-CSRF-Token": request.headers.get("x-csrf-token")! }
+          : {}),
+      },
       body: ["GET", "HEAD"].includes(request.method)
         ? undefined
         : await boundedBody(request, bodyLimit(request.method, path)),
@@ -38,6 +55,10 @@ async function proxy(
       "X-Content-Type-Options": "nosniff",
     });
     const trace = response.headers.get("x-trace-id");
+    for (const cookie of response.headers.getSetCookie())
+      headers.append("Set-Cookie", cookie);
+    const retry = response.headers.get("retry-after");
+    if (retry) headers.set("Retry-After", retry);
     if (trace) headers.set("x-trace-id", trace);
     if (
       path.length === 3 &&

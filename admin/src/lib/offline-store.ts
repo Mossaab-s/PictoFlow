@@ -19,7 +19,10 @@ async function open() {
     const request = indexedDB.open("pictoflow-offline-v1", 1);
     request.onupgradeneeded = () =>
       request.result.createObjectStore("profiles", { keyPath: "profile_id" });
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => {
+      request.result.onversionchange = () => request.result.close();
+      resolve(request.result);
+    };
     request.onerror = () => reject(request.error);
     request.onblocked = () =>
       reject(new Error("Le stockage local est occupé."));

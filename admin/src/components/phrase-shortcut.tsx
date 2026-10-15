@@ -3,6 +3,8 @@ import { useRef, useState } from "react";
 import { api, APIError } from "@/lib/api";
 import type { HumanRole, Interpretation } from "@/lib/keyboard";
 import { shortcutChoice } from "@/lib/phrases";
+import { useAuthentication } from "./authentication";
+import { canPrepare } from "@/lib/access";
 
 export function phraseError(error: unknown): string {
   return error instanceof APIError &&
@@ -26,11 +28,12 @@ export default function PhraseShortcut({
   disabled?: boolean;
   onChange: (item: Interpretation) => void;
 }) {
+  const canEdit = canPrepare(useAuthentication(), profileId);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const gate = useRef(false);
   const body = shortcutChoice(item, !item.shortcut);
-  if (item.profile_id !== profileId || !body) return null;
+  if (!canEdit || item.profile_id !== profileId || !body) return null;
   async function choose() {
     if (gate.current || !body) return;
     gate.current = true;

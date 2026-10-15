@@ -43,6 +43,7 @@ from app.domain.pcl.keyboard import KeyboardGroup, KeyboardPosition, KeyboardZon
 from app.domain.pcl.pictograms import PictogramKey
 from app.infrastructure.postgres.ai_quality import quality_summary
 from app.infrastructure.postgres.models import ProfileRow
+from app.infrastructure.postgres.pcl_repository import PostgresPCLUnits
 from app.infrastructure.postgres.repositories import PostgresProfileRepository, to_domain
 from app.infrastructure.postgres.semantic_space import PostgresSemanticUnits
 
@@ -252,6 +253,9 @@ def units(request: Request):
     result = request.app.state.pcl_units
     if result is None:
         raise HTTPException(503, "Persistent storage is not configured")
+    account = getattr(request.state, "account", None)
+    if account:
+        return PostgresPCLUnits(result.factory, actor_reference=str(account.id))
     return result
 
 
@@ -280,7 +284,10 @@ def blocks(request: Request):
 
 
 def semantic(request: Request):
-    return SemanticSpace(PostgresSemanticUnits(units(request).factory))
+    unit = units(request)
+    return SemanticSpace(
+        PostgresSemanticUnits(unit.factory, getattr(unit, "actor_reference", None))
+    )
 
 
 def listing(request: Request, profile_id: UUID, entity_type):
@@ -291,7 +298,13 @@ def listing(request: Request, profile_id: UUID, entity_type):
 @router.get("/profiles", response_model=tuple[UserCommunicationProfile, ...])
 def list_profiles(request: Request):
     with units(request).factory.begin() as session:
-        rows = session.scalars(select(ProfileRow).order_by(ProfileRow.created_at, ProfileRow.id))
+        query = select(ProfileRow).order_by(ProfileRow.created_at, ProfileRow.id)
+        account = getattr(request.state, "account", None)
+        if account and not account.is_admin:
+            query = query.where(
+                ProfileRow.id.in_(tuple(UUID(key) for key in account.profile_access))
+            )
+        rows = session.scalars(query)
         return tuple(to_domain(UserCommunicationProfile, row) for row in rows)
 
 

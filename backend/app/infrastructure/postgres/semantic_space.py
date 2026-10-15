@@ -55,8 +55,9 @@ def _restore(target_type: str, values: dict | None) -> SemanticValue | None:
 
 
 class PostgresSemanticRepository:
-    def __init__(self, session: Session):
+    def __init__(self, session: Session, actor_reference: str | None = None):
         self.session = session
+        self.actor_reference = actor_reference
         self._profile: UUID | None = None
 
     def profile_exists(self, profile_id: UUID) -> bool:
@@ -134,7 +135,7 @@ class PostgresSemanticRepository:
                 semantic_relation_id=event.target_id,
                 action=event.action,
                 actor_role=event.actor_role,
-                actor_reference=event.actor_reference,
+                actor_reference=self.actor_reference or event.actor_reference,
                 corrected_value=None,
                 created_at=event.created_at,
             )
@@ -229,10 +230,11 @@ class PostgresSemanticRepository:
 
 
 class PostgresSemanticUnits:
-    def __init__(self, factory: sessionmaker[Session]):
+    def __init__(self, factory: sessionmaker[Session], actor_reference: str | None = None):
         self.factory = factory
+        self.actor_reference = actor_reference
 
     @contextmanager
     def __call__(self) -> Iterator[PostgresSemanticRepository]:
         with transaction(self.factory) as session:
-            yield PostgresSemanticRepository(session)
+            yield PostgresSemanticRepository(session, self.actor_reference)

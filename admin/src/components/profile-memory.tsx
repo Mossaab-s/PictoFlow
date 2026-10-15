@@ -19,6 +19,8 @@ import {
 } from "@/lib/memory";
 import { ProfileNavigation, HumanRoleSelector } from "./profile-navigation";
 import PhraseShortcut from "./phrase-shortcut";
+import { useAuthentication } from "./authentication";
+import { canPrepare } from "@/lib/access";
 import { TouchContent } from "./pictogram";
 import MemoryEvidence, { memoryDate } from "./memory-evidence";
 
@@ -32,6 +34,7 @@ type Category = "all" | "messages" | "blocks" | "relations";
 const pageSize = 10;
 
 export default function ProfileMemory({ profileId }: { profileId: string }) {
+  const canEdit = canPrepare(useAuthentication(), profileId);
   const [validated, setValidated] = useState(true);
   const [bundle, setBundle] = useState<Bundle | null>(null);
   const [loading, setLoading] = useState(true);
@@ -436,12 +439,14 @@ export default function ProfileMemory({ profileId }: { profileId: string }) {
                     </p>
                   )}
                   {pagination("blocks", blocks.length)}
-                  <Link
-                    className="button-link secondary"
-                    href={`/admin/profiles/${profileId}/keyboard`}
-                  >
-                    Préparer le clavier
-                  </Link>
+                  {canEdit && (
+                    <Link
+                      className="button-link secondary"
+                      href={`/admin/profiles/${profileId}/keyboard`}
+                    >
+                      Préparer le clavier
+                    </Link>
+                  )}
                 </section>
               )}
               {(category === "all" || category === "relations") && (

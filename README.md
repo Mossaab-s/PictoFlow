@@ -622,6 +622,8 @@ map, verification and a disposable demo. A LAN test instance is deployed on
 are documented in [docs/SERVER_DEPLOYMENT.md](docs/SERVER_DEPLOYMENT.md).
 The profile's AI quality report and synthetic evaluation command are described
 in [docs/AI_QUALITY.md](docs/AI_QUALITY.md).
+Personal accounts, per-profile permissions and activation after HTTPS setup are
+documented in [docs/ACCESS_CONTROL.md](docs/ACCESS_CONTROL.md).
 
 Current priorities:
 - validate the semantic model;
