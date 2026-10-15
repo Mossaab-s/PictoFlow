@@ -44,7 +44,20 @@ class FeedbackPage:
     next_cursor: UUID | None
 
 
+@dataclass(frozen=True)
+class AcceptedTrace:
+    interpretation_id: UUID
+    sequence_id: UUID
+    block_ids: tuple[UUID, ...]
+    text: str
+    accepted_at: datetime
+
+
 class PCLRepository(Protocol):
+    def accepted_traces(
+        self, profile_id: UUID, *, block_ids: tuple[UUID, ...], exclude_sequence_id: UUID
+    ) -> tuple[AcceptedTrace, ...]: ...
+
     def get(self, profile_id: UUID, entity_type: type[T], entity_id: UUID) -> T: ...
 
     def list(self, profile_id: UUID, entity_type: type[T]) -> tuple[T, ...]: ...

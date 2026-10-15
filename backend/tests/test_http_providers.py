@@ -261,6 +261,41 @@ def test_prism_sends_short_corrections_and_refuses_oversized_requests_without_tr
     asyncio.run(scenario())
 
 
+def test_prism_reduces_only_memory_examples_to_fit_native_limit(fixtures):
+    from uuid import uuid4
+
+    from app.ai.contracts import MemoryExample
+
+    original = fixtures.interpretations[0].request
+    request = original.model_copy(
+        update={
+            "memory_examples": tuple(
+                MemoryExample(
+                    reference_id=uuid4(), blocks=original.blocks, text="Bruit, stop, partir."
+                )
+                for _ in range(50)
+            )
+        }
+    )
+
+    def respond(http_request):
+        query = json.loads(http_request.content)["query"]
+        assert len(query) <= 4000
+        sent = json.loads(query.rsplit("\n", 1)[-1])["request"]
+        assert sent["blocks"] == original.model_dump(mode="json")["blocks"]
+        assert len(sent["memory_examples"]) < 50
+        return httpx.Response(200, json={"execution_status": "REFUSED"})
+
+    async def scenario():
+        provider = PRISMProvider("http://example.test", transport=httpx.MockTransport(respond))
+        try:
+            assert (await provider.interpret(request)).status == "not_understood"
+        finally:
+            await provider.aclose()
+
+    asyncio.run(scenario())
+
+
 @pytest.mark.parametrize(
     "url", ["ftp://example.test", "https://secret@example.test", "http://example.test?key=secret"]
 )

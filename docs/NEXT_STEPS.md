@@ -13,9 +13,21 @@ qui restent à recueillir avec la personne.
 Les travaux d'exploitation sont mis de côté : la PR #45 est fusionnée et ses
 outils sont prêts, mais le timer n'est pas installé sur l'instance active.
 
-## Incréments fonctionnels en cours de revue
+## Compréhension personnelle guidée par la mémoire
 
-Une PR en draft par tâche, dans cet ordre, sans fusion ni déploiement automatique :
+Les PR #48 à #54 sont fusionnées et déployées. Le prochain travail suit les choix
+confirmés : hypothèses souples guidées par la mémoire de la personne, jusqu’à 50
+références pertinentes avec fréquence et récence, observation du rythme avant
+toute association avec un état confirmé. Une PR en draft par étape.
+
+La première étape ajoute les références acceptées au contrat provider ; voir
+[PERSONAL_AI_MEMORY.md](PERSONAL_AI_MEMORY.md). Viennent ensuite les hypothèses
+plus souples, leur explication et la mesure facultative du rythme. Les choix,
+corrections et refus restent explicites ; aucun changement automatique du clavier.
+
+## Incréments fonctionnels livrés (#48–#54)
+
+Les six incréments suivants sont intégrés dans main et disponibles sur l’instance :
 
 1. Suggestions de mots et phrases uniquement depuis la mémoire acceptée du profil.
    Voir [MEMORY_SUGGESTIONS.md](MEMORY_SUGGESTIONS.md).

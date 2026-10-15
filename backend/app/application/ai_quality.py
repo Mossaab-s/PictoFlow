@@ -29,6 +29,7 @@ class AttemptEvidence:
     fallback_reason: FallbackReason | None = None
     received_candidates: int = 0
     correction_examples: int = 0
+    memory_examples: int = 0
 
     def snapshot(self, retained: int) -> dict:
         return {
@@ -39,6 +40,7 @@ class AttemptEvidence:
                 "received_candidates": self.received_candidates,
                 "retained_candidates": 0 if self.fallback_reason else retained,
                 "correction_examples": self.correction_examples,
+                "memory_examples_selected": self.memory_examples,
             }
         }
 

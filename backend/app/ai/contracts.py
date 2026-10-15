@@ -109,6 +109,15 @@ class SemanticHint(Contract):
     confidence: Confidence
 
 
+class MemoryExample(Contract):
+    """An accepted, profile-local association, not an instruction or a new fact."""
+
+    reference_id: UUID
+    blocks: Annotated[tuple[SelectedBlock, ...], Field(min_length=1, max_length=32)]
+    text: MessageText
+    occurrences: Annotated[int, Field(strict=True, ge=1)] = 1
+
+
 class InterpretationRequest(Contract):
     """Ordered selected blocks; no repositories, complete profile or provider credentials."""
 
@@ -116,6 +125,7 @@ class InterpretationRequest(Contract):
     declared_context: Annotated[tuple[ShortText, ...], Field(max_length=8)] = ()
     semantic_hints: Annotated[tuple[SemanticHint, ...], Field(max_length=16)] = ()
     correction_examples: Annotated[tuple[ShortText, ...], Field(max_length=3)] = ()
+    memory_examples: Annotated[tuple[MemoryExample, ...], Field(max_length=100)] = ()
     language: Language = "fr"
 
 
