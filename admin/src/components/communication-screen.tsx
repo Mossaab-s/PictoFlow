@@ -700,6 +700,10 @@ export default function CommunicationScreen({
             <Link
               className="button-link secondary"
               href={`/admin/profiles/${profileId}/keyboard?resume=1`}
+              aria-disabled={pending}
+              onClick={(event) => {
+                if (pending) event.preventDefault();
+              }}
             >
               Il me manque un mot
             </Link>
