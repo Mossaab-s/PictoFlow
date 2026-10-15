@@ -169,6 +169,7 @@ try {
   await page.getByText("Votre phrase est conservée", { exact: true }).waitFor();
   assert.equal((await call(own.base + "/memory")).interpretations.length, 2);
   await page.reload();
+  await panel.locator('button[aria-pressed="true"]').filter({ hasText: /^Phrases$/ }).waitFor();
   assert.equal(
     await panel
       .getByRole("button", { name: "Phrases", exact: true })
