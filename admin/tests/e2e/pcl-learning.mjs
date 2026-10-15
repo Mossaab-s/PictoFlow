@@ -35,6 +35,7 @@ try {
     viewport: { width: 1280, height: 900 },
   });
   const page = await context.newPage();
+  page.setDefaultTimeout(15000);
   const errors = [];
   let interpretations = 0;
   page.on("pageerror", (error) => errors.push(error.message));
@@ -248,7 +249,10 @@ try {
       exact: true,
     })
     .click();
-  await page.getByRole("alert").filter({ hasText: "503" }).waitFor();
+  await page
+    .getByRole("alert")
+    .filter({ hasText: "Le service est indisponible." })
+    .waitFor();
   const partial = await page.evaluate(
     (key) => JSON.parse(sessionStorage.getItem(key)),
     `pictoflow:sequence:${second.p}`,
