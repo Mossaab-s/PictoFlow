@@ -57,10 +57,14 @@ export default function CommunicationScreen({
   const contrast = useContrastSetting(profileId);
   const suggestions = useMemorySuggestionMode(profileId);
   const messageHeading = useRef<HTMLHeadingElement>(null);
+  const reviewHeading = useRef<HTMLHeadingElement>(null);
   const tools = useRef<HTMLDetailsElement>(null);
   const toolsButton = useRef<HTMLButtonElement>(null);
   const [sequence, setSequence] = useState<Sequence | null>(null);
   const [decision, setDecision] = useState<Decision | null>(null);
+  useEffect(() => {
+    if (decision) requestAnimationFrame(() => reviewHeading.current?.focus());
+  }, [decision]);
   const [context, setContext] = useState("");
   const [observeRhythm, setObserveRhythm] = useState(false);
   const lastSelection = useRef<SelectionMark | null>(null);
@@ -604,6 +608,17 @@ export default function CommunicationScreen({
             </button>
           </div>
           <div className="message-flow-actions">
+            <a
+              className="button-link secondary"
+              href="#communication-suggestions"
+            >
+              Suggestions :{" "}
+              {suggestions.mode === "off"
+                ? "désactivées"
+                : suggestions.mode === "words"
+                  ? "mots"
+                  : "phrases"}
+            </a>
             {!completed && (
               <button
                 className="secondary"
@@ -890,6 +905,11 @@ export default function CommunicationScreen({
               La proposition reste à vérifier. Vos touches et leur ordre sont
               conservés.
             </p>
+            <p className="helper">
+              Cette demande utilise l’IA configurée, si elle est disponible,
+              guidée par votre mémoire personnelle. Les modes Mots et Phrases
+              utilisent uniquement vos phrases acceptées.
+            </p>
             <label>
               Contexte que je souhaite préciser, facultatif
               <input
@@ -917,12 +937,17 @@ export default function CommunicationScreen({
               (item) => item.source === "pcl-memory",
             )) && (
             <section className="review-section">
-              <h2>Vérifier ce que je veux dire</h2>
-              <HumanRoleSelector
-                value={role}
-                onChange={setRole}
-                disabled={pending}
-              />
+              <h2 ref={reviewHeading} tabIndex={-1}>
+                Vérifier ce que je veux dire
+              </h2>
+              <details>
+                <summary>Qui valide ce message ?</summary>
+                <HumanRoleSelector
+                  value={role}
+                  onChange={setRole}
+                  disabled={pending}
+                />
+              </details>
               {decision.state === "not_understood" ? (
                 <div className="notice">
                   <p>
@@ -1059,30 +1084,33 @@ function InterpretationCard({
               Ce n'est pas mon sens
             </button>
           </div>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              void feedback("correct", correction);
-            }}
-          >
-            <label>
-              Je corrige la phrase
-              <textarea
-                value={correction}
-                onChange={(event) => setCorrection(event.target.value)}
-                maxLength={4000}
-                required
-                disabled={disabled}
-                rows={3}
-              />
-            </label>
-            <button
-              className="secondary"
-              disabled={disabled || !correction.trim()}
+          <details className="correction-editor">
+            <summary>Modifier la phrase</summary>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void feedback("correct", correction);
+              }}
             >
-              Valider ma correction
-            </button>
-          </form>
+              <label>
+                Je corrige la phrase
+                <textarea
+                  value={correction}
+                  onChange={(event) => setCorrection(event.target.value)}
+                  maxLength={4000}
+                  required
+                  disabled={disabled}
+                  rows={3}
+                />
+              </label>
+              <button
+                className="secondary"
+                disabled={disabled || !correction.trim()}
+              >
+                Valider ma correction
+              </button>
+            </form>
+          </details>
         </>
       )}
       {accepted && (

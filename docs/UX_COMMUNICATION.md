@@ -35,3 +35,16 @@ button. Stop and Escape interrupt speech. Finishing remains explicit and enables
 formulation review. Clear/new-message replacement asks before discarding an
 editable draft or leaving an unaccepted review; cancellation preserves the message
 and returns focus. Completed messages keep the existing immutable sequence history.
+
+## Personal suggestions and review (UX-003, #62)
+
+The message links to a dedicated suggestions region. Off/Words/Phrases retain
+the existing profile-scoped behavior and completed-message prerequisite. The
+first three suggestions are shown; More, search and pagination keep the full
+pool accessible, including linking words without a drawing. No prefix filter
+or AI call is added. Only an existing validated personal representation is used.
+
+A proposal leads to a focused review with explicit acceptance, refusal or a
+progressively disclosed correction editor. Reading remains separate from
+acceptance. Actor and source details remain available on demand. The optional
+AI formulation entry is distinguished from accepted-memory-only suggestions.

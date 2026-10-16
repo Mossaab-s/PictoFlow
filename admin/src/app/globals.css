@@ -1400,6 +1400,23 @@ pre {
 .speak-message {
   font-weight: 700;
 }
+.communication-page :is(.review-section, #communication-suggestions) {
+  scroll-margin-top: 50vh;
+}
+.communication-page .correction-editor {
+  margin-top: 16px;
+}
+.communication-page .correction-editor summary {
+  padding-block: 12px;
+  font-weight: 600;
+}
+.communication-page .memory-suggestions .tabs {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.communication-page .memory-suggestion-card {
+  padding: 16px;
+}
 .communication-heading h1 {
   font-size: 24px;
   margin: 0;

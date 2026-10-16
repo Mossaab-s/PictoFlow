@@ -82,6 +82,7 @@ try {
     (await call(`profiles/${p}/memory?validated=true`)).interpretations.length,
     0,
   );
+  await page.getByText("Modifier la phrase", { exact: true }).click();
   await page.getByLabel("Je corrige la phrase").fill("Je veux boire encore.");
   await page
     .getByRole("button", { name: "Valider ma correction", exact: true })
