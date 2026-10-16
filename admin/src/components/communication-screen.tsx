@@ -32,6 +32,7 @@ import { replayAvailable } from "@/lib/learning";
 import MemorySuggestions from "./memory-suggestions";
 import AIContext from "./ai-context";
 import MessageResetDialog from "./message-reset-dialog";
+import { useOnlineStatus } from "./use-online-status";
 import SelectionRhythm from "./selection-rhythm";
 import {
   selectionObservation,
@@ -51,6 +52,7 @@ export default function CommunicationScreen({
   initialPhraseId?: string | null;
 }) {
   const data = useProfileKeyboard(profileId);
+  const online = useOnlineStatus();
   const canEdit = canPrepare(useAuthentication(), profileId);
   const display = useDisplaySettings(profileId);
   const contrast = useContrastSetting(profileId);
@@ -243,9 +245,11 @@ export default function CommunicationScreen({
               }
             }
           } catch {
-            /* Keep the error visible; never guess the committed state. */
+            // An ambiguous write cannot be followed by more writes until state is reloaded.
+            if (alive.current) setRestoreFailed(true);
           }
-        }
+        } else if (error instanceof TypeError && alive.current)
+          setRestoreFailed(true);
       }
     } finally {
       gate.current = false;
@@ -469,6 +473,7 @@ export default function CommunicationScreen({
     ) ?? false;
   const pending =
     busy ||
+    !online ||
     restoring ||
     data.loading ||
     restoreFailed ||
@@ -516,6 +521,7 @@ export default function CommunicationScreen({
             ref={toolsButton}
             className="secondary"
             aria-controls="communication-options"
+            aria-label="Plus d’options"
             aria-expanded={toolsOpen}
             onClick={() => {
               if (tools.current) {
@@ -525,12 +531,49 @@ export default function CommunicationScreen({
               }
             }}
           >
-            Plus d’options
+            Options
+          </button>
+          <button
+            className="secondary"
+            disabled={busy || restoring}
+            onClick={() => {
+              if (tools.current) {
+                tools.current.open = true;
+                const library =
+                  tools.current.querySelector<HTMLDetailsElement>(
+                    ".phrase-library",
+                  );
+                if (library) {
+                  library.open = true;
+                  library.querySelector("summary")?.focus();
+                  library.scrollIntoView({ block: "start" });
+                }
+              }
+            }}
+          >
+            Mes phrases
           </button>
         </header>
+        {!online && (
+          <div className="communication-connection notice" role="status">
+            <strong>Connexion réseau interrompue</strong>
+            <p>
+              Vos mots déjà affichés restent lisibles. Vous pouvez les faire
+              parler si une voix locale est disponible. Les envois attendent
+              votre action.
+            </p>
+            <Link className="text-link" href="/offline">
+              Ouvrir une copie hors connexion déjà préparée
+            </Link>
+          </div>
+        )}
         {data.error && (
           <div className="error" role="alert">
-            {data.error}
+            <span>{data.error}</span>
+            <p>
+              Votre message reste affiché. Aucune action n’est renvoyée
+              automatiquement.
+            </p>
             {restoreFailed && (
               <button
                 className="secondary"
@@ -546,13 +589,14 @@ export default function CommunicationScreen({
             {notice}
           </p>
         )}
-        {pending && (
+        {(busy || restoring || data.loading) && (
           <p role="status">
             {busy ? "Enregistrement…" : "Chargement de votre clavier…"}
           </p>
         )}
         <section
           className="message-panel"
+          data-completed={completed ? "true" : "false"}
           aria-label="Message en cours"
           id="communication-message"
           tabIndex={-1}
@@ -586,7 +630,7 @@ export default function CommunicationScreen({
             <button
               className="speak-message"
               onClick={() => speech.read(literal)}
-              disabled={!speech.available || !literal || pending}
+              disabled={!speech.available || !literal || busy || restoring}
               aria-label="Parler : lire mes mots"
             >
               Parler

@@ -74,3 +74,23 @@ saved gaps, page order and stable geometry. Page navigation in the preview chang
 only its local view; touches are non-interactive and create no sequence or speech.
 The separate explicit communication link opens the actual route. Existing access
 controls, representation changes, placement review and missing-word return remain.
+
+## Connection and recovery (UX-006, #65)
+
+An offline network hint explains what can still be read locally and links to an
+already prepared protected copy. It does not claim the server is reachable and
+never sends on reconnect. Displayed words can still be spoken with a local voice.
+If a failed write cannot be reconciled by reading its server sequence, further
+writes are blocked until an explicit reload rather than guessing the committed
+state. The current server/local draft split and protected import remain intact.
+The completed message returns to normal page flow so its toolbar cannot cover
+the suggestion and review controls; editable compositions retain the bounded toolbar.
+Dynamic suggestion results are excluded from browser scroll anchoring so that
+search updates do not move controls during pointer activation. Keyboard focus
+remains visible and follows the existing tab order.
+
+The header has a direct usual-phrases entry; opening it does not replace the
+composition or accept a meaning. Empty personal memory offers an explicit path
+back to the normal formulation workflow without calling AI. On the dedicated
+communication route the existing account/logout controls are collapsed under
+Mon compte; authentication, access checks and cleanup behavior are unchanged.

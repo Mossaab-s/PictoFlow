@@ -201,6 +201,8 @@ export default function MemorySuggestions({
                     value={query}
                     disabled={disabled}
                     onChange={(e) => {
+                      setPage(null);
+                      setError("");
                       setQuery(e.target.value);
                       setOffset(0);
                     }}
@@ -282,6 +284,15 @@ export default function MemorySuggestions({
                         ? "Aucune suggestion ne correspond à cette recherche."
                         : "Aucune phrase acceptée pour le moment. Validez ou corrigez d’abord une phrase dans ce profil."}
                     </p>
+                  )}
+                  {!page.total && !query && (
+                    <button
+                      className="secondary"
+                      disabled={disabled}
+                      onClick={() => changeMode("off")}
+                    >
+                      Préparer une première formulation
+                    </button>
                   )}
                   {mode === "words" && (
                     <div className="memory-word-cards">

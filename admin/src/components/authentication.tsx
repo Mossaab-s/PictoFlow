@@ -278,21 +278,30 @@ export default function Authentication({
         {error && <p role="alert">{error}</p>}
       </main>
     );
+  const accountControls = (
+    <>
+      <span>{session.account?.display_name}</span>
+      <button
+        className="secondary"
+        disabled={busy}
+        onClick={() => void disconnect()}
+      >
+        Se déconnecter et effacer les copies locales
+      </button>
+      {error && <p role="alert">{error}</p>}
+    </>
+  );
   return (
     <AuthContext.Provider value={session}>
-      {session.enabled && (
-        <div className="account-bar">
-          <span>{session.account?.display_name}</span>
-          <button
-            className="secondary"
-            disabled={busy}
-            onClick={() => void disconnect()}
-          >
-            Se déconnecter et effacer les copies locales
-          </button>
-          {error && <p role="alert">{error}</p>}
-        </div>
-      )}
+      {session.enabled &&
+        (path.startsWith("/communication/") ? (
+          <details className="account-bar communication-account">
+            <summary>Mon compte</summary>
+            <div className="account-controls">{accountControls}</div>
+          </details>
+        ) : (
+          <div className="account-bar">{accountControls}</div>
+        ))}
       {pathPermitted(session, path) ? (
         children
       ) : (
