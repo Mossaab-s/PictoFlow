@@ -205,6 +205,12 @@ try {
     .getByText("Utiliser le clavier et la souris", { exact: true })
     .click();
   await page.keyboard.press("Escape");
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('button[aria-controls="communication-options"]')
+        ?.getAttribute("aria-expanded") === "false",
+  );
   assert.equal(
     await page
       .getByRole("button", { name: "Plus d’options", exact: true })
