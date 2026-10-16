@@ -1,3 +1,5 @@
+import { dailyPictograms } from "./daily-pictograms.ts";
+
 export const pictogramCategories = {
   needs: "Besoins quotidiens",
   people: "Personnes",
@@ -6,6 +8,13 @@ export const pictogramCategories = {
   feelings: "Émotions",
   places: "Lieux et déplacements",
   nature: "Animaux et nature",
+  food: "Aliments et boissons",
+  care: "Hygiène et soins",
+  clothes: "Vêtements",
+  household: "Objets de la maison",
+  body: "Parties du corps",
+  actions: "Actions quotidiennes",
+  time: "Temps et moments",
 } as const;
 export type PictogramCategory = keyof typeof pictogramCategories;
 type CatalogEntry = {
@@ -148,6 +157,7 @@ export const pictograms = [
     category: "needs",
     keywords: "laver toilette bain",
   },
+  ...dailyPictograms,
 ] as const satisfies readonly CatalogEntry[];
 export type PictogramKey = (typeof pictograms)[number]["key"];
 export const pictogramSource = "pictoflow-builtin-v1";

@@ -16,10 +16,9 @@ test("catalog search accepts accents, synonyms and several terms without changin
     searchPictograms("téléphone mobile").map((item) => item.key),
     ["phone"],
   );
-  assert.deepEqual(
-    searchPictograms("repas").map((item) => item.key),
-    ["eat"],
-  );
+  const meal = searchPictograms("repas").map((item) => item.key);
+  assert.equal(meal[0], "eat");
+  assert(meal.includes("bread") && meal.includes("kitchen"));
   assert.deepEqual(
     searchPictograms("coeur").map((item) => item.key),
     ["love"],
@@ -47,4 +46,19 @@ test("every displayed drawing has a unique key and a stable local reference", ()
   assert.equal(new Set(keys).size, keys.length);
   for (const item of pictograms)
     assert.equal(pictogramFromReference(pictogramReference(item.key)), item);
+});
+
+test("daily objects, hygiene, body and personal pronouns are searchable without accents", () => {
+  for (const [query, category, key] of [
+    ["brossage dents", "care", "brush_teeth"],
+    ["oeil", "body", "eye"],
+    ["tete", "body", "head"],
+    ["chaussette", "clothes", "socks"],
+    ["cacao", "food", "chocolate"],
+    ["grand-mere", "people", "grandmother"],
+    ["moi-meme", "people", "me"],
+    ["matin", "time", "morning"],
+    ["recommencer", "answers", "again"],
+  ])
+    assert(searchPictograms(query, category).some((item) => item.key === key));
 });

@@ -7,9 +7,11 @@ import {
 import type { Representation } from "@/lib/keyboard";
 import { photoUrl } from "@/lib/photos";
 import { PhotoImage } from "./photo-picker";
+import { dailyDrawings } from "./daily-pictogram-drawings";
 
 // Original bundled SVG drawings. No external image request or platform emoji font.
 const drawings: Record<PictogramKey, ReactNode> = {
+  ...dailyDrawings,
   toilets: (
     <>
       <rect x="22" y="14" width="45" height="40" rx="7" fill="#e2f2f5" />
