@@ -273,8 +273,8 @@ export default function OfflineCommunication({
               disabled={disabled || !online}
             />
           )}
-          <p>
-            Copie préparée le{" "}
+          <p role="status">
+            Copie locale séparée du message serveur. Copie préparée le{" "}
             {new Date(snapshot.captured_at).toLocaleString("fr-FR")}. Elle peut
             différer du clavier actuel sur le serveur.
           </p>

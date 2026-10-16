@@ -127,7 +127,13 @@ function ZoneGrid({
                   const button = event.currentTarget;
                   await onSelect(tile);
                   requestAnimationFrame(() => {
-                    if (button.isConnected && !button.disabled) button.focus();
+                    if (
+                      button.isConnected &&
+                      !button.disabled &&
+                      (document.activeElement === button ||
+                        document.activeElement === document.body)
+                    )
+                      button.focus();
                   });
                 }}
               >
