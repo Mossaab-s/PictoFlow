@@ -32,6 +32,7 @@ import CompositionMemory from "./composition-memory";
 import { replayAvailable } from "@/lib/learning";
 import MemorySuggestions from "./memory-suggestions";
 import AIContext from "./ai-context";
+import MessageResetDialog from "./message-reset-dialog";
 import SelectionRhythm from "./selection-rhythm";
 import {
   selectionObservation,
@@ -69,6 +70,8 @@ export default function CommunicationScreen({
   const [restoring, setRestoring] = useState(true);
   const [restoreFailed, setRestoreFailed] = useState(false);
   const [notice, setNotice] = useState("");
+  const [resetAction, setResetAction] = useState<"clear" | "new" | null>(null);
+  const resetOpener = useRef<HTMLButtonElement | null>(null);
   const [phraseChoice, setPhraseChoice] = useState<{
     id: string;
     version: number;
@@ -469,6 +472,17 @@ export default function CommunicationScreen({
     !contrast.ready ||
     !suggestions.ready ||
     !speech.ready;
+  function cancelReset() {
+    setResetAction(null);
+    requestAnimationFrame(() => resetOpener.current?.focus());
+  }
+  function requestReset(action: "clear" | "new", button: HTMLButtonElement) {
+    if (chosen.length && (!completed || (!!decision && !accepted))) {
+      resetOpener.current = button;
+      setResetAction(action);
+    } else
+      void perform(action === "clear" ? () => selection("clear") : newMessage);
+  }
   return (
     <>
       {!standalone && (
@@ -565,40 +579,57 @@ export default function CommunicationScreen({
           </div>
           <div className="actions">
             <button
-              className="secondary"
-              onClick={() => void perform(() => selection("undo"))}
-              disabled={pending || completed || !chosen.length}
-            >
-              Annuler la dernière touche
-            </button>
-            <button
-              className="secondary"
-              onClick={() => void perform(() => selection("clear"))}
-              disabled={pending || completed || !chosen.length}
-            >
-              Effacer le message
-            </button>
-            <button
-              onClick={() => void perform(() => selection("complete"))}
-              disabled={pending || completed || !chosen.length}
-            >
-              Terminer mon message
-            </button>
-            <button
-              className="secondary"
+              className="speak-message"
               onClick={() => speech.read(literal)}
               disabled={!speech.available || !literal || pending}
+              aria-label="Parler : lire mes mots"
             >
-              Lire mes mots
+              Parler
             </button>
             <button
               className="secondary"
-              onClick={() => void perform(newMessage)}
-              disabled={pending || !sequence}
+              onClick={() => void perform(() => selection("undo"))}
+              aria-label="Annuler la dernière touche"
+              disabled={pending || completed || !chosen.length}
             >
-              Nouveau message
+              Annuler
+            </button>
+            <button
+              className="secondary"
+              onClick={(event) => requestReset("clear", event.currentTarget)}
+              aria-label="Effacer le message"
+              disabled={pending || completed || !chosen.length}
+            >
+              Effacer
             </button>
           </div>
+          <div className="message-flow-actions">
+            {!completed && (
+              <button
+                className="secondary"
+                onClick={() => void perform(() => selection("complete"))}
+                disabled={pending || !chosen.length}
+              >
+                Terminer mon message
+              </button>
+            )}
+            {sequence && (
+              <button
+                className="secondary"
+                onClick={(event) => requestReset("new", event.currentTarget)}
+                disabled={pending || !sequence}
+              >
+                Nouveau message
+              </button>
+            )}
+          </div>
+          <p className="helper">
+            {!chosen.length
+              ? "Choisissez vos touches, puis Parler pour les lire."
+              : completed
+                ? "Vos mots sont conservés. Vous pouvez les lire ou choisir une formulation à vérifier."
+                : "Parler lit vos mots. Terminer permet ensuite de vérifier une phrase."}
+          </p>
           {!speech.available && (
             <p className="helper">
               La lecture vocale française locale n'est pas disponible dans ce
@@ -930,6 +961,21 @@ export default function CommunicationScreen({
             </section>
           )}
       </section>
+      <MessageResetDialog
+        action={resetAction}
+        cancel={cancelReset}
+        confirm={() => {
+          const action = resetAction;
+          setResetAction(null);
+          requestAnimationFrame(() => {
+            resetOpener.current?.focus();
+            if (action)
+              void perform(
+                action === "clear" ? () => selection("clear") : newMessage,
+              );
+          });
+        }}
+      />
     </>
   );
 }

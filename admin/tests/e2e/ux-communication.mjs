@@ -43,6 +43,38 @@ try {
   }
   const before = await call(base + "/keyboard");
   const page = await browser.newPage();
+  await page.addInitScript(() => {
+    window.__spoken = [];
+    Object.defineProperty(window, "SpeechSynthesisUtterance", {
+      configurable: true,
+      value: class {
+        constructor(text) {
+          this.text = text;
+        }
+      },
+    });
+    Object.defineProperty(window, "speechSynthesis", {
+      configurable: true,
+      value: {
+        getVoices: () => [
+          {
+            voiceURI: "synthetic-fr",
+            name: "Synthetic French",
+            lang: "fr-FR",
+            localService: true,
+            default: true,
+          },
+        ],
+        cancel() {},
+        speak(utterance) {
+          window.__spoken.push(utterance.text);
+          utterance.onstart?.();
+        },
+        addEventListener() {},
+        removeEventListener() {},
+      },
+    });
+  });
   page.setDefaultTimeout(15000);
   const errors = [];
   let ai = 0;
@@ -111,6 +143,51 @@ try {
       .evaluate((e) => e.scrollHeight > e.clientHeight),
   );
   await page.screenshot({ path: ".local/ux-communication/long-message.png" });
+  await page
+    .getByRole("button", { name: "Parler : lire mes mots", exact: true })
+    .click();
+  assert.deepEqual(await page.evaluate(() => window.__spoken), [
+    "Boire" + " Eau".repeat(11),
+  ]);
+  await page
+    .getByRole("button", { name: "Arrêter la lecture", exact: true })
+    .waitFor();
+  await page.keyboard.press("Escape");
+  await page
+    .getByRole("button", { name: "Effacer le message", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Garder mon message", exact: true })
+    .click();
+  assert.equal(await page.locator(".message-touch").count(), 12);
+  await page
+    .getByRole("button", { name: "Effacer le message", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Oui, effacer les mots", exact: true })
+    .click();
+  await page
+    .getByText("Votre message apparaîtra ici.", { exact: true })
+    .waitFor();
+  await keyboard.getByRole("button", { name: "Boire", exact: true }).click();
+  await page.locator(".message-touch").first().waitFor();
+  await page
+    .getByRole("button", { name: "Nouveau message", exact: true })
+    .click();
+  await page.keyboard.press("Escape");
+  assert.equal(await page.locator(".message-touch").count(), 1);
+  await page
+    .getByRole("button", { name: "Nouveau message", exact: true })
+    .click();
+  await page
+    .getByRole("button", {
+      name: "Oui, commencer un autre message",
+      exact: true,
+    })
+    .click();
+  await page
+    .getByText("Votre message apparaîtra ici.", { exact: true })
+    .waitFor();
   assert.deepEqual(await call(base + "/keyboard"), before);
   assert.equal((await call(base + "/memory")).interpretations.length, 0);
   assert.equal(ai, 0);

@@ -26,3 +26,12 @@ No display change moves saved touches or validates meaning.
 `admin/tests/e2e/ux-communication.mjs` checks synthetic desktop, tablet, mobile and
 long-message layouts in the isolated PCL browser CI. Actual usability feedback is
 still needed; automated checks do not establish suitability for an individual.
+
+## Message actions (UX-002, #61)
+
+**Parler** reads exactly the ordered pictogram words; it does not finish the
+sequence or accept an interpretation. Phrase reading targets that phrase's own
+button. Stop and Escape interrupt speech. Finishing remains explicit and enables
+formulation review. Clear/new-message replacement asks before discarding an
+editable draft or leaving an unaccepted review; cancellation preserves the message
+and returns focus. Completed messages keep the existing immutable sequence history.
