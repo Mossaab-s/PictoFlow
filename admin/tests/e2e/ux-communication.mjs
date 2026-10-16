@@ -415,9 +415,12 @@ try {
     .locator(".communication-tile")
     .first()
     .boundingBox();
+  await page.screenshot({
+    path: ".local/ux-communication/account-first-row.png",
+  });
   assert(
     firstRow.y + firstRow.height <= 844,
-    "Account controls must not bury the keyboard",
+    `Account controls must not bury the keyboard: ${JSON.stringify(firstRow)}`,
   );
   await page.getByText("Mon compte", { exact: true }).click();
   await page

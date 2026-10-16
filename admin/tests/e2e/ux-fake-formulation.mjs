@@ -101,7 +101,10 @@ try {
       .getByRole("button", { name: "Proposer une phrase", exact: true })
       .click();
     const card = page.locator(".interpretation-card");
-    await card.getByText("Je veux boire de l’eau.", { exact: true }).waitFor();
+    await card
+      .locator(".proposed-phrase")
+      .filter({ hasText: "Je veux boire de l’eau." })
+      .waitFor();
     const candidate = (await call(base + "/interpretations")).find(
       (i) => i.sequence_id === seq,
     );
