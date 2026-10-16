@@ -233,6 +233,7 @@ try {
     }),
   );
   await online.goto(`${origin}/communication/${p}`);
+  await online.getByText("Mon compte", { exact: true }).click();
   await online
     .getByRole("button", {
       name: "Se déconnecter et effacer les copies locales",

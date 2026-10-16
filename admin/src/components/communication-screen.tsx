@@ -22,16 +22,17 @@ import { useProfileKeyboard } from "./use-profile-keyboard";
 import { TouchContent } from "./pictogram";
 import ProfileIdentity from "./profile-identity";
 import { useLocalSpeech } from "./use-local-speech";
-import DisplaySettings from "./display-settings";
+import CommunicationPreferences from "./communication-preferences";
 import { useDisplaySettings } from "./use-display-settings";
 import PhraseLibrary from "./phrase-library";
-import SpeechSettings from "./speech-settings";
 import { useContrastSetting } from "./use-contrast-setting";
 import OfflineCommunication from "./offline-communication";
 import CompositionMemory from "./composition-memory";
 import { replayAvailable } from "@/lib/learning";
 import MemorySuggestions from "./memory-suggestions";
 import AIContext from "./ai-context";
+import MessageResetDialog from "./message-reset-dialog";
+import { useOnlineStatus } from "./use-online-status";
 import SelectionRhythm from "./selection-rhythm";
 import {
   selectionObservation,
@@ -51,15 +52,22 @@ export default function CommunicationScreen({
   initialPhraseId?: string | null;
 }) {
   const data = useProfileKeyboard(profileId);
+  const online = useOnlineStatus();
   const canEdit = canPrepare(useAuthentication(), profileId);
   const display = useDisplaySettings(profileId);
   const contrast = useContrastSetting(profileId);
   const suggestions = useMemorySuggestionMode(profileId);
   const messageHeading = useRef<HTMLHeadingElement>(null);
+  const reviewHeading = useRef<HTMLHeadingElement>(null);
   const tools = useRef<HTMLDetailsElement>(null);
   const toolsButton = useRef<HTMLButtonElement>(null);
+  const toolsReturn = useRef<HTMLButtonElement | null>(null);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const [sequence, setSequence] = useState<Sequence | null>(null);
   const [decision, setDecision] = useState<Decision | null>(null);
+  useEffect(() => {
+    if (decision) requestAnimationFrame(() => reviewHeading.current?.focus());
+  }, [decision]);
   const [context, setContext] = useState("");
   const [observeRhythm, setObserveRhythm] = useState(false);
   const lastSelection = useRef<SelectionMark | null>(null);
@@ -69,6 +77,8 @@ export default function CommunicationScreen({
   const [restoring, setRestoring] = useState(true);
   const [restoreFailed, setRestoreFailed] = useState(false);
   const [notice, setNotice] = useState("");
+  const [resetAction, setResetAction] = useState<"clear" | "new" | null>(null);
+  const resetOpener = useRef<HTMLButtonElement | null>(null);
   const [phraseChoice, setPhraseChoice] = useState<{
     id: string;
     version: number;
@@ -236,9 +246,11 @@ export default function CommunicationScreen({
               }
             }
           } catch {
-            /* Keep the error visible; never guess the committed state. */
+            // An ambiguous write cannot be followed by more writes until state is reloaded.
+            if (alive.current) setRestoreFailed(true);
           }
-        }
+        } else if (error instanceof TypeError && alive.current)
+          setRestoreFailed(true);
       }
     } finally {
       gate.current = false;
@@ -462,6 +474,7 @@ export default function CommunicationScreen({
     ) ?? false;
   const pending =
     busy ||
+    !online ||
     restoring ||
     data.loading ||
     restoreFailed ||
@@ -469,6 +482,17 @@ export default function CommunicationScreen({
     !contrast.ready ||
     !suggestions.ready ||
     !speech.ready;
+  function cancelReset() {
+    setResetAction(null);
+    requestAnimationFrame(() => resetOpener.current?.focus());
+  }
+  function requestReset(action: "clear" | "new", button: HTMLButtonElement) {
+    if (chosen.length && (!completed || (!!decision && !accepted))) {
+      resetOpener.current = button;
+      setResetAction(action);
+    } else
+      void perform(action === "clear" ? () => selection("clear") : newMessage);
+  }
   return (
     <>
       {!standalone && (
@@ -498,7 +522,10 @@ export default function CommunicationScreen({
             ref={toolsButton}
             className="secondary"
             aria-controls="communication-options"
-            onClick={() => {
+            aria-label="Plus d’options"
+            aria-expanded={toolsOpen}
+            onClick={(event) => {
+              toolsReturn.current = event.currentTarget;
               if (tools.current) {
                 tools.current.open = true;
                 tools.current.querySelector("summary")?.focus();
@@ -506,12 +533,50 @@ export default function CommunicationScreen({
               }
             }}
           >
-            Plus d’options
+            Options
+          </button>
+          <button
+            className="secondary"
+            disabled={busy || restoring}
+            onClick={(event) => {
+              toolsReturn.current = event.currentTarget;
+              if (tools.current) {
+                tools.current.open = true;
+                const library =
+                  tools.current.querySelector<HTMLDetailsElement>(
+                    ".phrase-library",
+                  );
+                if (library) {
+                  library.open = true;
+                  library.querySelector("summary")?.focus();
+                  library.scrollIntoView({ block: "start" });
+                }
+              }
+            }}
+          >
+            Mes phrases
           </button>
         </header>
+        {!online && (
+          <div className="communication-connection notice" role="status">
+            <strong>Connexion réseau interrompue</strong>
+            <p>
+              Vos mots déjà affichés restent lisibles. Vous pouvez les faire
+              parler si une voix locale est disponible. Les envois attendent
+              votre action.
+            </p>
+            <Link className="text-link" href="/offline">
+              Ouvrir une copie hors connexion déjà préparée
+            </Link>
+          </div>
+        )}
         {data.error && (
           <div className="error" role="alert">
-            {data.error}
+            <span>{data.error}</span>
+            <p>
+              Votre message reste affiché. Aucune action n’est renvoyée
+              automatiquement.
+            </p>
             {restoreFailed && (
               <button
                 className="secondary"
@@ -527,13 +592,14 @@ export default function CommunicationScreen({
             {notice}
           </p>
         )}
-        {pending && (
+        {(busy || restoring || data.loading) && (
           <p role="status">
             {busy ? "Enregistrement…" : "Chargement de votre clavier…"}
           </p>
         )}
         <section
           className="message-panel"
+          data-completed={completed ? "true" : "false"}
           aria-label="Message en cours"
           id="communication-message"
           tabIndex={-1}
@@ -565,40 +631,68 @@ export default function CommunicationScreen({
           </div>
           <div className="actions">
             <button
+              className="speak-message"
+              onClick={() => speech.read(literal)}
+              disabled={!speech.available || !literal || busy || restoring}
+              aria-label="Parler : lire mes mots"
+            >
+              Parler
+            </button>
+            <button
               className="secondary"
               onClick={() => void perform(() => selection("undo"))}
+              aria-label="Annuler la dernière touche"
               disabled={pending || completed || !chosen.length}
             >
-              Annuler la dernière touche
+              Annuler
             </button>
             <button
               className="secondary"
-              onClick={() => void perform(() => selection("clear"))}
+              onClick={(event) => requestReset("clear", event.currentTarget)}
+              aria-label="Effacer le message"
               disabled={pending || completed || !chosen.length}
             >
-              Effacer le message
-            </button>
-            <button
-              onClick={() => void perform(() => selection("complete"))}
-              disabled={pending || completed || !chosen.length}
-            >
-              Terminer mon message
-            </button>
-            <button
-              className="secondary"
-              onClick={() => speech.read(literal)}
-              disabled={!speech.available || !literal || pending}
-            >
-              Lire mes mots
-            </button>
-            <button
-              className="secondary"
-              onClick={() => void perform(newMessage)}
-              disabled={pending || !sequence}
-            >
-              Nouveau message
+              Effacer
             </button>
           </div>
+          <div className="message-flow-actions">
+            <a
+              className="button-link secondary"
+              href="#communication-suggestions"
+            >
+              Suggestions :{" "}
+              {suggestions.mode === "off"
+                ? "désactivées"
+                : suggestions.mode === "words"
+                  ? "mots"
+                  : "phrases"}
+            </a>
+            {!completed && (
+              <button
+                className="secondary"
+                onClick={() => void perform(() => selection("complete"))}
+                disabled={pending || !chosen.length}
+              >
+                Terminer mon message
+              </button>
+            )}
+            {sequence && (
+              <button
+                className="secondary"
+                onClick={(event) => requestReset("new", event.currentTarget)}
+                disabled={pending || !sequence}
+              >
+                Nouveau message
+              </button>
+            )}
+          </div>
+          <p className="helper">
+            {!chosen.length
+              ? "Choisissez vos touches, puis Parler pour les lire."
+              : completed
+                ? "Vos mots sont conservés. Vous pouvez les lire ou choisir une formulation à vérifier."
+                : "Parler lit vos mots. Terminer permet ensuite de vérifier une phrase."}
+          </p>
           {!speech.available && (
             <p className="helper">
               La lecture vocale française locale n'est pas disponible dans ce
@@ -719,13 +813,21 @@ export default function CommunicationScreen({
           ref={tools}
           id="communication-options"
           className="communication-tools"
+          onToggle={() => setToolsOpen(Boolean(tools.current?.open))}
+          onKeyDown={(event) => {
+            if (event.key === "Escape" && !speech.speaking) {
+              event.preventDefault();
+              if (tools.current) tools.current.open = false;
+              (toolsReturn.current ?? toolsButton.current)?.focus();
+            }
+          }}
         >
           <summary>Plus d’options : voix, affichage et préparation</summary>
           <button
             className="secondary"
             onClick={() => {
               if (tools.current) tools.current.open = false;
-              toolsButton.current?.focus();
+              (toolsReturn.current ?? toolsButton.current)?.focus();
             }}
           >
             Revenir au clavier
@@ -774,14 +876,13 @@ export default function CommunicationScreen({
             choiceRevision={phraseChoice?.version ?? 0}
             revision={decision}
           />
-          <DisplaySettings
-            size={display.size}
-            onChange={display.change}
+          <CommunicationPreferences
+            display={display}
+            speech={speech}
+            tile={tiles.find((tile) => tile.zone !== "stable") ?? tiles[0]}
             disabled={pending}
-            temporary={display.temporary}
             contrast={contrast}
           />
-          <SpeechSettings speech={speech} disabled={pending} />
           <OfflineCommunication
             key={profileId}
             profileId={profileId}
@@ -859,6 +960,11 @@ export default function CommunicationScreen({
               La proposition reste à vérifier. Vos touches et leur ordre sont
               conservés.
             </p>
+            <p className="helper">
+              Cette demande utilise l’IA configurée, si elle est disponible,
+              guidée par votre mémoire personnelle. Les modes Mots et Phrases
+              utilisent uniquement vos phrases acceptées.
+            </p>
             <label>
               Contexte que je souhaite préciser, facultatif
               <input
@@ -886,12 +992,17 @@ export default function CommunicationScreen({
               (item) => item.source === "pcl-memory",
             )) && (
             <section className="review-section">
-              <h2>Vérifier ce que je veux dire</h2>
-              <HumanRoleSelector
-                value={role}
-                onChange={setRole}
-                disabled={pending}
-              />
+              <h2 ref={reviewHeading} tabIndex={-1}>
+                Vérifier ce que je veux dire
+              </h2>
+              <details>
+                <summary>Qui valide ce message ?</summary>
+                <HumanRoleSelector
+                  value={role}
+                  onChange={setRole}
+                  disabled={pending}
+                />
+              </details>
               {decision.state === "not_understood" ? (
                 <div className="notice">
                   <p>
@@ -930,6 +1041,21 @@ export default function CommunicationScreen({
             </section>
           )}
       </section>
+      <MessageResetDialog
+        action={resetAction}
+        cancel={cancelReset}
+        confirm={() => {
+          const action = resetAction;
+          setResetAction(null);
+          requestAnimationFrame(() => {
+            resetOpener.current?.focus();
+            if (action)
+              void perform(
+                action === "clear" ? () => selection("clear") : newMessage,
+              );
+          });
+        }}
+      />
     </>
   );
 }
@@ -1013,30 +1139,33 @@ function InterpretationCard({
               Ce n'est pas mon sens
             </button>
           </div>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              void feedback("correct", correction);
-            }}
-          >
-            <label>
-              Je corrige la phrase
-              <textarea
-                value={correction}
-                onChange={(event) => setCorrection(event.target.value)}
-                maxLength={4000}
-                required
-                disabled={disabled}
-                rows={3}
-              />
-            </label>
-            <button
-              className="secondary"
-              disabled={disabled || !correction.trim()}
+          <details className="correction-editor">
+            <summary>Modifier la phrase</summary>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void feedback("correct", correction);
+              }}
             >
-              Valider ma correction
-            </button>
-          </form>
+              <label>
+                Je corrige la phrase
+                <textarea
+                  value={correction}
+                  onChange={(event) => setCorrection(event.target.value)}
+                  maxLength={4000}
+                  required
+                  disabled={disabled}
+                  rows={3}
+                />
+              </label>
+              <button
+                className="secondary"
+                disabled={disabled || !correction.trim()}
+              >
+                Valider ma correction
+              </button>
+            </form>
+          </details>
         </>
       )}
       {accepted && (

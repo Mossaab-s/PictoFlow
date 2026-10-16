@@ -60,6 +60,7 @@ async function prepare(acceptedText = null) {
 }
 
 const browser = await chromium.launch({ headless: true });
+let page;
 try {
   const own = await prepare("Je veux boire de l’eau.");
   const empty = await prepare();
@@ -68,7 +69,11 @@ try {
   const context = await browser.newContext({
     viewport: { width: 1280, height: 900 },
   });
-  const page = await context.newPage();
+  page = await context.newPage();
+  page.on("response", (r) => {
+    if (r.url().includes("/memory-suggestions?"))
+      console.log("Synthetic suggestion response:", r.status());
+  });
   page.setDefaultTimeout(15000);
   const errors = [];
   let unexpectedAI = 0;
@@ -97,6 +102,12 @@ try {
   await page.goto(`${origin}/communication/${own.p}`);
   await compose();
   await panel.getByRole("button", { name: "Mots", exact: true }).click();
+  await panel.locator(".memory-word-cards article").first().waitFor();
+  assert.equal(await panel.locator(".memory-word-cards article").count(), 3);
+  await panel
+    .getByRole("button", { name: "Voir plus de suggestions", exact: true })
+    .click();
+
   await panel
     .getByRole("button", { name: "Ajouter « eau »", exact: true })
     .waitFor();
@@ -245,8 +256,13 @@ try {
   assert.deepEqual(await call(own.base + "/interpretations"), afterLost);
   await page.unroute("**/memory-proposals");
   await panel.getByRole("button", { name: "Mots", exact: true }).click();
+
   await page.setViewportSize({ width: 320, height: 900 });
+  const filtered = page.waitForResponse((r) =>
+    r.url().includes("/memory-suggestions?mode=words&q=eau&"),
+  );
   await panel.getByLabel("Rechercher dans mes suggestions").fill("eau");
+  await filtered;
   await panel
     .getByRole("button", { name: "Ajouter « eau »", exact: true })
     .waitFor();
@@ -258,12 +274,73 @@ try {
   await panel.screenshot({
     path: ".local/memory-suggestions/words-mobile.png",
   });
-  await page.route("**/memory-suggestions?*", (route) =>
+  const suggestionURL = (url) => url.pathname.endsWith("/memory-suggestions");
+  await page.route(suggestionURL, (route) =>
     route.fulfill({ status: 503, contentType: "application/json", body: "{}" }),
   );
+  const unavailable = page
+    .waitForResponse(
+      (r) => r.url().includes("/memory-suggestions?") && r.status() === 503,
+      { timeout: 5000 },
+    )
+    .then((response) => response.status())
+    .catch(() => null);
+  const refreshButton = panel.getByRole("button", {
+    name: "Actualiser les suggestions",
+    exact: true,
+  });
+  await page.evaluate(() => {
+    window.__uxPointer = [];
+    for (const type of [
+      "pointerdown",
+      "mousedown",
+      "focusin",
+      "pointerup",
+      "mouseup",
+      "click",
+      "scroll",
+    ])
+      document.addEventListener(
+        type,
+        (e) => {
+          window.__uxPointer.push({
+            type,
+            target:
+              e.target.closest?.("button")?.textContent?.trim() ??
+              e.target.tagName,
+            scroll: window.scrollY,
+            active: document.activeElement?.tagName,
+            button: [...document.querySelectorAll("button")]
+              .find(
+                (b) => b.textContent.trim() === "Actualiser les suggestions",
+              )
+              ?.getBoundingClientRect()
+              .toJSON(),
+          });
+        },
+        { capture: true },
+      );
+  });
   await panel
     .getByRole("button", { name: "Actualiser les suggestions", exact: true })
     .click();
+  console.log(
+    "Synthetic refresh pointer events:",
+    await page.evaluate(() => window.__uxPointer),
+  );
+  assert(
+    await page.evaluate(() =>
+      window.__uxPointer.some(
+        (e) => e.type === "click" && e.target === "Actualiser les suggestions",
+      ),
+    ),
+    "The refresh pointer activation must reach the control",
+  );
+  assert.equal(
+    await unavailable,
+    503,
+    "The unavailable suggestion response must be injected",
+  );
   await panel.getByRole("alert").waitFor();
   assert.equal(
     await panel
@@ -271,7 +348,7 @@ try {
       .count(),
     0,
   );
-  await page.unroute("**/memory-suggestions?*");
+  await page.unroute(suggestionURL);
   await panel
     .getByRole("button", { name: "Actualiser les suggestions", exact: true })
     .click();
@@ -287,6 +364,7 @@ try {
     "true",
   );
   await panel.getByRole("button", { name: "Mots", exact: true }).click();
+
   await panel
     .getByText("Aucune phrase acceptée pour le moment.", { exact: false })
     .waitFor();
@@ -304,6 +382,19 @@ try {
   console.log(
     "Memory-only suggestions verified: all accepted words, existing drawing, phrase selection, explicit confirmation/rejection, source revocation, idempotent retry, outage, profile isolation and mobile.",
   );
+} catch (error) {
+  if (page) {
+    await fs.mkdir(".local/memory-suggestions", { recursive: true });
+    await page.screenshot({
+      path: ".local/memory-suggestions/failure.png",
+      fullPage: true,
+    });
+    console.log(
+      "Synthetic suggestion UI at failure:",
+      await page.locator(".memory-suggestions").innerText(),
+    );
+  }
+  throw error;
 } finally {
   await browser.close();
   await api.dispose();

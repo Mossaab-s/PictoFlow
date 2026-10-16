@@ -40,6 +40,7 @@ export default function MemorySuggestions({
   const [offset, setOffset] = useState(0);
   const [words, setWords] = useState<SuggestedWord[]>([]);
   const [hidden, setHidden] = useState<string[]>([]);
+  const [expanded, setExpanded] = useState(false);
   const [role, setRole] = useState<HumanRole>("user");
   const request = useRef<AbortController | null>(null);
   const heading = useRef<HTMLHeadingElement | null>(null);
@@ -94,6 +95,7 @@ export default function MemorySuggestions({
     lastSequence.current = sequenceId;
   }, [sequenceId]);
   function changeMode(value: SuggestionMode) {
+    setExpanded(false);
     setWords([]);
     setHidden([]);
     setQuery("");
@@ -129,15 +131,26 @@ export default function MemorySuggestions({
   }
   const pending = disabled || loading;
   const phrase = joinMemoryWords(words);
+  const visibleWords =
+    page?.words.filter(
+      (word) => !hidden.includes("word:" + wordKey(word.text)),
+    ) ?? [];
+  const visiblePhrases =
+    page?.phrases.filter(
+      (item) => !hidden.includes("phrase:" + item.reference.interpretation_id),
+    ) ?? [];
+  const showAll = expanded || !!query.trim();
+  const more = (mode === "words" ? visibleWords : visiblePhrases).length > 3;
   return (
     <section
       className="panel memory-suggestions"
       aria-label="Suggestions de ma mémoire"
+      id="communication-suggestions"
     >
       <h2 ref={heading} tabIndex={-1}>
         Suggestions de ma mémoire
       </h2>
-      <p>
+      <p className="helper">
         Uniquement les phrases acceptées de ce profil et leurs mots. Aucune
         nouvelle formulation par l’IA.
       </p>
@@ -188,6 +201,8 @@ export default function MemorySuggestions({
                     value={query}
                     disabled={disabled}
                     onChange={(e) => {
+                      setPage(null);
+                      setError("");
                       setQuery(e.target.value);
                       setOffset(0);
                     }}
@@ -201,12 +216,15 @@ export default function MemorySuggestions({
                   Actualiser les suggestions
                 </button>
               </div>
-              <HumanRoleSelector
-                value={role}
-                onChange={setRole}
-                disabled={disabled}
-                label="Je propose en tant que"
-              />
+              <details>
+                <summary>Qui propose ce message ?</summary>
+                <HumanRoleSelector
+                  value={role}
+                  onChange={setRole}
+                  disabled={disabled}
+                  label="Je propose en tant que"
+                />
+              </details>
               {mode === "words" && (
                 <div
                   className="memory-word-draft"
@@ -267,13 +285,19 @@ export default function MemorySuggestions({
                         : "Aucune phrase acceptée pour le moment. Validez ou corrigez d’abord une phrase dans ce profil."}
                     </p>
                   )}
+                  {!page.total && !query && (
+                    <button
+                      className="secondary"
+                      disabled={disabled}
+                      onClick={() => changeMode("off")}
+                    >
+                      Préparer une première formulation
+                    </button>
+                  )}
                   {mode === "words" && (
                     <div className="memory-word-cards">
-                      {page.words
-                        .filter(
-                          (word) =>
-                            !hidden.includes("word:" + wordKey(word.text)),
-                        )
+                      {visibleWords
+                        .slice(0, showAll ? undefined : 3)
                         .map((word) => (
                           <article
                             className="panel memory-suggestion-card"
@@ -323,13 +347,8 @@ export default function MemorySuggestions({
                   )}
                   {mode === "phrases" && (
                     <div className="phrase-cards">
-                      {page.phrases
-                        .filter(
-                          (item) =>
-                            !hidden.includes(
-                              "phrase:" + item.reference.interpretation_id,
-                            ),
-                        )
+                      {visiblePhrases
+                        .slice(0, showAll ? undefined : 3)
                         .map((item) => (
                           <article
                             className="panel memory-card"
@@ -362,6 +381,19 @@ export default function MemorySuggestions({
                           </article>
                         ))}
                     </div>
+                  )}
+                  {more && !query.trim() && (
+                    <button
+                      className="secondary"
+                      onClick={() => {
+                        setExpanded(!expanded);
+                        if (expanded) heading.current?.focus();
+                      }}
+                    >
+                      {expanded
+                        ? "Réduire les suggestions"
+                        : "Voir plus de suggestions"}
+                    </button>
                   )}
                   {page.total > 12 && (
                     <nav className="actions" aria-label="Pages de suggestions">

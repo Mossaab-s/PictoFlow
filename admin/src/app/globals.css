@@ -769,6 +769,8 @@ textarea {
 }
 
 .memory-suggestions {
+  /* Search results change height; browser anchoring must not move a pressed control. */
+  overflow-anchor: none;
   margin-block: 1rem;
 }
 .memory-word-draft {
@@ -1354,10 +1356,131 @@ pre {
 }
 .communication-heading {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
+}
+.communication-heading > div {
+  flex: 1 1 130px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.communication-heading > button {
+  font-size: 14px;
+  padding: 10px 12px;
+}
+.communication-connection p {
+  margin-block: 8px;
+}
+.communication-preferences {
+  margin-top: 20px;
+}
+.communication-page .display-preview {
+  display: grid;
+  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  margin: 16px 0;
+}
+.display-preview .communication-tile {
+  min-height: 160px;
+}
+.display-preview figcaption {
+  font-size: 14px;
+}
+.keyboard-instructions summary {
+  padding-block: 12px;
+}
+.communication-page
+  :is(a, button, input, select, textarea, summary, [tabindex="-1"]) {
+  scroll-margin-block: 50vh 24px;
+}
+.communication-page:has(.communication-keyboard :focus-visible)
+  > .message-panel {
+  position: static;
+}
+.communication-page .speech-controls.is-speaking {
+  position: fixed;
+  top: auto;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(420px, calc(100vw - 24px));
+  z-index: 20;
+  box-sizing: border-box;
+}
+.communication-page:has(.speech-controls.is-speaking) {
+  padding-bottom: 110px;
+}
+@media (max-width: 620px) {
+  .communication-page .display-preview {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .communication-page * {
+    scroll-behavior: auto;
+  }
+}
+.message-flow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.message-flow-actions button {
+  font-size: 13px;
+}
+.communication-page .message-panel .actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.communication-page .message-flow-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.communication-page .message-flow-actions > :is(a, button) {
+  padding: 10px;
+  font-size: 13px;
+}
+.communication-page .message-tokens:has(> p) {
+  min-height: 32px;
+}
+.message-reset-dialog {
+  max-width: min(480px, calc(100vw - 32px));
+  border: 2px solid var(--accent);
+  border-radius: 16px;
+  padding: 24px;
+  color: var(--ink);
+  background: #fff;
+}
+.message-reset-dialog::backdrop {
+  background: #183a3270;
+}
+.message-reset-dialog button {
+  min-height: 48px;
+}
+.speak-message {
+  font-weight: 700;
+}
+.communication-page :is(.review-section, #communication-suggestions) {
+  scroll-margin-top: 50vh;
+}
+.communication-page .correction-editor {
+  margin-top: 16px;
+}
+.communication-page .correction-editor summary {
+  padding-block: 12px;
+  font-weight: 600;
+}
+.communication-page .memory-suggestions .tabs {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.communication-page .memory-suggestion-card {
+  padding: 16px;
 }
 .communication-heading h1 {
   font-size: 24px;
@@ -1795,4 +1918,80 @@ pre {
   .display-options label {
     width: 100%;
   }
+}
+/* Landmarks leave room for the toolbar; controls must not jump on pointer focus. */
+.communication-page
+  :is(a, button, input, select, textarea, summary, [tabindex="-1"]) {
+  scroll-margin-block: 12px 24px;
+}
+.communication-page [tabindex="-1"] {
+  scroll-margin-block: 50vh 24px;
+}
+.preparation-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.preparation-steps a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--accent);
+  background: #fff;
+}
+.keyboard-preparation-preview {
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  padding: 20px;
+  background: var(--bg);
+}
+.keyboard-preparation-preview .tile-preview {
+  cursor: default;
+}
+#keyboard-create,
+#keyboard-review,
+#keyboard-organize,
+#keyboard-preview {
+  scroll-margin-top: 24px;
+}
+.account-bar.communication-account {
+  display: block;
+  padding: 4px 12px;
+}
+.communication-account > summary {
+  min-height: 48px;
+  display: list-item;
+  align-content: center;
+  cursor: pointer;
+  font-weight: 600;
+}
+.account-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+}
+.communication-tile .touch-word {
+  max-width: 100%;
+}
+@media (max-width: 620px) {
+  .keyboard-preparation-preview {
+    margin-inline: -8px;
+    padding: 8px;
+  }
+  .keyboard-preparation-preview .keyboard-zone {
+    padding: 12px;
+  }
+  .keyboard-preparation-preview .tile-preview {
+    padding-inline: 8px;
+  }
+}
+.communication-page:has(.communication-tools[open]) > .message-panel,
+.communication-page > .message-panel[data-completed="true"] {
+  position: static;
 }
