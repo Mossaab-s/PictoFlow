@@ -431,6 +431,14 @@ try {
     .waitFor();
   await page.getByText("Mon compte", { exact: true }).click();
   await page.getByRole("button", { name: "Mes phrases", exact: true }).click();
+  await page.locator(".phrase-library > details.phrase-picker[open]").waitFor();
+  assert.equal(
+    await page
+      .locator(".phrase-library > details.phrase-picker > summary")
+      .evaluate((element) => document.activeElement === element),
+    true,
+    "The header entry must expand the usual-phrase list and focus its summary",
+  );
   await page.keyboard.press("Escape");
   assert(
     await page

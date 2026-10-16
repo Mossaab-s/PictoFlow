@@ -542,10 +542,9 @@ export default function CommunicationScreen({
               toolsReturn.current = event.currentTarget;
               if (tools.current) {
                 tools.current.open = true;
-                const library =
-                  tools.current.querySelector<HTMLDetailsElement>(
-                    ".phrase-library",
-                  );
+                const library = tools.current.querySelector<HTMLDetailsElement>(
+                  ".phrase-library > details.phrase-picker",
+                );
                 if (library) {
                   library.open = true;
                   library.querySelector("summary")?.focus();
