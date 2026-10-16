@@ -769,6 +769,8 @@ textarea {
 }
 
 .memory-suggestions {
+  /* Search results change height; browser anchoring must not move a pressed control. */
+  overflow-anchor: none;
   margin-block: 1rem;
 }
 .memory-word-draft {

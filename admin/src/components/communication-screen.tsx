@@ -500,15 +500,6 @@ export default function CommunicationScreen({
       )}
       <section
         className={`page communication-page${standalone ? " communication-standalone" : ""}${contrast.enhanced ? " contrast-enhanced" : ""}`}
-        onMouseDownCapture={(event) => {
-          if (event.button !== 0 || !(event.target instanceof Element)) return;
-          const button = event.target.closest("button");
-          if (button instanceof HTMLButtonElement && !button.disabled) {
-            // Native focus scrolling must not move a button between pointer press and release.
-            event.preventDefault();
-            button.focus({ preventScroll: true });
-          }
-        }}
         onKeyDownCapture={(event) => {
           if (event.key === "Escape" && speech.speaking) {
             event.preventDefault();
