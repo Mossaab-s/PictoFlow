@@ -1894,3 +1894,34 @@ pre {
   :is(a, button, input, select, textarea, summary, [tabindex="-1"]) {
   scroll-margin-block: 50vh 24px;
 }
+.preparation-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.preparation-steps a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--accent);
+  background: #fff;
+}
+.keyboard-preparation-preview {
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  padding: 20px;
+  background: var(--bg);
+}
+.keyboard-preparation-preview .tile-preview {
+  cursor: default;
+}
+#keyboard-create,
+#keyboard-review,
+#keyboard-organize,
+#keyboard-preview {
+  scroll-margin-top: 24px;
+}

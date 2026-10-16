@@ -236,6 +236,31 @@ try {
     path: ".local/ux-communication/large-forced-colors.png",
   });
   await page.emulateMedia({ forcedColors: "none" });
+  const sequenceCount = (await call(base + "/sequences")).length;
+  await call(base + "/keyboard-groups", "post", {
+    label: "Activités",
+    actor_role: "user",
+  });
+  await page.goto(`${origin}/admin/profiles/${p}/keyboard`);
+  await page.getByRole("link", { name: "Voir l’aperçu", exact: true }).click();
+  const preview = page.getByRole("region", {
+    name: "Aperçu du clavier de communication",
+    exact: true,
+  });
+  await preview.locator(".tile-preview").first().waitFor();
+  assert.equal(await preview.locator(".tile-preview").count(), 3);
+  assert.equal(await preview.locator("button.communication-tile").count(), 0);
+  assert((await preview.locator(".grid-columns-2").count()) > 0);
+  await preview.getByRole("button", { name: "Activités", exact: true }).click();
+  await preview
+    .getByText("Cette page attend ses touches.", { exact: false })
+    .waitFor();
+  await preview.getByRole("button", { name: "Accueil", exact: true }).click();
+  await page.screenshot({
+    path: ".local/ux-communication/preparation-preview.png",
+  });
+  assert.equal((await call(base + "/sequences")).length, sequenceCount);
+  assert.deepEqual(await page.evaluate(() => window.__spoken), []);
   assert.deepEqual(await call(base + "/keyboard"), before);
   assert.equal(ai, 0);
   assert.deepEqual(errors, []);
