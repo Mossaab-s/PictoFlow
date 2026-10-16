@@ -60,6 +60,7 @@ async function prepare(acceptedText = null) {
 }
 
 const browser = await chromium.launch({ headless: true });
+let page;
 try {
   const own = await prepare("Je veux boire de l’eau.");
   const empty = await prepare();
@@ -68,7 +69,11 @@ try {
   const context = await browser.newContext({
     viewport: { width: 1280, height: 900 },
   });
-  const page = await context.newPage();
+  page = await context.newPage();
+  page.on("response", (r) => {
+    if (r.url().includes("/memory-suggestions?"))
+      console.log("Synthetic suggestion response:", r.status());
+  });
   page.setDefaultTimeout(15000);
   const errors = [];
   let unexpectedAI = 0;
@@ -316,6 +321,19 @@ try {
   console.log(
     "Memory-only suggestions verified: all accepted words, existing drawing, phrase selection, explicit confirmation/rejection, source revocation, idempotent retry, outage, profile isolation and mobile.",
   );
+} catch (error) {
+  if (page) {
+    await fs.mkdir(".local/memory-suggestions", { recursive: true });
+    await page.screenshot({
+      path: ".local/memory-suggestions/failure.png",
+      fullPage: true,
+    });
+    console.log(
+      "Synthetic suggestion UI at failure:",
+      await page.locator(".memory-suggestions").innerText(),
+    );
+  }
+  throw error;
 } finally {
   await browser.close();
   await api.dispose();
