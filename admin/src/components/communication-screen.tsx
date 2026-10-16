@@ -61,6 +61,7 @@ export default function CommunicationScreen({
   const reviewHeading = useRef<HTMLHeadingElement>(null);
   const tools = useRef<HTMLDetailsElement>(null);
   const toolsButton = useRef<HTMLButtonElement>(null);
+  const toolsReturn = useRef<HTMLButtonElement | null>(null);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [sequence, setSequence] = useState<Sequence | null>(null);
   const [decision, setDecision] = useState<Decision | null>(null);
@@ -522,7 +523,8 @@ export default function CommunicationScreen({
             className="secondary"
             aria-controls="communication-options"
             aria-expanded={toolsOpen}
-            onClick={() => {
+            onClick={(event) => {
+              toolsReturn.current = event.currentTarget;
               if (tools.current) {
                 tools.current.open = true;
                 tools.current.querySelector("summary")?.focus();
@@ -535,7 +537,8 @@ export default function CommunicationScreen({
           <button
             className="secondary"
             disabled={busy || restoring}
-            onClick={() => {
+            onClick={(event) => {
+              toolsReturn.current = event.currentTarget;
               if (tools.current) {
                 tools.current.open = true;
                 const library =
@@ -813,7 +816,7 @@ export default function CommunicationScreen({
             if (event.key === "Escape" && !speech.speaking) {
               event.preventDefault();
               if (tools.current) tools.current.open = false;
-              toolsButton.current?.focus();
+              (toolsReturn.current ?? toolsButton.current)?.focus();
             }
           }}
         >
@@ -822,7 +825,7 @@ export default function CommunicationScreen({
             className="secondary"
             onClick={() => {
               if (tools.current) tools.current.open = false;
-              toolsButton.current?.focus();
+              (toolsReturn.current ?? toolsButton.current)?.focus();
             }}
           >
             Revenir au clavier
