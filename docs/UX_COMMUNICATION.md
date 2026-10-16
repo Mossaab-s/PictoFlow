@@ -87,6 +87,8 @@ never sends on reconnect. Displayed words can still be spoken with a local voice
 If a failed write cannot be reconciled by reading its server sequence, further
 writes are blocked until an explicit reload rather than guessing the committed
 state. The current server/local draft split and protected import remain intact.
+The completed message returns to normal page flow so its toolbar cannot cover
+the suggestion and review controls; editable compositions retain the bounded toolbar.
 
 The header has a direct usual-phrases entry; opening it does not replace the
 composition or accept a meaning. Empty personal memory offers an explicit path

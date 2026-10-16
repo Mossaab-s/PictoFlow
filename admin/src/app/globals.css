@@ -1984,4 +1984,6 @@ pre {
   .keyboard-preparation-preview .tile-preview {
     padding-inline: 8px;
   }
+.communication-page > .message-panel[data-completed="true"] {
+  position: static;
 }

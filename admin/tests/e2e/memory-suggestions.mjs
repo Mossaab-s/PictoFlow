@@ -282,9 +282,23 @@ try {
     (r) => r.url().includes("/memory-suggestions?") && r.status() === 503,
     { timeout: 5000 },
   );
+  const refreshButton = panel.getByRole("button", {
+    name: "Actualiser les suggestions",
+    exact: true,
+  });
+  await refreshButton.evaluate((e) =>
+    e.addEventListener("click", () => (e.dataset.uxClicked = "true"), {
+      once: true,
+    }),
+  );
   await panel
     .getByRole("button", { name: "Actualiser les suggestions", exact: true })
     .click();
+  assert.equal(
+    await refreshButton.getAttribute("data-ux-clicked"),
+    "true",
+    "The refresh pointer activation must reach the control",
+  );
   await unavailable;
   await panel.getByRole("alert").waitFor();
   assert.equal(
