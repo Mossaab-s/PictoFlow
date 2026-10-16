@@ -253,7 +253,11 @@ try {
   await panel.getByRole("button", { name: "Mots", exact: true }).click();
 
   await page.setViewportSize({ width: 320, height: 900 });
+  const filtered = page.waitForResponse((r) =>
+    r.url().includes("/memory-suggestions?mode=words&q=eau&"),
+  );
   await panel.getByLabel("Rechercher dans mes suggestions").fill("eau");
+  await filtered;
   await panel
     .getByRole("button", { name: "Ajouter « eau »", exact: true })
     .waitFor();
