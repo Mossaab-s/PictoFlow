@@ -521,6 +521,7 @@ export default function CommunicationScreen({
             ref={toolsButton}
             className="secondary"
             aria-controls="communication-options"
+            aria-label="Plus d’options"
             aria-expanded={toolsOpen}
             onClick={() => {
               if (tools.current) {
@@ -530,7 +531,7 @@ export default function CommunicationScreen({
               }
             }}
           >
-            Plus d’options
+            Options
           </button>
           <button
             className="secondary"
