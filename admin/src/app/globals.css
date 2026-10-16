@@ -1916,9 +1916,12 @@ pre {
     width: 100%;
   }
 }
-/* Focus targets account for the bounded message toolbar above them. */
+/* Landmarks leave room for the toolbar; controls must not jump on pointer focus. */
 .communication-page
   :is(a, button, input, select, textarea, summary, [tabindex="-1"]) {
+  scroll-margin-block: 12px 24px;
+}
+.communication-page [tabindex="-1"] {
   scroll-margin-block: 50vh 24px;
 }
 .preparation-steps {
@@ -1985,6 +1988,7 @@ pre {
     padding-inline: 8px;
   }
 }
+.communication-page:has(.communication-tools[open]) > .message-panel,
 .communication-page > .message-panel[data-completed="true"] {
   position: static;
 }

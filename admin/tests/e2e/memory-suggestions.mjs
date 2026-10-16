@@ -278,10 +278,13 @@ try {
   await page.route(suggestionURL, (route) =>
     route.fulfill({ status: 503, contentType: "application/json", body: "{}" }),
   );
-  const unavailable = page.waitForResponse(
-    (r) => r.url().includes("/memory-suggestions?") && r.status() === 503,
-    { timeout: 5000 },
-  );
+  const unavailable = page
+    .waitForResponse(
+      (r) => r.url().includes("/memory-suggestions?") && r.status() === 503,
+      { timeout: 5000 },
+    )
+    .then((response) => response.status())
+    .catch(() => null);
   const refreshButton = panel.getByRole("button", {
     name: "Actualiser les suggestions",
     exact: true,
@@ -299,7 +302,11 @@ try {
     "true",
     "The refresh pointer activation must reach the control",
   );
-  await unavailable;
+  assert.equal(
+    await unavailable,
+    503,
+    "The unavailable suggestion response must be injected",
+  );
   await panel.getByRole("alert").waitFor();
   assert.equal(
     await panel
