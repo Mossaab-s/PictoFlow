@@ -291,15 +291,31 @@ try {
   });
   await page.evaluate(() => {
     window.__uxPointer = [];
-    for (const type of ["pointerdown", "pointerup", "click"])
+    for (const type of [
+      "pointerdown",
+      "mousedown",
+      "focusin",
+      "pointerup",
+      "mouseup",
+      "click",
+      "scroll",
+    ])
       document.addEventListener(
         type,
         (e) => {
           window.__uxPointer.push({
             type,
             target:
-              e.target.closest("button")?.textContent?.trim() ??
+              e.target.closest?.("button")?.textContent?.trim() ??
               e.target.tagName,
+            scroll: window.scrollY,
+            active: document.activeElement?.tagName,
+            button: [...document.querySelectorAll("button")]
+              .find(
+                (b) => b.textContent.trim() === "Actualiser les suggestions",
+              )
+              ?.getBoundingClientRect()
+              .toJSON(),
           });
         },
         { capture: true },
