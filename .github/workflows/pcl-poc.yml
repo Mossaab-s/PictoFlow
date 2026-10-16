@@ -40,29 +40,58 @@ jobs:
           python -m alembic upgrade head
           python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --no-access-log > /tmp/pictoflow-poc-api.log 2>&1 &
       - name: Build the communication interface
+        id: communication-build
         working-directory: admin
         run: |
           npm ci
           npx playwright install --with-deps chromium
           npm run build
           npm run start -- --port 3130 > /tmp/pictoflow-poc-ui.log 2>&1 &
-      - name: Compose, correct, replay and recall through the browser
+      - name: Wait for the isolated communication API
+        id: communication-ready
         working-directory: admin
         run: |
           node --input-type=module -e 'const end=Date.now()+30000; for(;;){try{if((await fetch("http://127.0.0.1:3130/api/pictoflow/health")).ok)break;}catch{} if(Date.now()>end)process.exit(1);await new Promise(r=>setTimeout(r,300));}'
-          node tests/e2e/pcl-learning.mjs
-          node tests/e2e/memory-suggestions.mjs
-          node tests/e2e/missing-word.mjs
-          node tests/e2e/keyboard-usage.mjs
-          node tests/e2e/offline-reopen.mjs
-          node tests/e2e/selection-rhythm.mjs
-          node tests/e2e/daily-pictograms.mjs
-          node tests/e2e/ux-communication.mjs
+      - name: Compose, correct, replay and recall
+        if: ${{ !cancelled() && steps.communication-ready.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/pcl-learning.mjs
+      - name: Choose personal-memory suggestions
+        if: ${{ !cancelled() && steps.communication-ready.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/memory-suggestions.mjs
+      - name: Prepare a missing word and return
+        if: ${{ !cancelled() && steps.communication-ready.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/missing-word.mjs
+      - name: Inspect explicit keyboard usage
+        if: ${{ !cancelled() && steps.communication-ready.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/keyboard-usage.mjs
+      - name: Reopen the protected offline copy
+        if: ${{ !cancelled() && steps.communication-ready.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/offline-reopen.mjs
+      - name: Observe optional selection rhythm
+        if: ${{ !cancelled() && steps.communication-ready.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/selection-rhythm.mjs
+      - name: Choose daily pictograms
+        if: ${{ !cancelled() && steps.communication-ready.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/daily-pictograms.mjs
+      - name: Verify communication UX and recovery
+        if: ${{ !cancelled() && steps.communication-ready.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/ux-communication.mjs
       - name: Prepare the isolated fixture-driven FakeProvider API
+        if: ${{ !cancelled() && steps.communication-build.outcome == 'success' }}
+        id: fake-api
         working-directory: backend
         run: |
           PICTOFLOW_UX_TESTING=1 python -m uvicorn tests.ux_fake_application:app --host 127.0.0.1 --port 8001 --no-access-log > /tmp/pictoflow-ux-fake-api.log 2>&1 &
       - name: Verify optional formulation with the real FakeProvider
+        if: ${{ !cancelled() && steps.fake-api.outcome == 'success' }}
         working-directory: admin
         run: |
           PICTOFLOW_API_BASE_URL=http://127.0.0.1:8001/api/v1 npm run start -- --port 3131 > /tmp/pictoflow-ux-fake-ui.log 2>&1 &
