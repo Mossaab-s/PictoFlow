@@ -1,5 +1,9 @@
 # Communication-first UX
 
+Implementation plan: #59, with draft PRs #67-#73 in dependency order. See
+[verification and usability-session materials](UX_USABILITY_SESSIONS.md) for the
+synthetic journey matrix, evidence limits and pending checks with actual users.
+
 This series improves the existing POC communication journeys. The interface stays
 French; issue/PR descriptions and this implementation guide are English.
 

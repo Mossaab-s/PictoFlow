@@ -270,6 +270,17 @@ try {
     .getByText("Cette page attend ses touches.", { exact: false })
     .waitFor();
   await preview.getByRole("button", { name: "Accueil", exact: true }).click();
+  assert(
+    await preview
+      .locator(".touch-word")
+      .evaluateAll((nodes) =>
+        nodes.every(
+          (e) =>
+            e.getBoundingClientRect().right <=
+            e.parentElement.getBoundingClientRect().right,
+        ),
+      ),
+  );
   await page.screenshot({
     path: ".local/ux-communication/preparation-preview.png",
   });
@@ -334,6 +345,108 @@ try {
     (await call(base + `/sequences/${reference.sequence_id}`)).block_ids,
     [blocks[0].id],
   );
+  let release;
+  let started;
+  const held = new Promise((resolve) => {
+    release = resolve;
+  });
+  const arrived = new Promise((resolve) => {
+    started = resolve;
+  });
+  await page.route(selectionPath, async (r) => {
+    started();
+    await held;
+    await r.continue();
+  });
+  await keyboard.getByRole("button", { name: "Eau", exact: true }).click();
+  await arrived;
+  const optionsButton = page.getByRole("button", {
+    name: "Plus d’options",
+    exact: true,
+  });
+  await optionsButton.focus();
+  release();
+  await page.locator(".message-touch").nth(1).waitFor();
+  await page.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
+  assert(
+    await optionsButton.evaluate((e) => document.activeElement === e),
+    "Late response must not reclaim focus",
+  );
+  await page.unroute(selectionPath);
+  // A mocked authenticated frontend session checks layout and affordances, not API security.
+  await page.route("**/api/pictoflow/auth/session", (r) =>
+    r.fulfill({
+      json: {
+        enabled: true,
+        csrf_token: "synthetic-ux-token",
+        account: {
+          id: crypto.randomUUID(),
+          username: "synthetic",
+          display_name: "Compte fictif",
+          is_admin: false,
+          active: true,
+          profile_access: { [p]: "communicator" },
+        },
+      },
+    }),
+  );
+  await page.evaluate((profile) => {
+    localStorage.setItem(
+      `pictoflow:display:${profile}`,
+      JSON.stringify({ version: 1, size: "standard" }),
+    );
+    sessionStorage.removeItem(`pictoflow:sequence:${profile}`);
+  }, p);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload();
+  await keyboard.locator(".communication-tile").first().waitFor();
+  assert.equal(
+    await page
+      .getByRole("link", { name: "Il me manque un mot", exact: true })
+      .count(),
+    0,
+  );
+  const firstRow = await keyboard
+    .locator(".communication-tile")
+    .first()
+    .boundingBox();
+  await page.screenshot({
+    path: ".local/ux-communication/account-first-row.png",
+  });
+  assert(
+    firstRow.y + firstRow.height <= 844,
+    `Account controls must not bury the keyboard: ${JSON.stringify(firstRow)}`,
+  );
+  await page.getByText("Mon compte", { exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: "Se déconnecter et effacer les copies locales",
+      exact: true,
+    })
+    .waitFor();
+  await page.getByText("Mon compte", { exact: true }).click();
+  await page.getByRole("button", { name: "Mes phrases", exact: true }).click();
+  await page.keyboard.press("Escape");
+  assert(
+    await page
+      .getByRole("button", { name: "Mes phrases", exact: true })
+      .evaluate((e) => document.activeElement === e),
+  );
+  await page.screenshot({
+    path: ".local/ux-communication/communicator-account-mobile.png",
+  });
+  await page.goto(`${origin}/admin/profiles/${p}/keyboard`);
+  await page
+    .getByRole("heading", {
+      name: "Ce profil ou cet écran ne vous est pas accessible.",
+      exact: true,
+    })
+    .waitFor();
   assert.deepEqual(await call(base + "/keyboard"), before);
   assert.equal(ai, 0);
   assert.deepEqual(errors, []);
