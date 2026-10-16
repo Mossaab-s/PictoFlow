@@ -63,3 +63,14 @@ Browser checks cover persisted size/contrast, narrow large-touch reflow, forced
 colors and reduced-motion preferences. Manual screen-reader and actual browser
 zoom checks remain to be recorded with the UX evaluation guide; no full
 accessibility certification is claimed.
+
+## Preparation and preview (UX-005, #64)
+
+The keyboard editor has direct links to prepare, review, organize and preview.
+New proposals appear immediately after the creation form, before page management.
+The communication preview uses only validated content and the existing per-profile
+size/contrast. It shares the live keyboard renderer, including personal photos,
+saved gaps, page order and stable geometry. Page navigation in the preview changes
+only its local view; touches are non-interactive and create no sequence or speech.
+The separate explicit communication link opens the actual route. Existing access
+controls, representation changes, placement review and missing-word return remain.

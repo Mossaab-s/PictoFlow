@@ -15,7 +15,7 @@ import {
   type Zone,
   type KeyboardGroup,
 } from "@/lib/keyboard";
-import KeyboardGrid from "./keyboard-grid";
+import KeyboardPreparationPreview from "./keyboard-preparation-preview";
 import { HumanRoleSelector, ProfileNavigation } from "./profile-navigation";
 import { useProfileKeyboard } from "./use-profile-keyboard";
 import { Pictogram, TouchContent } from "./pictogram";
@@ -216,7 +216,7 @@ export default function KeyboardEditor({
         <div className="page-heading">
           <div>
             <div className="eyebrow">MON VOCABULAIRE, MES REPÈRES</div>
-            <h1>Créer mon clavier</h1>
+            <h1>Préparer mon clavier</h1>
             <p>
               Un grand dessin, un mot en dessous. Choisissez les deux et
               vérifiez leur sens avant d'ajouter la touche au clavier.
@@ -226,6 +226,14 @@ export default function KeyboardEditor({
             Ouvrir la communication →
           </Link>
         </div>
+        <nav className="preparation-steps" aria-label="Étapes de préparation">
+          <a href="#keyboard-create">1. Préparer une touche</a>
+          {proposed.length > 0 && (
+            <a href="#keyboard-review">2. Vérifier ({proposed.length})</a>
+          )}
+          <a href="#keyboard-organize">3. Organiser</a>
+          <a href="#keyboard-preview">Voir l’aperçu</a>
+        </nav>
         <HumanRoleSelector value={role} onChange={setRole} disabled={busy} />
         {resume && (
           <section className="panel" aria-label="Préparer un mot manquant">
@@ -269,14 +277,7 @@ export default function KeyboardEditor({
           <p role="status">Chargement du clavier…</p>
         ) : (
           <>
-            <KeyboardUsage
-              key={`usage:${profileId}`}
-              profileId={profileId}
-              blocks={data.blocks}
-              positions={data.positions}
-              visuals={data.representations}
-            />
-            <div className="touch-creator">
+            <div className="touch-creator" id="keyboard-create">
               <section className="panel">
                 <h2>1. Préparer une touche</h2>
                 <p>
@@ -427,48 +428,11 @@ export default function KeyboardEditor({
                 </form>
               </section>
             </div>
-            <section className="review-section">
-              <h2>Les pages de mon clavier</h2>
-              <p>
-                Créez vos pages, par exemple Personnes ou Besoins. Les repères
-                stables restent visibles sur chaque page. Les touches sans page
-                sont dans Accueil.
-              </p>
-              <form
-                className="inline-form"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void perform(createGroup);
-                }}
-              >
-                <label>
-                  Nom de la nouvelle page
-                  <input
-                    value={groupLabel}
-                    onChange={(event) => setGroupLabel(event.target.value)}
-                    maxLength={80}
-                    required
-                    disabled={busy}
-                    placeholder="Personnes"
-                  />
-                </label>
-                <button disabled={busy || !groupLabel.trim()}>
-                  Créer la page
-                </button>
-              </form>
-              <KeyboardPageManager
-                profileId={profileId}
-                groups={data.groups}
-                visuals={data.representations}
-                role={role}
-                busy={busy}
-                perform={perform}
-                notice={setNotice}
-              />
-            </section>
             {proposed.length > 0 && (
               <section className="review-section">
-                <h2>2. Vérifier les nouvelles touches</h2>
+                <h2 id="keyboard-review" tabIndex={-1}>
+                  2. Vérifier les nouvelles touches
+                </h2>
                 <p>
                   Vérifiez le dessin et le mot. Votre validation les rend
                   disponibles pour communiquer.
@@ -544,25 +508,63 @@ export default function KeyboardEditor({
               </section>
             )}
             <section className="review-section">
-              <h2>Aperçu du clavier</h2>
-              {validated.length ? (
-                <KeyboardGrid
-                  profileId={profileId}
-                  groups={data.groups}
-                  tiles={joinKeyboard(
-                    profileId,
-                    data.blocks,
-                    data.positions,
-                    data.representations,
-                  )}
-                />
-              ) : (
-                <div className="empty">
-                  <h3>Votre clavier attend ses premières touches</h3>
-                  <p>Créez une touche puis validez-la pour la retrouver ici.</p>
-                </div>
-              )}
+              <h2 id="keyboard-organize" tabIndex={-1}>
+                3. Organiser les pages de mon clavier
+              </h2>
+              <p>
+                Créez vos pages, par exemple Personnes ou Besoins. Les repères
+                stables restent visibles sur chaque page. Les touches sans page
+                sont dans Accueil.
+              </p>
+              <form
+                className="inline-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void perform(createGroup);
+                }}
+              >
+                <label>
+                  Nom de la nouvelle page
+                  <input
+                    value={groupLabel}
+                    onChange={(event) => setGroupLabel(event.target.value)}
+                    maxLength={80}
+                    required
+                    disabled={busy}
+                    placeholder="Personnes"
+                  />
+                </label>
+                <button disabled={busy || !groupLabel.trim()}>
+                  Créer la page
+                </button>
+              </form>
+              <KeyboardPageManager
+                profileId={profileId}
+                groups={data.groups}
+                visuals={data.representations}
+                role={role}
+                busy={busy}
+                perform={perform}
+                notice={setNotice}
+              />
             </section>
+            <KeyboardUsage
+              key={`usage:${profileId}`}
+              profileId={profileId}
+              blocks={data.blocks}
+              positions={data.positions}
+              visuals={data.representations}
+            />
+            <KeyboardPreparationPreview
+              profileId={profileId}
+              groups={data.groups}
+              tiles={joinKeyboard(
+                profileId,
+                data.blocks,
+                data.positions,
+                data.representations,
+              )}
+            />
             {validated.length > 0 && (
               <section className="review-section">
                 <h2>Modifier les touches et leurs places</h2>
