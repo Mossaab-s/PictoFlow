@@ -76,7 +76,7 @@ try {
       .inputValue(),
     "Pomme",
   );
-  await picker.getByLabel("Catégorie", { exact: true }).selectOption("care");
+  await picker.getByRole("combobox").selectOption("care");
   await picker
     .getByLabel("Rechercher un dessin", { exact: true })
     .fill("brossage dents");
