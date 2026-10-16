@@ -48,7 +48,7 @@ try {
   page.setDefaultTimeout(20000);
   await page.goto(`${origin}/communication/${p}`);
   await page
-    .getByRole("button", { name: "Plus d�options", exact: true })
+    .getByRole("button", { name: "Plus d’options", exact: true })
     .click();
   await page
     .getByText("Mon clavier pour les coupures", { exact: true })
