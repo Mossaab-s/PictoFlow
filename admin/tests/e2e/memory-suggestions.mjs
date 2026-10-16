@@ -97,6 +97,12 @@ try {
   await page.goto(`${origin}/communication/${own.p}`);
   await compose();
   await panel.getByRole("button", { name: "Mots", exact: true }).click();
+  await panel.locator(".memory-word-cards article").first().waitFor();
+  assert.equal(await panel.locator(".memory-word-cards article").count(), 3);
+  await panel
+    .getByRole("button", { name: "Voir plus de suggestions", exact: true })
+    .click();
+
   await panel
     .getByRole("button", { name: "Ajouter « eau »", exact: true })
     .waitFor();
@@ -245,6 +251,7 @@ try {
   assert.deepEqual(await call(own.base + "/interpretations"), afterLost);
   await page.unroute("**/memory-proposals");
   await panel.getByRole("button", { name: "Mots", exact: true }).click();
+
   await page.setViewportSize({ width: 320, height: 900 });
   await panel.getByLabel("Rechercher dans mes suggestions").fill("eau");
   await panel
@@ -287,6 +294,7 @@ try {
     "true",
   );
   await panel.getByRole("button", { name: "Mots", exact: true }).click();
+
   await panel
     .getByText("Aucune phrase acceptée pour le moment.", { exact: false })
     .waitFor();
