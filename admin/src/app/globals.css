@@ -1354,10 +1354,22 @@ pre {
 }
 .communication-heading {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
+}
+.communication-heading > div {
+  flex: 1 1 130px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.communication-heading > button {
+  font-size: 14px;
+}
+.communication-connection p {
+  margin-block: 8px;
 }
 .communication-preferences {
   margin-top: 20px;
@@ -1939,4 +1951,22 @@ pre {
 #keyboard-organize,
 #keyboard-preview {
   scroll-margin-top: 24px;
+}
+.account-bar.communication-account {
+  display: block;
+  padding: 4px 12px;
+}
+.communication-account > summary {
+  min-height: 48px;
+  display: list-item;
+  align-content: center;
+  cursor: pointer;
+  font-weight: 600;
+}
+.account-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
 }

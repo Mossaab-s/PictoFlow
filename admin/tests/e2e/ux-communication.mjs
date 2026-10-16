@@ -261,6 +261,65 @@ try {
   });
   assert.equal((await call(base + "/sequences")).length, sequenceCount);
   assert.deepEqual(await page.evaluate(() => window.__spoken), []);
+  await page.goto(`${origin}/communication/${p}`);
+  await keyboard.getByRole("button", { name: "Boire", exact: true }).click();
+  await page.locator(".message-touch").first().waitFor();
+  const reference = await page.evaluate(
+    (key) => JSON.parse(sessionStorage.getItem(key)),
+    `pictoflow:sequence:${p}`,
+  );
+  let writes = 0;
+  page.on("request", (r) => {
+    if (r.method() === "POST") writes++;
+  });
+  await page.context().setOffline(true);
+  await page
+    .getByText("Connexion réseau interrompue", { exact: true })
+    .waitFor();
+  assert(
+    await keyboard
+      .getByRole("button", { name: "Boire", exact: true })
+      .isDisabled(),
+  );
+  await page
+    .getByRole("button", { name: "Parler : lire mes mots", exact: true })
+    .click();
+  assert.deepEqual(await page.evaluate(() => window.__spoken), ["Boire"]);
+  await page.keyboard.press("Escape");
+  const beforeReconnect = writes;
+  await page.context().setOffline(false);
+  await page
+    .getByText("Connexion réseau interrompue", { exact: true })
+    .waitFor({ state: "hidden" });
+  assert.equal(writes, beforeReconnect);
+  const selectionPath = `**/profiles/${p}/sequences/${reference.sequence_id}/selection`;
+  const restorePath = `**/profiles/${p}/sequences/${reference.sequence_id}`;
+  await page.route(selectionPath, (r) =>
+    r.fulfill({ status: 503, json: { detail: "Synthetic failure" } }),
+  );
+  await page.route(restorePath, (r) =>
+    r.fulfill({ status: 503, json: { detail: "Synthetic recovery failure" } }),
+  );
+  await keyboard.getByRole("button", { name: "Eau", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Recharger le message", exact: true })
+    .waitFor();
+  assert(
+    await keyboard
+      .getByRole("button", { name: "Boire", exact: true })
+      .isDisabled(),
+  );
+  assert.equal(await page.locator(".message-touch").count(), 1);
+  await page.unroute(selectionPath);
+  await page.unroute(restorePath);
+  await page
+    .getByRole("button", { name: "Recharger le message", exact: true })
+    .click();
+  await page.locator(".message-touch").first().waitFor();
+  assert.deepEqual(
+    (await call(base + `/sequences/${reference.sequence_id}`)).block_ids,
+    [blocks[0].id],
+  );
   assert.deepEqual(await call(base + "/keyboard"), before);
   assert.equal(ai, 0);
   assert.deepEqual(errors, []);

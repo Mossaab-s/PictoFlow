@@ -283,6 +283,15 @@ export default function MemorySuggestions({
                         : "Aucune phrase acceptée pour le moment. Validez ou corrigez d’abord une phrase dans ce profil."}
                     </p>
                   )}
+                  {!page.total && !query && (
+                    <button
+                      className="secondary"
+                      disabled={disabled}
+                      onClick={() => changeMode("off")}
+                    >
+                      Préparer une première formulation
+                    </button>
+                  )}
                   {mode === "words" && (
                     <div className="memory-word-cards">
                       {visibleWords
