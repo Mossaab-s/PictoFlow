@@ -31,6 +31,11 @@ try {
     actor_role: "user",
     confirm_representation: true,
   });
+  // Pin an explicitly chosen place; automatic positions of unplaced touches are provisional.
+  const placement = await api.put(`/api/pictoflow/${base}/keyboard/${old.id}`, {
+    data: { zone: "personal", position: 0, actor_role: "user" },
+  });
+  assert(placement.ok());
   const before = await call(base + "/keyboard");
   const page = await browser.newPage({
     viewport: { width: 1280, height: 900 },
