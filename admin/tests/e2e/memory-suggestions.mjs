@@ -274,12 +274,18 @@ try {
   await panel.screenshot({
     path: ".local/memory-suggestions/words-mobile.png",
   });
-  await page.route("**/memory-suggestions?*", (route) =>
+  const suggestionURL = (url) => url.pathname.endsWith("/memory-suggestions");
+  await page.route(suggestionURL, (route) =>
     route.fulfill({ status: 503, contentType: "application/json", body: "{}" }),
+  );
+  const unavailable = page.waitForResponse(
+    (r) => r.url().includes("/memory-suggestions?") && r.status() === 503,
+    { timeout: 5000 },
   );
   await panel
     .getByRole("button", { name: "Actualiser les suggestions", exact: true })
     .click();
+  await unavailable;
   await panel.getByRole("alert").waitFor();
   assert.equal(
     await panel
@@ -287,7 +293,7 @@ try {
       .count(),
     0,
   );
-  await page.unroute("**/memory-suggestions?*");
+  await page.unroute(suggestionURL);
   await panel
     .getByRole("button", { name: "Actualiser les suggestions", exact: true })
     .click();
