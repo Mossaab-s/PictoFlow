@@ -1368,6 +1368,21 @@ pre {
 .message-flow-actions button {
   font-size: 13px;
 }
+.communication-page .message-panel .actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.communication-page .message-flow-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.communication-page .message-flow-actions > :is(a, button) {
+  padding: 10px;
+  font-size: 13px;
+}
+.communication-page .message-tokens:has(> p) {
+  min-height: 32px;
+}
 .message-reset-dialog {
   max-width: min(480px, calc(100vw - 32px));
   border: 2px solid var(--accent);
