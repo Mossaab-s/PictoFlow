@@ -1412,7 +1412,7 @@ pre {
   padding-bottom: 110px;
 }
 @media (max-width: 620px) {
-  .display-preview {
+  .communication-page .display-preview {
     grid-template-columns: 1fr;
   }
 }
@@ -1969,4 +1969,19 @@ pre {
   gap: 12px;
   align-items: center;
   padding: 8px 0;
+}
+.communication-tile .touch-word {
+  max-width: 100%;
+}
+@media (max-width: 620px) {
+  .keyboard-preparation-preview {
+    margin-inline: -8px;
+    padding: 8px;
+  }
+  .keyboard-preparation-preview .keyboard-zone {
+    padding: 12px;
+  }
+  .keyboard-preparation-preview .tile-preview {
+    padding-inline: 8px;
+  }
 }

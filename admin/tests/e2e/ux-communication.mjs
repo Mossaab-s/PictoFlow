@@ -270,6 +270,17 @@ try {
     .getByText("Cette page attend ses touches.", { exact: false })
     .waitFor();
   await preview.getByRole("button", { name: "Accueil", exact: true }).click();
+  assert(
+    await preview
+      .locator(".touch-word")
+      .evaluateAll((nodes) =>
+        nodes.every(
+          (e) =>
+            e.getBoundingClientRect().right <=
+            e.parentElement.getBoundingClientRect().right,
+        ),
+      ),
+  );
   await page.screenshot({
     path: ".local/ux-communication/preparation-preview.png",
   });
