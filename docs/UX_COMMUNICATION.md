@@ -48,3 +48,18 @@ A proposal leads to a focused review with explicit acceptance, refusal or a
 progressively disclosed correction editor. Reading remains separate from
 acceptance. Actor and source details remain available on demand. The optional
 AI formulation entry is distinguished from accepted-memory-only suggestions.
+
+## Preferences and keyboard access (UX-004, #63)
+
+Display and local-voice choices are grouped in the secondary tools, with a
+non-interactive sample of an existing touch. The current per-profile/browser
+settings and stable-anchor grid contract are reused. Escape closes options and
+returns focus when it is not being used to stop speech. A floating Stop remains
+reachable during reading; short viewports and keyboard navigation avoid a sticky
+message obscuring focus. Late selection responses do not reclaim another control's
+focus. Existing skip links remain available at the first Tab.
+
+Browser checks cover persisted size/contrast, narrow large-touch reflow, forced
+colors and reduced-motion preferences. Manual screen-reader and actual browser
+zoom checks remain to be recorded with the UX evaluation guide; no full
+accessibility certification is claimed.
