@@ -1970,3 +1970,6 @@ pre {
   align-items: center;
   padding: 8px 0;
 }
+.communication-page > .message-panel[data-completed="true"] {
+  position: static;
+}

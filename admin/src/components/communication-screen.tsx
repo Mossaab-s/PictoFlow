@@ -595,6 +595,7 @@ export default function CommunicationScreen({
         )}
         <section
           className="message-panel"
+          data-completed={completed ? "true" : "false"}
           aria-label="Message en cours"
           id="communication-message"
           tabIndex={-1}
