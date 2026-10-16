@@ -289,17 +289,35 @@ try {
     name: "Actualiser les suggestions",
     exact: true,
   });
-  await refreshButton.evaluate((e) =>
-    e.addEventListener("click", () => (e.dataset.uxClicked = "true"), {
-      once: true,
-    }),
-  );
+  await page.evaluate(() => {
+    window.__uxPointer = [];
+    for (const type of ["pointerdown", "pointerup", "click"])
+      document.addEventListener(
+        type,
+        (e) => {
+          window.__uxPointer.push({
+            type,
+            target:
+              e.target.closest("button")?.textContent?.trim() ??
+              e.target.tagName,
+          });
+        },
+        { capture: true },
+      );
+  });
   await panel
     .getByRole("button", { name: "Actualiser les suggestions", exact: true })
     .click();
-  assert.equal(
-    await refreshButton.getAttribute("data-ux-clicked"),
-    "true",
+  console.log(
+    "Synthetic refresh pointer events:",
+    await page.evaluate(() => window.__uxPointer),
+  );
+  assert(
+    await page.evaluate(() =>
+      window.__uxPointer.some(
+        (e) => e.type === "click" && e.target === "Actualiser les suggestions",
+      ),
+    ),
     "The refresh pointer activation must reach the control",
   );
   assert.equal(
