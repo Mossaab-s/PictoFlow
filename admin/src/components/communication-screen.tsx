@@ -568,7 +568,7 @@ export default function CommunicationScreen({
         )}
         {data.error && (
           <div className="error" role="alert">
-            {data.error}
+            <span>{data.error}</span>
             <p>
               Votre message reste affiché. Aucune action n’est renvoyée
               automatiquement.
