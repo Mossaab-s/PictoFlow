@@ -59,6 +59,9 @@ try {
     .getByRole("button", { name: "Terminer mon message", exact: true })
     .click();
   await page
+    .getByRole("button", { name: "Plus d’options", exact: true })
+    .click();
+  await page
     .getByText("Le sens personnel de mes touches", { exact: true })
     .click();
   await page.getByText("Boire une boisson", { exact: false }).first().waitFor();
