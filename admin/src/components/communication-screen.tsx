@@ -589,16 +589,18 @@ export default function CommunicationScreen({
             <button
               className="secondary"
               onClick={() => void perform(() => selection("undo"))}
+              aria-label="Annuler la dernière touche"
               disabled={pending || completed || !chosen.length}
             >
-              Annuler la dernière touche
+              Annuler
             </button>
             <button
               className="secondary"
               onClick={(event) => requestReset("clear", event.currentTarget)}
+              aria-label="Effacer le message"
               disabled={pending || completed || !chosen.length}
             >
-              Effacer le message
+              Effacer
             </button>
           </div>
           <div className="message-flow-actions">
@@ -611,18 +613,22 @@ export default function CommunicationScreen({
                 Terminer mon message
               </button>
             )}
-            <button
-              className="secondary"
-              onClick={(event) => requestReset("new", event.currentTarget)}
-              disabled={pending || !sequence}
-            >
-              Nouveau message
-            </button>
+            {sequence && (
+              <button
+                className="secondary"
+                onClick={(event) => requestReset("new", event.currentTarget)}
+                disabled={pending || !sequence}
+              >
+                Nouveau message
+              </button>
+            )}
           </div>
           <p className="helper">
-            {completed
-              ? "Vos mots sont conservés. Vous pouvez les lire ou choisir une formulation à vérifier."
-              : "Parler lit vos mots. Terminer permet ensuite de vérifier une phrase."}
+            {!chosen.length
+              ? "Choisissez vos touches, puis Parler pour les lire."
+              : completed
+                ? "Vos mots sont conservés. Vous pouvez les lire ou choisir une formulation à vérifier."
+                : "Parler lit vos mots. Terminer permet ensuite de vérifier une phrase."}
           </p>
           {!speech.available && (
             <p className="helper">
