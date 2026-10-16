@@ -85,6 +85,8 @@ writes are blocked until an explicit reload rather than guessing the committed
 state. The current server/local draft split and protected import remain intact.
 The completed message returns to normal page flow so its toolbar cannot cover
 the suggestion and review controls; editable compositions retain the bounded toolbar.
+Pointer activation focuses a button without native scrolling between press and
+release. Keyboard focus remains visible and follows the existing tab order.
 
 The header has a direct usual-phrases entry; opening it does not replace the
 composition or accept a meaning. Empty personal memory offers an explicit path
