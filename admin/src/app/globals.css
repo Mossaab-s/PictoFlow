@@ -1359,6 +1359,56 @@ pre {
   gap: 12px;
   margin-bottom: 16px;
 }
+.communication-preferences {
+  margin-top: 20px;
+}
+.communication-page .display-preview {
+  display: grid;
+  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  margin: 16px 0;
+}
+.display-preview .communication-tile {
+  min-height: 160px;
+}
+.display-preview figcaption {
+  font-size: 14px;
+}
+.keyboard-instructions summary {
+  padding-block: 12px;
+}
+.communication-page
+  :is(a, button, input, select, textarea, summary, [tabindex="-1"]) {
+  scroll-margin-block: 50vh 24px;
+}
+.communication-page:has(.communication-keyboard :focus-visible)
+  > .message-panel {
+  position: static;
+}
+.communication-page .speech-controls.is-speaking {
+  position: fixed;
+  top: auto;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(420px, calc(100vw - 24px));
+  z-index: 20;
+  box-sizing: border-box;
+}
+.communication-page:has(.speech-controls.is-speaking) {
+  padding-bottom: 110px;
+}
+@media (max-width: 620px) {
+  .display-preview {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .communication-page * {
+    scroll-behavior: auto;
+  }
+}
 .message-flow-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1853,4 +1903,9 @@ pre {
   .display-options label {
     width: 100%;
   }
+}
+/* Focus targets account for the bounded message toolbar above them. */
+.communication-page
+  :is(a, button, input, select, textarea, summary, [tabindex="-1"]) {
+  scroll-margin-block: 50vh 24px;
 }

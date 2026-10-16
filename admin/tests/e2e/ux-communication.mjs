@@ -190,6 +190,67 @@ try {
     .waitFor();
   assert.deepEqual(await call(base + "/keyboard"), before);
   assert.equal((await call(base + "/memory")).interpretations.length, 0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page
+    .getByRole("button", { name: "Plus d’options", exact: true })
+    .click();
+  const size = page.getByRole("radio", { name: /Très grandes touches/ });
+  if (!(await size.isVisible()))
+    await page.getByText("Réglages d’affichage", { exact: true }).click();
+  await size.check();
+  await page
+    .getByRole("checkbox", { name: "Contraste renforcé", exact: true })
+    .check();
+  await page
+    .getByText("Utiliser le clavier et la souris", { exact: true })
+    .click();
+  await page.keyboard.press("Escape");
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('button[aria-controls="communication-options"]')
+        ?.getAttribute("aria-expanded") === "false",
+  );
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Plus d’options", exact: true })
+      .getAttribute("aria-expanded"),
+    "false",
+  );
+  await page.reload();
+  await keyboard.locator(".communication-tile").first().waitFor();
+  await page
+    .getByRole("button", { name: "Plus d’options", exact: true })
+    .click();
+  await page.getByText("Réglages d’affichage", { exact: true }).click();
+  assert(await size.isChecked());
+  assert(
+    await page
+      .getByRole("checkbox", { name: "Contraste renforcé", exact: true })
+      .isChecked(),
+  );
+  await page
+    .getByRole("button", { name: "Revenir au clavier", exact: true })
+    .click();
+  await page.setViewportSize({ width: 320, height: 800 });
+  assert(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  );
+  await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
+  await page.keyboard.press("Tab");
+  await keyboard.getByRole("button", { name: "Boire", exact: true }).focus();
+  assert(
+    await keyboard
+      .getByRole("button", { name: "Boire", exact: true })
+      .evaluate((e) => getComputedStyle(e).outlineStyle !== "none"),
+  );
+  await page.screenshot({
+    path: ".local/ux-communication/large-forced-colors.png",
+  });
+  await page.emulateMedia({ forcedColors: "none" });
+  assert.deepEqual(await call(base + "/keyboard"), before);
   assert.equal(ai, 0);
   assert.deepEqual(errors, []);
   console.log(

@@ -22,10 +22,9 @@ import { useProfileKeyboard } from "./use-profile-keyboard";
 import { TouchContent } from "./pictogram";
 import ProfileIdentity from "./profile-identity";
 import { useLocalSpeech } from "./use-local-speech";
-import DisplaySettings from "./display-settings";
+import CommunicationPreferences from "./communication-preferences";
 import { useDisplaySettings } from "./use-display-settings";
 import PhraseLibrary from "./phrase-library";
-import SpeechSettings from "./speech-settings";
 import { useContrastSetting } from "./use-contrast-setting";
 import OfflineCommunication from "./offline-communication";
 import CompositionMemory from "./composition-memory";
@@ -60,6 +59,7 @@ export default function CommunicationScreen({
   const reviewHeading = useRef<HTMLHeadingElement>(null);
   const tools = useRef<HTMLDetailsElement>(null);
   const toolsButton = useRef<HTMLButtonElement>(null);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const [sequence, setSequence] = useState<Sequence | null>(null);
   const [decision, setDecision] = useState<Decision | null>(null);
   useEffect(() => {
@@ -516,6 +516,7 @@ export default function CommunicationScreen({
             ref={toolsButton}
             className="secondary"
             aria-controls="communication-options"
+            aria-expanded={toolsOpen}
             onClick={() => {
               if (tools.current) {
                 tools.current.open = true;
@@ -765,6 +766,14 @@ export default function CommunicationScreen({
           ref={tools}
           id="communication-options"
           className="communication-tools"
+          onToggle={() => setToolsOpen(Boolean(tools.current?.open))}
+          onKeyDown={(event) => {
+            if (event.key === "Escape" && !speech.speaking) {
+              event.preventDefault();
+              if (tools.current) tools.current.open = false;
+              toolsButton.current?.focus();
+            }
+          }}
         >
           <summary>Plus d’options : voix, affichage et préparation</summary>
           <button
@@ -820,14 +829,13 @@ export default function CommunicationScreen({
             choiceRevision={phraseChoice?.version ?? 0}
             revision={decision}
           />
-          <DisplaySettings
-            size={display.size}
-            onChange={display.change}
+          <CommunicationPreferences
+            display={display}
+            speech={speech}
+            tile={tiles.find((tile) => tile.zone !== "stable") ?? tiles[0]}
             disabled={pending}
-            temporary={display.temporary}
             contrast={contrast}
           />
-          <SpeechSettings speech={speech} disabled={pending} />
           <OfflineCommunication
             key={profileId}
             profileId={profileId}
