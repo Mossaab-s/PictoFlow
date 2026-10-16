@@ -4,7 +4,6 @@ import pytest
 
 from app.application.profile_archive import RestoreRequest, parse_archive
 from app.domain.pcl.entities import HumanRole
-from app.domain.pcl.pictograms import PictogramKey, pictogram_reference
 from app.infrastructure.postgres.profile_archives import PostgresProfileArchives
 from tests.integration.test_business_api import api as api
 
@@ -54,7 +53,7 @@ def test_new_daily_drawings_remain_proposals_until_chosen_and_survive_backup(api
     visuals = api.get(base + "/representations").json()
     refs = {item["asset_reference"] for item in visuals}
     assert refs == {
-        pictogram_reference(PictogramKey(key))
+        f"pictoflow:pictogram:v1:{key}"
         for key in ("me", "apple", "wash_hands", "socks", "stomach", "bus", "tomorrow")
     }
     assert all(
