@@ -1352,6 +1352,121 @@ pre {
   max-width: 1280px;
   padding: 28px;
 }
+.communication-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.communication-heading h1 {
+  font-size: 24px;
+  margin: 0;
+}
+.communication-heading p {
+  margin: 4px 0 0;
+}
+.communication-page > .communication-jumps {
+  position: absolute;
+  left: -10000px;
+}
+.communication-page > .communication-jumps:focus-within {
+  position: relative;
+  left: auto;
+}
+.communication-page > .message-panel {
+  position: sticky;
+  top: 8px;
+  z-index: 3;
+  margin: 0 0 20px;
+  padding: 16px;
+  box-shadow: 0 3px 14px #183a3212;
+}
+.communication-page .message-tokens {
+  max-height: 168px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  scrollbar-gutter: stable;
+}
+.communication-page .message-tokens > span {
+  font-size: 18px;
+  padding: 8px 12px;
+  gap: 4px;
+}
+.communication-page .message-touch .pictogram,
+.communication-page .message-touch .touch-photo {
+  width: 56px;
+  height: 56px;
+}
+.communication-page .message-panel .zone-heading {
+  margin-bottom: 8px;
+}
+.communication-page .message-panel .actions {
+  gap: 8px;
+  margin-top: 12px;
+}
+.communication-page .message-panel .helper {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+.communication-page .communication-keyboard {
+  margin-bottom: 24px;
+}
+.communication-page .keyboard-help {
+  display: none;
+}
+.communication-page .communication-keyboard > .button-link {
+  margin-bottom: 12px;
+}
+.communication-tools {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 24px;
+  background: #fff;
+}
+.communication-tools > summary {
+  font-weight: 600;
+  padding: 12px 0;
+}
+.communication-tools .communication-navigation {
+  margin: 16px 0;
+}
+.communication-tools .panel {
+  margin-block: 16px;
+}
+.message-speech-status {
+  margin-top: 8px;
+}
+@media (max-width: 620px) {
+  .communication-page.communication-standalone {
+    padding: 12px;
+  }
+  .communication-heading h1 {
+    font-size: 21px;
+  }
+  .communication-heading .communication-profile {
+    font-size: 14px;
+  }
+  .communication-page > .message-panel {
+    padding: 12px;
+    top: 0;
+  }
+  .communication-page .message-tokens {
+    max-height: 112px;
+  }
+  .communication-page .message-panel .actions button {
+    flex: 1 1 40%;
+    padding: 10px;
+    font-size: 14px;
+  }
+}
+@media (max-height: 700px) {
+  .communication-page > .message-panel {
+    position: static;
+  }
+}
 .communication-page {
   --muted: #4d6258;
   --line: #73867c;

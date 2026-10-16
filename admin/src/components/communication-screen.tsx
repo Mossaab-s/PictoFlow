@@ -56,6 +56,8 @@ export default function CommunicationScreen({
   const contrast = useContrastSetting(profileId);
   const suggestions = useMemorySuggestionMode(profileId);
   const messageHeading = useRef<HTMLHeadingElement>(null);
+  const tools = useRef<HTMLDetailsElement>(null);
+  const toolsButton = useRef<HTMLButtonElement>(null);
   const [sequence, setSequence] = useState<Sequence | null>(null);
   const [decision, setDecision] = useState<Decision | null>(null);
   const [context, setContext] = useState("");
@@ -75,6 +77,10 @@ export default function CommunicationScreen({
   const gate = useRef(false);
   const alive = useRef(true);
   const speech = useLocalSpeech(profileId);
+  useEffect(() => {
+    if ((phraseChoice || initialPhraseId) && tools.current)
+      tools.current.open = true;
+  }, [phraseChoice, initialPhraseId]);
   const base = `profiles/${profileId}`;
   const storageKey = `pictoflow:sequence:${profileId}`;
   function remember(value: Sequence | null, result: Decision | null) {
@@ -481,55 +487,28 @@ export default function CommunicationScreen({
           <a href="#communication-message">Aller au message</a>
           <a href="#communication-keyboard">Aller au clavier</a>
         </nav>
-        <div className="page-heading">
+        <header className="communication-heading">
           <div>
-            <div className="eyebrow">
-              {standalone ? "PICTOFLOW · MES MOTS" : "MON MESSAGE, MES MOTS"}
-            </div>
             <h1>Je communique</h1>
             <p className="communication-profile">
               <ProfileIdentity profileId={profileId} />
             </p>
-            <p>
-              Choisissez vos touches dans l'ordre. Votre message peut rester tel
-              quel ou recevoir une proposition de phrase.
-            </p>
           </div>
-          <div className="communication-navigation">
-            {!standalone && (
-              <Link
-                className="button-link"
-                href={`/communication/${profileId}`}
-                aria-disabled={busy}
-                tabIndex={busy ? -1 : undefined}
-                onClick={(event) => {
-                  if (busy) event.preventDefault();
-                }}
-              >
-                Ouvrir l’espace de communication
-              </Link>
-            )}
-            {canEdit ? (
-              <Link
-                className="button-link secondary"
-                href={`/admin/profiles/${profileId}/keyboard`}
-                aria-disabled={busy}
-                tabIndex={busy ? -1 : undefined}
-                onClick={(event) => {
-                  if (busy) event.preventDefault();
-                }}
-              >
-                {standalone
-                  ? "Retour à la préparation"
-                  : "Modifier mon clavier"}
-              </Link>
-            ) : (
-              <Link className="button-link secondary" href="/admin/profiles">
-                Mes profils
-              </Link>
-            )}
-          </div>
-        </div>
+          <button
+            ref={toolsButton}
+            className="secondary"
+            aria-controls="communication-options"
+            onClick={() => {
+              if (tools.current) {
+                tools.current.open = true;
+                tools.current.querySelector("summary")?.focus();
+                tools.current.scrollIntoView({ block: "start" });
+              }
+            }}
+          >
+            Plus d’options
+          </button>
+        </header>
         {data.error && (
           <div className="error" role="alert">
             {data.error}
@@ -553,35 +532,6 @@ export default function CommunicationScreen({
             {busy ? "Enregistrement…" : "Chargement de votre clavier…"}
           </p>
         )}
-        <div
-          className={`speech-controls${speech.speaking ? " is-speaking" : ""}`}
-        >
-          <span role="status">
-            {speech.speaking ? "Lecture en cours…" : "Lecture arrêtée"}
-          </span>
-          <button
-            className="secondary"
-            onClick={speech.stop}
-            disabled={!speech.speaking}
-          >
-            Arrêter la lecture
-          </button>
-        </div>
-        {speech.error && (
-          <p className="error" role="alert">
-            {speech.error}
-          </p>
-        )}
-        <PhraseLibrary
-          profileId={profileId}
-          blocks={data.blocks}
-          visuals={data.representations}
-          speech={speech}
-          disabled={pending}
-          initialPhraseId={phraseChoice?.id ?? initialPhraseId}
-          choiceRevision={phraseChoice?.version ?? 0}
-          revision={decision}
-        />
         <section
           className="message-panel"
           aria-label="Message en cours"
@@ -655,84 +605,31 @@ export default function CommunicationScreen({
               navigateur.
             </p>
           )}
+          {(speech.speaking || speech.error) && (
+            <div className="message-speech-status">
+              {" "}
+              <div
+                className={`speech-controls${speech.speaking ? " is-speaking" : ""}`}
+              >
+                <span role="status">
+                  {speech.speaking ? "Lecture en cours…" : "Lecture arrêtée"}
+                </span>
+                <button
+                  className="secondary"
+                  onClick={speech.stop}
+                  disabled={!speech.speaking}
+                >
+                  Arrêter la lecture
+                </button>
+              </div>
+              {speech.error && (
+                <p className="error" role="alert">
+                  {speech.error}
+                </p>
+              )}
+            </div>
+          )}
         </section>
-        {chosen.length > 0 && (
-          <details className="panel">
-            <summary>Le sens personnel de mes touches</summary>
-            <p>
-              Les mots et dessins restent vos repères. Ces sens viennent du
-              profil et peuvent aider à comprendre une proposition de phrase.
-            </p>
-            <ol>
-              {sequence?.block_ids.map((id, index) => {
-                const block = data.blocks.find(
-                  (item) => item.id === id && item.profile_id === profileId,
-                );
-                const meaning =
-                  data.concepts.find(
-                    (item) =>
-                      item.id === block?.concept_id &&
-                      item.profile_id === profileId,
-                  )?.label ?? block?.canonical_intent;
-                return (
-                  <li key={index}>
-                    <strong>{block?.label ?? "Touche indisponible"}</strong> :{" "}
-                    {meaning ?? "Sens indisponible"}
-                  </li>
-                );
-              })}
-            </ol>
-          </details>
-        )}
-        <MemorySuggestions
-          key={`suggestions:${profileId}`}
-          profileId={profileId}
-          sequence={sequence}
-          mode={suggestions.mode}
-          onModeChange={suggestions.change}
-          temporary={suggestions.temporary}
-          disabled={pending || accepted}
-          revision={decision}
-          onPropose={proposeFromMemory}
-        />
-        {completed && sequence && (
-          <CompositionMemory
-            key={sequence.id}
-            profileId={profileId}
-            sequence={sequence}
-            revision={decision}
-            decision={decision}
-            disabled={pending}
-            canReplay={replayAvailable(profileId, sequence, data.blocks)}
-            onReplay={() => void perform(replay)}
-            onChoose={(id) => {
-              speech.stop();
-              setPhraseChoice((previous) => ({
-                id,
-                version: (previous?.version ?? 0) + 1,
-              }));
-            }}
-          />
-        )}
-        <DisplaySettings
-          size={display.size}
-          onChange={display.change}
-          disabled={pending}
-          temporary={display.temporary}
-          contrast={contrast}
-        />
-        <SpeechSettings speech={speech} disabled={pending} />
-        <OfflineCommunication
-          key={profileId}
-          profileId={profileId}
-          speech={speech}
-          size={display.size}
-          canOpen={!sequence && !pending}
-          onOpen={(value) => {
-            remember(value, null);
-            setNotice("Votre message local enregistré est ouvert.");
-          }}
-        />
         <section
           className="communication-keyboard"
           id="communication-keyboard"
@@ -807,17 +704,154 @@ export default function CommunicationScreen({
               </div>
             ))}
         </section>
-        <SelectionRhythm
-          key={`rhythm:${profileId}:${sequence?.id ?? "new"}`}
+        <MemorySuggestions
+          key={`suggestions:${profileId}`}
           profileId={profileId}
-          sequenceId={sequence?.id ?? null}
-          enabled={observeRhythm}
-          disabled={pending}
-          onChange={(enabled) => {
-            setObserveRhythm(enabled);
-            lastSelection.current = null;
-          }}
+          sequence={sequence}
+          mode={suggestions.mode}
+          onModeChange={suggestions.change}
+          temporary={suggestions.temporary}
+          disabled={pending || accepted}
+          revision={decision}
+          onPropose={proposeFromMemory}
         />
+        <details
+          ref={tools}
+          id="communication-options"
+          className="communication-tools"
+        >
+          <summary>Plus d’options : voix, affichage et préparation</summary>
+          <button
+            className="secondary"
+            onClick={() => {
+              if (tools.current) tools.current.open = false;
+              toolsButton.current?.focus();
+            }}
+          >
+            Revenir au clavier
+          </button>
+          <div className="communication-navigation">
+            {!standalone && (
+              <Link
+                className="button-link"
+                href={`/communication/${profileId}`}
+                aria-disabled={busy}
+                tabIndex={busy ? -1 : undefined}
+                onClick={(event) => {
+                  if (busy) event.preventDefault();
+                }}
+              >
+                Ouvrir l’espace de communication
+              </Link>
+            )}
+            {canEdit ? (
+              <Link
+                className="button-link secondary"
+                href={`/admin/profiles/${profileId}/keyboard`}
+                aria-disabled={busy}
+                tabIndex={busy ? -1 : undefined}
+                onClick={(event) => {
+                  if (busy) event.preventDefault();
+                }}
+              >
+                {standalone
+                  ? "Retour à la préparation"
+                  : "Modifier mon clavier"}
+              </Link>
+            ) : (
+              <Link className="button-link secondary" href="/admin/profiles">
+                Mes profils
+              </Link>
+            )}
+          </div>
+          <PhraseLibrary
+            profileId={profileId}
+            blocks={data.blocks}
+            visuals={data.representations}
+            speech={speech}
+            disabled={pending}
+            initialPhraseId={phraseChoice?.id ?? initialPhraseId}
+            choiceRevision={phraseChoice?.version ?? 0}
+            revision={decision}
+          />
+          <DisplaySettings
+            size={display.size}
+            onChange={display.change}
+            disabled={pending}
+            temporary={display.temporary}
+            contrast={contrast}
+          />
+          <SpeechSettings speech={speech} disabled={pending} />
+          <OfflineCommunication
+            key={profileId}
+            profileId={profileId}
+            speech={speech}
+            size={display.size}
+            canOpen={!sequence && !pending}
+            onOpen={(value) => {
+              remember(value, null);
+              setNotice("Votre message local enregistré est ouvert.");
+            }}
+          />
+          {chosen.length > 0 && (
+            <details className="panel">
+              <summary>Le sens personnel de mes touches</summary>
+              <p>
+                Les mots et dessins restent vos repères. Ces sens viennent du
+                profil et peuvent aider à comprendre une proposition de phrase.
+              </p>
+              <ol>
+                {sequence?.block_ids.map((id, index) => {
+                  const block = data.blocks.find(
+                    (item) => item.id === id && item.profile_id === profileId,
+                  );
+                  const meaning =
+                    data.concepts.find(
+                      (item) =>
+                        item.id === block?.concept_id &&
+                        item.profile_id === profileId,
+                    )?.label ?? block?.canonical_intent;
+                  return (
+                    <li key={index}>
+                      <strong>{block?.label ?? "Touche indisponible"}</strong> :{" "}
+                      {meaning ?? "Sens indisponible"}
+                    </li>
+                  );
+                })}
+              </ol>
+            </details>
+          )}
+          <SelectionRhythm
+            key={`rhythm:${profileId}:${sequence?.id ?? "new"}`}
+            profileId={profileId}
+            sequenceId={sequence?.id ?? null}
+            enabled={observeRhythm}
+            disabled={pending}
+            onChange={(enabled) => {
+              setObserveRhythm(enabled);
+              lastSelection.current = null;
+            }}
+          />
+        </details>
+        {completed && sequence && (
+          <CompositionMemory
+            key={sequence.id}
+            profileId={profileId}
+            sequence={sequence}
+            revision={decision}
+            decision={decision}
+            disabled={pending}
+            canReplay={replayAvailable(profileId, sequence, data.blocks)}
+            onReplay={() => void perform(replay)}
+            onChoose={(id) => {
+              speech.stop();
+              setPhraseChoice((previous) => ({
+                id,
+                version: (previous?.version ?? 0) + 1,
+              }));
+            }}
+          />
+        )}
         {completed && !decision && suggestions.mode === "off" && (
           <section className="panel interpretation-panel">
             <h2>Une proposition de phrase ?</h2>

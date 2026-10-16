@@ -57,6 +57,7 @@ jobs:
           node tests/e2e/offline-reopen.mjs
           node tests/e2e/selection-rhythm.mjs
           node tests/e2e/daily-pictograms.mjs
+          node tests/e2e/ux-communication.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -68,3 +69,4 @@ jobs:
             admin/.local/offline-reopen/*.png
             admin/.local/selection-rhythm/*.png
             admin/.local/daily-pictograms/*.png
+            admin/.local/ux-communication/*.png
