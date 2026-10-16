@@ -56,6 +56,7 @@ jobs:
           node tests/e2e/keyboard-usage.mjs
           node tests/e2e/offline-reopen.mjs
           node tests/e2e/selection-rhythm.mjs
+          node tests/e2e/daily-pictograms.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -66,3 +67,4 @@ jobs:
             admin/.local/keyboard-usage/*.png
             admin/.local/offline-reopen/*.png
             admin/.local/selection-rhythm/*.png
+            admin/.local/daily-pictograms/*.png

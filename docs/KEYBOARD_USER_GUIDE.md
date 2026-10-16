@@ -23,13 +23,15 @@ déplacer une autre touche. Les **repères stables** conservent leurs cases libr
 Les grandes grilles sont paginées. Les nouvelles suggestions PCL ne peuvent
 pas être promues en repères stables dans ce parcours V1.
 
-La bibliothèque comprend **28 dessins**, répartis en besoins quotidiens,
-personnes, activités et objets, réponses et demandes, émotions, lieux et
-déplacements, animaux et nature. Aux premiers exemples (Toilettes, Jouet,
-Livre, Maman, Papa, Stop, Oui, Non, Aimer, Voiture, Chat, Soleil, Boire et Dormir)
-s'ajoutent Téléphone, Manger, Eau, Aide, Maison, École, Dehors, Marcher, Chien,
-Musique, Content, Triste, Mal et Douche. Ce sont des dessins vectoriels
-intégrés à l'application ; aucune image externe n'est chargée. Le choix du
+La bibliothèque comprend **140 dessins simples** : les 28 dessins d’origine
+et 112 pictogrammes supplémentaires du quotidien. Les catégories couvrent les
+aliments, l’hygiène, les vêtements, les objets de la maison, les parties du
+corps, les personnes, les actions, les émotions, les lieux, les transports,
+la nature et les moments de la journée. « Brosser les dents », « Chaussettes »,
+« Pomme », « Moi » ou « Demain » sont recherchables, même sans accents.
+Voir [les aperçus de la bibliothèque](DAILY_PICTOGRAMS.md).
+Ce sont des dessins vectoriels intégrés à l'application ; aucune image externe
+n'est chargée. Le choix du
 dessin appartient à la personne qui prépare et valide la touche. Le mot seul
 ne déclenche aucune association automatique à un dessin.
 

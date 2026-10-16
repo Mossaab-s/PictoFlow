@@ -20,10 +20,14 @@ def main():
         for node in enum.body
         if isinstance(node, ast.Assign)
     ]
-    frontend = re.findall(
-        r'key: "([a-z]+)"',
-        (root / "admin/src/lib/pictograms.ts").read_text(encoding="utf-8"),
-    )
+    frontend = []
+    for name in ("pictograms.ts", "daily-pictograms.ts"):
+        frontend.extend(
+            re.findall(
+                r'\bkey:\s*"([a-z_]+)"',
+                (root / "admin/src/lib" / name).read_text(encoding="utf-8"),
+            )
+        )
     if len(set(frontend)) != len(frontend) or sorted(frontend) != sorted(backend):
         raise SystemExit("Pictogram catalog mismatch between backend and admin")
     print(f"Pictogram contract matches: {len(frontend)} drawings")
