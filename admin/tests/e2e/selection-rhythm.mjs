@@ -43,7 +43,7 @@ try {
   });
   await page.goto(`${origin}/communication/${profile}`);
   await page
-    .getByRole("button", { name: "Plus d�options", exact: true })
+    .getByRole("button", { name: "Plus d’options", exact: true })
     .click();
   const setting = page.getByRole("checkbox", {
     name: "Enregistrer les intervalles entre mes prochaines touches",
@@ -92,7 +92,7 @@ try {
   });
   await page.reload();
   await page
-    .getByRole("button", { name: "Plus d�options", exact: true })
+    .getByRole("button", { name: "Plus d’options", exact: true })
     .click();
   assert.equal(await setting.isChecked(), false);
   await page
