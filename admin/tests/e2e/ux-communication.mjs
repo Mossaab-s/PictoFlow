@@ -45,6 +45,14 @@ try {
   const page = await browser.newPage();
   await page.addInitScript(() => {
     window.__spoken = [];
+    Object.defineProperty(window, "SpeechSynthesisUtterance", {
+      configurable: true,
+      value: class {
+        constructor(text) {
+          this.text = text;
+        }
+      },
+    });
     Object.defineProperty(window, "speechSynthesis", {
       configurable: true,
       value: {
