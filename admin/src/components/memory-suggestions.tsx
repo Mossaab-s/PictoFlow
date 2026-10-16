@@ -201,6 +201,8 @@ export default function MemorySuggestions({
                     value={query}
                     disabled={disabled}
                     onChange={(e) => {
+                      setPage(null);
+                      setError("");
                       setQuery(e.target.value);
                       setOffset(0);
                     }}
