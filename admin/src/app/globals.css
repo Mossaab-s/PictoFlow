@@ -1359,6 +1359,32 @@ pre {
   gap: 12px;
   margin-bottom: 16px;
 }
+.message-flow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.message-flow-actions button {
+  font-size: 13px;
+}
+.message-reset-dialog {
+  max-width: min(480px, calc(100vw - 32px));
+  border: 2px solid var(--accent);
+  border-radius: 16px;
+  padding: 24px;
+  color: var(--ink);
+  background: #fff;
+}
+.message-reset-dialog::backdrop {
+  background: #183a3270;
+}
+.message-reset-dialog button {
+  min-height: 48px;
+}
+.speak-message {
+  font-weight: 700;
+}
 .communication-heading h1 {
   font-size: 24px;
   margin: 0;
