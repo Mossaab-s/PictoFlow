@@ -20,7 +20,7 @@ import {
 import { ProfileNavigation, HumanRoleSelector } from "./profile-navigation";
 import PhraseShortcut from "./phrase-shortcut";
 import { useAuthentication } from "./authentication";
-import { canPrepare, canProfile } from "@/lib/access";
+import { canPrepare, canProfile, profileToolPath } from "@/lib/access";
 import { TouchContent } from "./pictogram";
 import MemoryEvidence, { memoryDate } from "./memory-evidence";
 
@@ -37,6 +37,7 @@ export default function ProfileMemory({ profileId }: { profileId: string }) {
   const session = useAuthentication();
   const canEdit = canPrepare(session, profileId);
   const canHistory = canProfile(session, profileId, "view_history");
+  const canCommunicate = canProfile(session, profileId, "communicate");
   const [validated, setValidated] = useState(true);
   const [bundle, setBundle] = useState<Bundle | null>(null);
   const [loading, setLoading] = useState(true);
@@ -212,7 +213,7 @@ export default function ProfileMemory({ profileId }: { profileId: string }) {
           {canHistory && (
             <>
               Les refus restent consultables dans{" "}
-              <Link href={`/admin/profiles/${profileId}/audit`}>
+              <Link href={profileToolPath(session, profileId, "audit")}>
                 l’historique
               </Link>
               .
@@ -354,12 +355,14 @@ export default function ProfileMemory({ profileId }: { profileId: string }) {
                         />
                         {validated && (
                           <div className="actions">
-                            <Link
-                              className="button-link"
-                              href={`/communication/${profileId}?phrase=${item.id}`}
-                            >
-                              Utiliser ce message
-                            </Link>
+                            {canCommunicate && (
+                              <Link
+                                className="button-link"
+                                href={`/communication/${profileId}?phrase=${item.id}`}
+                              >
+                                Utiliser ce message
+                              </Link>
+                            )}
                             <PhraseShortcut
                               profileId={profileId}
                               item={item}
@@ -451,7 +454,7 @@ export default function ProfileMemory({ profileId }: { profileId: string }) {
                   {canEdit && (
                     <Link
                       className="button-link secondary"
-                      href={`/admin/profiles/${profileId}/keyboard`}
+                      href={profileToolPath(session, profileId, "keyboard")}
                     >
                       Préparer le clavier
                     </Link>

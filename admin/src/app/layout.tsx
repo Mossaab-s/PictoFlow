@@ -3,7 +3,7 @@ import "./globals.css";
 import Authentication from "@/components/authentication";
 
 export const metadata: Metadata = {
-  title: "PictoFlow · Administration",
+  title: "PictoFlow",
   description: "Espace de communication personnel",
 };
 

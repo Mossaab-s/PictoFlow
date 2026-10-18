@@ -6,6 +6,10 @@ import {
   profileCapabilities,
   isAdministrator,
   pathPermitted,
+  assignedProfiles,
+  entryRedirect,
+  landingPath,
+  profileToolPath,
 } from "../src/lib/access.ts";
 import { api, APIError, setCSRFToken } from "../src/lib/api.ts";
 
@@ -53,7 +57,7 @@ test("explicit capabilities override broad role labels and do not imply review o
     },
   };
   assert(canPrepare(prepare, p));
-  assert(pathPermitted(prepare, `/admin/profiles/${p}/keyboard`));
+  assert(pathPermitted(prepare, `/accompagnement/personnes/${p}/clavier`));
   assert(!pathPermitted(prepare, `/communication/${p}`));
   assert(!pathPermitted(prepare, `/admin/profiles/${p}/concepts`));
   assert(!pathPermitted(prepare, `/admin/profiles/${p}/made-up`));
@@ -61,7 +65,7 @@ test("explicit capabilities override broad role labels and do not imply review o
 
 test("communication UI exposes only granted profiles; account management and preparation need their own permission", () => {
   assert(pathPermitted(session, `/communication/${p}`));
-  assert(pathPermitted(session, `/admin/profiles/${p}/memory`));
+  assert(pathPermitted(session, `/communication/${p}/memoire`));
   assert(!pathPermitted(session, `/communication/${other}`));
   assert(!pathPermitted(session, `/admin/profiles/${p}/keyboard`));
   assert(!pathPermitted(session, "/admin/access"));
@@ -73,7 +77,7 @@ test("communication UI exposes only granted profiles; account management and pre
   };
   assert(canPrepare(editor, p));
   assert(!canPrepare(editor, other));
-  assert(pathPermitted(editor, `/admin/profiles/${p}/keyboard`));
+  assert(pathPermitted(editor, `/accompagnement/personnes/${p}/clavier`));
   assert(!pathPermitted(editor, "/admin/restore-profile"));
   assert(
     pathPermitted(
@@ -88,6 +92,96 @@ test("communication UI exposes only granted profiles; account management and pre
       "/admin/providers",
     ),
   );
+});
+
+test("entry resolves actual per-profile grants, including mixed, multiple and empty accounts", () => {
+  const withRights = (rights) => ({
+    ...session,
+    account: { ...session.account, profile_capabilities: rights },
+  });
+  assert.equal(landingPath(session), `/communication/${p}`);
+  assert.equal(
+    landingPath(withRights({ [p]: ["communicate"], [other]: ["communicate"] })),
+    "/communication",
+  );
+  assert.equal(landingPath(withRights({})), "/communication");
+  for (const capability of [
+    "prepare_keyboard",
+    "manage_meanings",
+    "view_history",
+    "export_profile",
+    "review_meanings",
+  ]) {
+    assert.equal(
+      landingPath(withRights({ [p]: [capability] })),
+      "/accompagnement",
+    );
+  }
+  const mixed = withRights({
+    [p]: ["communicate", "review_meanings"],
+    [other]: ["prepare_keyboard"],
+  });
+  assert.equal(landingPath(mixed), "/accompagnement");
+  assert.deepEqual(assignedProfiles(mixed, "support"), [other]);
+  assert.deepEqual(assignedProfiles(mixed, "communication"), [p]);
+  assert(!pathPermitted(mixed, `/accompagnement/personnes/${p}`));
+  assert(pathPermitted(mixed, `/accompagnement/personnes/${other}/clavier`));
+  assert(!pathPermitted(mixed, `/communication/${other}`));
+  assert(
+    !pathPermitted(mixed, `/accompagnement/personnes/${other}/constructor`),
+  );
+  assert.equal(
+    landingPath({
+      ...session,
+      account: { ...session.account, is_admin: true },
+    }),
+    "/admin",
+  );
+});
+
+test("legacy routes only alias known authorized tools; denied routes never mount admin content", () => {
+  const supporter = {
+    ...session,
+    account: {
+      ...session.account,
+      profile_capabilities: { [p]: ["prepare_keyboard"] },
+    },
+  };
+  assert.equal(entryRedirect(session, "/"), `/communication/${p}`);
+  assert.equal(
+    entryRedirect(session, "/admin/profiles"),
+    `/communication/${p}`,
+  );
+  assert.equal(
+    entryRedirect(session, `/admin/profiles/${p}/memory`),
+    `/communication/${p}/memoire`,
+  );
+  assert.equal(
+    entryRedirect(supporter, `/admin/profiles/${p}/keyboard`),
+    `/accompagnement/personnes/${p}/clavier`,
+  );
+  assert.equal(
+    entryRedirect(supporter, `/admin/profiles/${other}/keyboard`),
+    null,
+  );
+  assert.equal(entryRedirect(session, `/admin/profiles/${p}/keyboard`), null);
+  assert.equal(entryRedirect(session, "/admin/access"), null);
+  assert.equal(entryRedirect(session, "https://untrusted.invalid"), null);
+  assert.equal(
+    profileToolPath(supporter, p, "keyboard"),
+    `/accompagnement/personnes/${p}/clavier`,
+  );
+  assert(!pathPermitted(supporter, `/admin/profiles/${p}/keyboard`));
+  const exporter = {
+    ...supporter,
+    account: {
+      ...supporter.account,
+      profile_capabilities: { [p]: ["export_profile"] },
+    },
+  };
+  assert(pathPermitted(exporter, `/accompagnement/personnes/${p}/sauvegarde`));
+  assert(!pathPermitted(exporter, `/accompagnement/personnes/${p}/clavier`));
+  assert(!pathPermitted(exporter, `/accompagnement/personnes/${p}/phrases`));
 });
 
 test("a response from an older login cannot populate the next account's screen", async () => {

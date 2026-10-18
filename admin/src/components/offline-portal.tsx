@@ -113,7 +113,7 @@ export default function OfflinePortal() {
         appareil. Les messages restent locaux jusqu’à votre demande explicite
         d’enregistrement et à la vérification de vos accès sur le serveur.
       </p>
-      <a className="button-link secondary" href="/admin/profiles">
+      <a className="button-link secondary" href="/">
         Revenir à PictoFlow en ligne
       </a>
       {error && (

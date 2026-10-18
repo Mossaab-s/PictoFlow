@@ -116,6 +116,10 @@ jobs:
           PICTOFLOW_API_BASE_URL=http://127.0.0.1:8002/api/v1 npm run start -- --port 3132 > /tmp/pictoflow-capability-ui.log 2>&1 &
           node --input-type=module -e 'const end=Date.now()+30000; for(;;){try{if((await fetch("http://127.0.0.1:3132/api/pictoflow/health")).ok)break;}catch{} if(Date.now()>end)process.exit(1);await new Promise(r=>setTimeout(r,300));}'
           node tests/e2e/profile-capabilities.mjs
+      - name: Verify authenticated three-space journeys
+        if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/three-spaces.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -129,3 +133,4 @@ jobs:
             admin/.local/daily-pictograms/*.png
             admin/.local/ux-communication/*.png
             admin/.local/profile-capabilities/*.png
+            admin/.local/three-spaces/*.png
