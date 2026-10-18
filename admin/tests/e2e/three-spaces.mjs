@@ -335,6 +335,24 @@ try {
     page.getByRole("heading", { name: "Eau", exact: true }),
   ).toBeVisible();
   assert.equal(await page.locator("pre,.identifier").count(), 0);
+  await page
+    .getByLabel("Mot ou sens personnel", { exact: true })
+    .fill("Mon verre fictif");
+  await page
+    .getByRole("button", { name: "Ajouter au vocabulaire", exact: true })
+    .click();
+  await page
+    .getByRole("heading", { name: "Mon verre fictif", exact: true })
+    .waitFor();
+  const meanings = (await call(`profiles/${p.id}/concepts`)).filter(
+    (item) => item.label === "Mon verre fictif",
+  );
+  assert.equal(meanings.length, 1);
+  assert.equal(meanings[0].profile_id, p.id);
+  assert.equal(
+    await page.getByText(meanings[0].canonical_key, { exact: true }).count(),
+    0,
+  );
   await context.close();
 
   context = await connect(empty.username);
