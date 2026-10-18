@@ -401,7 +401,7 @@ function ReviewCard({
       </span>
       <p className="memory-phrase">{text}</p>
       <time dateTime={candidate.created_at}>
-        {memoryDate(candidate.created_at)}
+        Proposition du {memoryDate(candidate.created_at)}
       </time>
       <p className="helper">
         {candidate.source === "pcl-memory"
@@ -441,17 +441,18 @@ function ReviewCard({
                 if (correction.trim()) void decide("correct", correction);
               }}
             >
-              <label>
+              <label htmlFor={`review-correction-${candidate.id}`}>
                 Phrase corrigée
-                <textarea
-                  required
-                  rows={3}
-                  maxLength={4000}
-                  disabled={disabled}
-                  value={correction}
-                  onChange={(event) => setCorrection(event.target.value)}
-                />
               </label>
+              <textarea
+                id={`review-correction-${candidate.id}`}
+                required
+                rows={3}
+                maxLength={4000}
+                disabled={disabled}
+                value={correction}
+                onChange={(event) => setCorrection(event.target.value)}
+              />
               <button disabled={disabled || !correction.trim()}>
                 Enregistrer la correction
               </button>
