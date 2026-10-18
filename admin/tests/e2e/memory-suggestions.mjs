@@ -183,6 +183,7 @@ try {
   await page
     .getByRole("button", { name: "C'est ce que je veux dire", exact: true })
     .click();
+  await page.getByText("Ce que ma mémoire retient", { exact: true }).click();
   await page.getByText("Votre phrase est conservée", { exact: true }).waitFor();
   assert.equal((await call(own.base + "/memory")).interpretations.length, 2);
   await page.reload();

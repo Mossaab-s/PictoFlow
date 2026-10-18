@@ -403,39 +403,6 @@ try {
   );
   assert.equal(await page.locator(".message-touch").count(), 1);
   await page.unroute(selectionPath);
-  await page
-    .getByRole("button", { name: "Terminer mon message", exact: true })
-    .click();
-  await page.locator(".communication-memory").waitFor();
-  assert.equal(await page.locator(".composition-memory").isVisible(), false);
-  assert(await page.locator(".interpretation-panel").isVisible());
-  assert(
-    await page
-      .locator(".interpretation-panel")
-      .evaluate(
-        (element) =>
-          !!(
-            element.compareDocumentPosition(
-              document.querySelector(".communication-memory"),
-            ) & Node.DOCUMENT_POSITION_FOLLOWING
-          ),
-      ),
-  );
-  assert.equal(
-    await page
-      .getByLabel("Contexte que je souhaite préciser, facultatif", {
-        exact: true,
-      })
-      .isVisible(),
-    false,
-  );
-  await page.getByText("Ce que ma mémoire retient", { exact: true }).click();
-  await page
-    .getByRole("region", { name: "Mon PCL et ce message", exact: true })
-    .getByText("Aucun message déjà accepté", { exact: false })
-    .waitFor();
-  await page.getByText("Ce que ma mémoire retient", { exact: true }).click();
-  assert.equal((await call(base + "/memory")).interpretations.length, 0);
   await page.unroute(restorePath);
   await page
     .getByRole("button", { name: "Recharger le message", exact: true })
@@ -478,6 +445,39 @@ try {
     "Late response must not reclaim focus",
   );
   await page.unroute(selectionPath);
+  await page
+    .getByRole("button", { name: "Terminer mon message", exact: true })
+    .click();
+  await page.locator(".communication-memory").waitFor();
+  assert.equal(await page.locator(".composition-memory").isVisible(), false);
+  assert(await page.locator(".interpretation-panel").isVisible());
+  assert(
+    await page
+      .locator(".interpretation-panel")
+      .evaluate(
+        (element) =>
+          !!(
+            element.compareDocumentPosition(
+              document.querySelector(".communication-memory"),
+            ) & Node.DOCUMENT_POSITION_FOLLOWING
+          ),
+      ),
+  );
+  assert.equal(
+    await page
+      .getByLabel("Contexte que je souhaite préciser, facultatif", {
+        exact: true,
+      })
+      .isVisible(),
+    false,
+  );
+  await page.getByText("Ce que ma mémoire retient", { exact: true }).click();
+  await page
+    .getByRole("region", { name: "Mon PCL et ce message", exact: true })
+    .getByText("Aucun message déjà accepté", { exact: false })
+    .waitFor();
+  await page.getByText("Ce que ma mémoire retient", { exact: true }).click();
+  assert.equal((await call(base + "/memory")).interpretations.length, 0);
   // A mocked authenticated frontend session checks layout and affordances, not API security.
   await page.route("**/api/pictoflow/auth/session", (r) =>
     r.fulfill({
