@@ -23,7 +23,8 @@ Human review and personal-memory explanation when applicable
 The message stays near the top while the keyboard is browsed. Long compositions
 have a bounded scrollable area; small-height viewports use normal page flow.
 Options preserve the current composition and can return focus to their opener.
-Choosing a saved phrase opens the secondary tools so the selected phrase is visible.
+Choosing a saved phrase opens its own phrase area so the selected phrase is visible,
+without opening display/voice/preparation tools.
 The shared administration communication view uses the same layout and contracts.
 No display change moves saved touches or validates meaning.
 
@@ -98,3 +99,49 @@ composition or accept a meaning. Empty personal memory offers an explicit path
 back to the normal formulation workflow without calling AI. On the dedicated
 communication route the existing account/logout controls are collapsed under
 Mon compte; authentication, access checks and cleanup behavior are unchanged.
+
+## Focused communication surface after three-space navigation
+
+The existing communication controller, endpoints, profile preferences and draft
+references are preserved. Only disclosure and visual order change:
+
+```text
+Name                        Options | My phrases
+Message and explicit speech / undo / clear / finish actions
+Personal pictogram keyboard (saved pages, gaps and stable positions)
+Missing-word preparation link when authorized
+Usual phrases                 [closed until requested]
+Personal-memory suggestions    [closed when off; saved active mode opens]
+Optional formulation / human review when applicable
+What my memory retains        [closed until requested]
+Voice, display and preparation [closed until requested]
+```
+
+The message's Suggestions link opens the native suggestions disclosure and focuses
+its summary. Word/phrase/off behavior and the completed-message prerequisite are
+unchanged. Closing it preserves the selected mode, search and tentative word list;
+Escape and the close button return focus to the opener. The header's My phrases
+button opens/focuses the existing phrase picker independently of the settings area.
+Escape closes the picker and returns to that button. Reading a saved phrase still
+requires its own explicit action and leaves the composed message intact.
+
+The finished message now offers formulation/review before the longer PCL learning
+explanation. Context remains optional in a separate disclosure; its existing value
+and request contract are preserved. The memory explanation, evidence, explicit
+replay and exact prior-message recall remain available behind **Ce que ma mémoire
+retient**. Its open state survives an intentional replay within the current view,
+but resets on a page reload. The interpretation card still displays the accepted,
+corrected or refused status. Opening/closing a panel never accepts a proposition.
+
+Native disclosure descendants remain mounted: temporary input, chosen phrases and
+word drafts are not discarded on close. Existing read-only memory loading still
+runs; collapsing is presentation, not a new access or request boundary. Escape
+first stops active speech; a later Escape can close the focused panel. An open
+secondary area disables the sticky composer so it cannot obscure focused controls.
+
+Browser checks exercise initial compactness, direct phrases without settings,
+suggestion mode preservation, keyboard open/close/focus, the completed-message
+order and unchanged server sequences, positions and validated memory. Existing
+PCL learning, suggestion revocation/retry, optional AI, offline and account journeys
+also run. This increment adds no backend policy, PCL mutation, model-prompt change
+or protected accompanied-session behavior.

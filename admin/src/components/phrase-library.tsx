@@ -34,6 +34,7 @@ export default function PhraseLibrary({
   initialPhraseId = null,
   choiceRevision = 0,
   revision,
+  onPickerToggle,
 }: {
   profileId: string;
   blocks: Block[];
@@ -43,6 +44,7 @@ export default function PhraseLibrary({
   initialPhraseId?: string | null;
   choiceRevision?: number;
   revision: unknown;
+  onPickerToggle?: (open: boolean) => void;
 }) {
   const [memory, setMemory] = useState<Memory | null>(null);
   const [loading, setLoading] = useState(true);
@@ -210,8 +212,7 @@ export default function PhraseLibrary({
             {messageText(chosen.interpretation, true)}
           </p>
           <p className="helper">
-            Message déjà accepté. Votre composition en cours est conservée
-            ci-dessous.
+            Message déjà accepté. Votre composition en cours est conservée.
           </p>
           {touches && (
             <ol className="memory-touches">
@@ -272,6 +273,7 @@ export default function PhraseLibrary({
       <details
         className="panel phrase-picker"
         open={initialPhraseId ? true : undefined}
+        onToggle={(event) => onPickerToggle?.(event.currentTarget.open)}
       >
         <summary>Mes phrases habituelles et raccourcis</summary>
         <p>

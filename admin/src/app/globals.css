@@ -1636,6 +1636,44 @@ pre {
   margin-top: 24px;
   background: #fff;
 }
+.communication-disclosure {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-block: 16px;
+  background: #fff;
+  min-width: 0;
+  overflow-anchor: none;
+}
+.communication-disclosure > summary,
+.communication-page .phrase-picker > summary {
+  font-weight: 600;
+  padding-block: 12px;
+  min-height: 48px;
+  cursor: pointer;
+}
+.communication-suggestion-options > .memory-suggestions {
+  border: 0;
+  padding: 16px 0 0;
+  margin: 0;
+}
+.communication-memory > .composition-memory {
+  margin-bottom: 0;
+  border: 0;
+  padding-inline: 0;
+}
+.formulation-context {
+  margin-top: 20px;
+}
+.formulation-context > summary {
+  min-height: 44px;
+  padding-block: 12px;
+  cursor: pointer;
+}
+.formulation-context label {
+  display: grid;
+  gap: 8px;
+}
 .communication-tools > summary {
   font-weight: 600;
   padding: 12px 0;
@@ -2079,6 +2117,8 @@ pre {
   }
 }
 .communication-page:has(.communication-tools[open]) > .message-panel,
+.communication-page:has(.communication-disclosure[open]) > .message-panel,
+.communication-page:has(.phrase-picker[open]) > .message-panel,
 .communication-page > .message-panel[data-completed="true"] {
   position: static;
 }

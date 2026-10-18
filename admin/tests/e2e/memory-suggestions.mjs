@@ -98,6 +98,12 @@ try {
       .getByRole("heading", { name: "Mon message terminé", exact: true })
       .waitFor();
     assert((await call(profile.base + "/sequences")).length > 0);
+    if (
+      !(await page
+        .locator(".communication-suggestion-options")
+        .evaluate((element) => element.open))
+    )
+      await page.locator(".communication-suggestion-options > summary").click();
   }
   await page.goto(`${origin}/communication/${own.p}`);
   await compose();
@@ -177,6 +183,7 @@ try {
   await page
     .getByRole("button", { name: "C'est ce que je veux dire", exact: true })
     .click();
+  await page.getByText("Ce que ma mémoire retient", { exact: true }).click();
   await page.getByText("Votre phrase est conservée", { exact: true }).waitFor();
   assert.equal((await call(own.base + "/memory")).interpretations.length, 2);
   await page.reload();
