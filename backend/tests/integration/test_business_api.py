@@ -53,7 +53,9 @@ def test_pending_review_http_conflicts_preserve_the_human_decision_and_history(a
     corrected = api.post(
         feedback,
         json={
-            "action": "correct", "actor_role": "caregiver", "expected_status": "proposed",
+            "action": "correct",
+            "actor_role": "caregiver",
+            "expected_status": "proposed",
             "corrected_value": "Je voudrais de l’eau.",
         },
     )
@@ -65,17 +67,27 @@ def test_pending_review_http_conflicts_preserve_the_human_decision_and_history(a
     assert len(history["items"]) == 1
     audit = api.get(base + "/audit").json()
     for action in ("confirm", "reject"):
-        assert api.post(
-            feedback,
-            json={"action": action, "actor_role": "professional", "expected_status": "proposed"},
-        ).status_code == 409
+        assert (
+            api.post(
+                feedback,
+                json={
+                    "action": action,
+                    "actor_role": "professional",
+                    "expected_status": "proposed",
+                },
+            ).status_code
+            == 409
+        )
     assert api.get(base + f"/interpretations/{candidate['id']}").json() == corrected.json()
     assert api.get(evidence).json() == history
     assert api.get(base + "/audit").json() == audit
-    assert api.post(
-        f"/api/v1/profiles/{other}/interpretations/{candidate['id']}/feedback",
-        json={"action": "reject", "actor_role": "caregiver", "expected_status": "proposed"},
-    ).status_code == 404
+    assert (
+        api.post(
+            f"/api/v1/profiles/{other}/interpretations/{candidate['id']}/feedback",
+            json={"action": "reject", "actor_role": "caregiver", "expected_status": "proposed"},
+        ).status_code
+        == 404
+    )
     # Existing intentional withdrawal clients remain compatible.
     assert api.post(feedback, json={"action": "reject", "actor_role": "user"}).status_code == 200
 
