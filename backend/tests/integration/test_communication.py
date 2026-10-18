@@ -15,7 +15,11 @@ from app.ai.providers.disabled import DisabledProvider
 from app.ai.providers.fake import FakeFixtures, FakeProvider, InterpretationFixture
 from app.application.audit import AuditService
 from app.application.blocks import BlockService, RepresentationService
-from app.application.communication import CommunicationService, InteractionMemory
+from app.application.communication import (
+    CommunicationService,
+    InteractionMemory,
+    InterpretationReviewConflict,
+)
 from app.application.interpretation import InterpretationService
 from app.application.semantic_space import SemanticNotFoundError, SemanticSpace
 from app.application.transient import TransientKind, TransientStoreUnavailable
@@ -126,6 +130,32 @@ def test_sequence_history_order_and_completion_do_not_promote_memory(communicati
     assert service.memory(a, validated=True).interpretations == ()
     assert service.memory(a, validated=True).relations == ()
     assert service.memory(a, validated=True).sequences == ()
+
+
+def test_pending_review_cannot_overwrite_correction_or_accept_a_resolved_sibling(communication):
+    service, a, _, blocks = communication
+    sequence = completed(service, a, blocks)
+    first, _ = proposal(service, a, sequence)
+    sibling, _ = proposal(service, a, sequence)
+    service.validate(
+        event(a, first, ValidationAction.CORRECT, "Mon choix personnel."),
+        expected_status=InterpretationStatus.PROPOSED,
+    )
+    with service.units() as store:
+        history = store.feedback_history(a, first.id)
+    for action in (ValidationAction.CONFIRM, ValidationAction.REJECT):
+        with pytest.raises(InterpretationReviewConflict):
+            service.validate(event(a, first, action), expected_status=InterpretationStatus.PROPOSED)
+    with pytest.raises(InterpretationReviewConflict):
+        service.validate(
+            event(a, sibling, ValidationAction.CONFIRM),
+            expected_status=InterpretationStatus.PROPOSED,
+        )
+    with service.units() as store:
+        assert store.feedback_history(a, first.id) == history
+        assert store.feedback_history(a, sibling.id) == ()
+    retained = service.memory(a, validated=True).interpretations[0]
+    assert retained.validated_text == "Mon choix personnel."
 
 
 def test_correction_precedence_rejection_reconfirmation_and_append_only_history(communication):

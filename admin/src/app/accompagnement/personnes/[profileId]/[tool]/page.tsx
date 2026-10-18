@@ -4,6 +4,7 @@ import KeyboardEditor from "@/components/keyboard-editor";
 import ProfileMemory from "@/components/profile-memory";
 import ProfileBackup from "@/components/profile-backup";
 import ProfileSection from "@/components/profile-section";
+import PhraseReview from "@/components/phrase-review";
 export default async function Page({
   params,
   searchParams,
@@ -18,6 +19,8 @@ export default async function Page({
   )
     notFound();
   const section = supportSections[tool as keyof typeof supportSections].section;
+  if (section === "review")
+    return <PhraseReview key={profileId} profileId={profileId} />;
   if (section === "keyboard")
     return (
       <KeyboardEditor

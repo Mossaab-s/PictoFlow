@@ -73,6 +73,11 @@ export function profileInPath(path: string): string | null {
 }
 
 export const supportSections = {
+  "a-verifier": {
+    section: "review",
+    title: "Phrases à vérifier",
+    capabilities: ["review_meanings"],
+  },
   clavier: {
     section: "keyboard",
     title: "Clavier",

@@ -12,7 +12,7 @@ export function ProfileNavigation({
   section,
 }: {
   profileId: string;
-  section?: Section;
+  section?: Section | "review";
 }) {
   const session = useAuthentication();
   const path = usePathname();
