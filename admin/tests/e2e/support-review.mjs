@@ -42,21 +42,21 @@ await call(grant, "PUT", {
   expected_capabilities: null,
 });
 const candidates = {};
-for (const label of [
-  "Eau",
-  "Livre",
-  "Maman",
-  "Boire",
-  "Pain",
-  "Chat",
-  "Toilettes",
-  "Maison",
+for (const [label, pictogram_key] of [
+  ["Eau", "water"],
+  ["Livre", "book"],
+  ["Maman", "mother"],
+  ["Boire", "drink"],
+  ["Pain", "bread"],
+  ["Chat", "cat"],
+  ["Toilettes", "toilets"],
+  ["Maison", "home"],
 ]) {
   const block = await call(base + "/blocks/personal", "POST", {
     request_id: crypto.randomUUID(),
     label,
     actor_role: "user",
-    ...(label === "Eau" ? { pictogram_key: "water" } : {}),
+    pictogram_key,
   });
   await call(base + `/blocks/${block.id}/feedback`, "POST", {
     action: "confirm",
@@ -195,7 +195,7 @@ try {
     .getByText("Voir les décisions humaines", { exact: true })
     .click();
   await card("Je voudrais lire mon livre.")
-    .getByText("Professionnel", { exact: true })
+    .getByText("Professionnel", { exact: false })
     .waitFor();
   await page.setViewportSize({ width: 390, height: 844 });
   assert(

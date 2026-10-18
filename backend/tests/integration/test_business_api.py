@@ -33,7 +33,12 @@ def test_pending_review_http_conflicts_preserve_the_human_decision_and_history(a
     base = f"/api/v1/profiles/{p}"
     block = api.post(
         base + "/blocks/personal",
-        json={"request_id": str(uuid4()), "label": "Eau", "actor_role": "user"},
+        json={
+            "request_id": str(uuid4()),
+            "label": "Eau",
+            "pictogram_key": "water",
+            "actor_role": "user",
+        },
     ).json()
     api.post(
         base + f"/blocks/{block['id']}/feedback",
