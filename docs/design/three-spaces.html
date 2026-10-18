@@ -1,0 +1,1191 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PictoFlow — maquettes des trois espaces</title>
+    <meta
+      name="description"
+      content="Wireframes de conception : communication, accompagnement et administration. Données fictives, aucune connexion."
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Arial, Helvetica, sans-serif;
+        --ink: #183a32;
+        --muted: #496158;
+        --line: #879d90;
+        --green: #28634f;
+        --soft: #eaf1e7;
+        --paper: #fff;
+        --bg: #f5f7f2;
+        --radius: 16px;
+        color: var(--ink);
+        background: #e4e9e5;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+      a {
+        color: var(--green);
+      }
+      a,
+      button,
+      summary {
+        touch-action: manipulation;
+      }
+      a:focus-visible,
+      button:focus-visible,
+      input:focus-visible,
+      select:focus-visible,
+      [tabindex]:focus-visible {
+        outline: 3px solid #143b82;
+        outline-offset: 4px;
+      }
+      button,
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 56px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 12px 18px;
+        background: var(--paper);
+        color: var(--ink);
+        font-weight: 700;
+        text-decoration: none;
+        cursor: pointer;
+        overflow-wrap: anywhere;
+      }
+      .primary {
+        background: var(--green);
+        color: #fff;
+        border-color: var(--green);
+      }
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+      h1 {
+        font-size: clamp(24px, 3.5vw, 34px);
+        line-height: 1.2;
+      }
+      h2 {
+        font-size: 22px;
+        line-height: 1.3;
+      }
+      h3 {
+        font-size: 18px;
+        line-height: 1.3;
+      }
+      p {
+        line-height: 1.55;
+      }
+      small,
+      .muted {
+        color: var(--muted);
+      }
+      [hidden] {
+        display: none !important;
+      }
+      .prototype {
+        padding: 20px max(16px, calc((100vw - 1180px) / 2));
+        background: #183a32;
+        color: #fff;
+      }
+      .prototype h1 {
+        font-size: 20px;
+      }
+      .prototype p {
+        margin-top: 8px;
+        font-size: 14px;
+        color: #e2eee6;
+      }
+      .prototype nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 16px;
+      }
+      .prototype a {
+        color: #fff;
+        border: 1px solid #9fb3a8;
+        padding: 10px 12px;
+        border-radius: 8px;
+        text-decoration: none;
+        min-height: 44px;
+      }
+      .prototype a[aria-current="page"] {
+        background: #fff;
+        color: #183a32;
+      }
+      .prototype a:focus-visible {
+        outline-color: #fff;
+      }
+      .caption {
+        max-width: 1180px;
+        margin: 18px auto;
+        padding: 0 20px;
+        font-size: 14px;
+      }
+      .caption strong {
+        display: block;
+        margin-bottom: 4px;
+      }
+      .frame {
+        max-width: 1180px;
+        margin: 0 auto 24px;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+      .screen-title {
+        font-size: 14px;
+        font-weight: 400;
+        padding: 12px 20px;
+        background: #fff;
+        border-bottom: 1px solid var(--line);
+      }
+      .screen-title span {
+        float: right;
+        font-weight: 700;
+      }
+      .workspace {
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr);
+        min-height: 690px;
+      }
+      .sidebar {
+        padding: 24px 16px;
+        border-right: 1px solid var(--line);
+        background: #edf2ec;
+      }
+      .brand {
+        display: block;
+        font-size: 21px;
+        font-weight: 700;
+        margin-bottom: 24px;
+      }
+      .sidebar nav {
+        display: grid;
+        gap: 8px;
+      }
+      .sidebar a,
+      .sidebar .nav-item {
+        display: block;
+        padding: 14px 12px;
+        border-radius: 9px;
+        text-decoration: none;
+        color: var(--ink);
+      }
+      .sidebar .current {
+        color: #fff;
+        background: var(--green);
+        font-weight: 700;
+      }
+      .sidebar .hint {
+        margin-top: 36px;
+        font-size: 13px;
+      }
+      .content {
+        padding: 28px;
+        min-width: 0;
+      }
+      .page-heading {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: start;
+        margin-bottom: 26px;
+      }
+      .page-heading p {
+        margin-top: 8px;
+      }
+      .eyebrow {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--muted);
+        margin-bottom: 9px;
+        letter-spacing: 0.05em;
+      }
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 22px;
+        background: #fff;
+      }
+      .panel > * + * {
+        margin-top: 14px;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+      }
+      .columns {
+        display: grid;
+        grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+        gap: 20px;
+        align-items: start;
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+      .stack {
+        display: grid;
+        gap: 20px;
+      }
+      .person {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+      }
+      .avatar {
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: #e2eddf;
+        min-width: 62px;
+        height: 62px;
+        font-size: 28px;
+      }
+      .person h2 {
+        margin-bottom: 4px;
+      }
+      .badge {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 6px;
+        background: #eaf1e7;
+        font-size: 13px;
+        font-weight: 700;
+      }
+      .tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 24px;
+      }
+      .tabs a,
+      .tabs span {
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        text-decoration: none;
+        min-height: 48px;
+      }
+      .tabs .active {
+        background: #dceada;
+        border-color: var(--green);
+        font-weight: 700;
+      }
+      label {
+        display: grid;
+        gap: 8px;
+        font-weight: 700;
+      }
+      input,
+      select {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        min-height: 52px;
+        padding: 12px;
+        width: 100%;
+        background: #fff;
+        color: var(--ink);
+      }
+      .search {
+        margin-bottom: 24px;
+      }
+      .tiles {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+      .tile {
+        min-width: 0;
+        border: 2px solid var(--line);
+        background: #fff;
+        border-radius: 13px;
+        padding: 14px 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 12px;
+        min-height: 132px;
+      }
+      .tile .drawing {
+        font-size: 48px;
+        line-height: 1.1;
+      }
+      .tile .word {
+        font-size: 20px;
+        font-weight: 700;
+        text-align: center;
+      }
+      .tile .position {
+        font-size: 12px;
+        font-weight: 400;
+        color: var(--muted);
+      }
+      .tile.fixed {
+        background: #f0f4ed;
+      }
+      .tiles.preview {
+        gap: 10px;
+      }
+      .tiles.preview .tile {
+        min-height: 112px;
+        padding: 10px 6px;
+      }
+      .tiles.preview .drawing {
+        font-size: 38px;
+      }
+      .tiles.preview .word {
+        font-size: 16px;
+      }
+      .communication {
+        max-width: 960px;
+        margin: auto;
+        padding: 24px;
+      }
+      .communication .heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+      .communication .heading h1 {
+        font-size: 28px;
+      }
+      .communication .message {
+        border: 2px solid var(--green);
+        padding: 20px;
+      }
+      .message-title {
+        font-size: 18px;
+      }
+      .message-words {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin: 18px 0;
+      }
+      .selected {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        background: var(--soft);
+        border-radius: 8px;
+        font-size: 19px;
+      }
+      .message-actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .message-actions button {
+        min-width: 0;
+        padding-inline: 10px;
+      }
+      .categories {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 22px 0;
+      }
+      .categories .button {
+        min-height: 52px;
+      }
+      .communication .tiles {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      .communication .tile {
+        min-height: 152px;
+      }
+      .quiet-actions {
+        margin-top: 24px;
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 14px;
+      }
+      .note {
+        font-size: 14px;
+        color: var(--muted);
+        margin-top: 20px;
+        line-height: 1.5;
+      }
+      .review-phrase {
+        font-size: 23px;
+        line-height: 1.4;
+      }
+      .divider {
+        border: 0;
+        border-top: 1px solid var(--line);
+        margin: 24px 0;
+      }
+      .stat {
+        font-size: 32px;
+        font-weight: 700;
+      }
+      .admin .sidebar {
+        background: #e8edf0;
+      }
+      .admin .sidebar .current {
+        background: #294a60;
+      }
+      .admin .badge {
+        background: #e5edf3;
+      }
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+        margin-bottom: 22px;
+      }
+      .metric-grid .panel {
+        padding: 18px;
+      }
+      .handoff {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 36px 24px;
+      }
+      .handoff > * + * {
+        margin-top: 24px;
+      }
+      .steps {
+        display: grid;
+        gap: 14px;
+        padding-left: 24px;
+        line-height: 1.6;
+      }
+      .preview-label {
+        text-align: center;
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 12px;
+      }
+      #prototype-status {
+        max-width: 1180px;
+        margin: 16px auto;
+        padding: 0 20px;
+        min-height: 28px;
+        font-size: 14px;
+      }
+      footer {
+        max-width: 1180px;
+        margin: 24px auto;
+        padding: 0 20px;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      @media (max-width: 820px) {
+        .workspace {
+          grid-template-columns: 1fr;
+        }
+        .sidebar {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+          padding: 18px;
+        }
+        .brand {
+          margin-bottom: 14px;
+        }
+        .sidebar nav {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 4px;
+        }
+        .sidebar .hint {
+          display: none;
+        }
+        .columns {
+          grid-template-columns: 1fr;
+        }
+        .content {
+          padding: 20px;
+        }
+        .frame {
+          border-radius: 0;
+        }
+      }
+      @media (max-width: 540px) {
+        .content,
+        .communication {
+          padding: 16px;
+        }
+        .page-heading {
+          flex-direction: column;
+        }
+        .cards,
+        .metric-grid {
+          grid-template-columns: 1fr;
+        }
+        .tiles,
+        .communication .tiles {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .communication .heading {
+          flex-wrap: wrap;
+        }
+        .communication .heading h1 {
+          font-size: 25px;
+        }
+        .communication .heading .row {
+          width: 100%;
+        }
+        .communication .heading .row > * {
+          flex: 1;
+        }
+        .communication .message {
+          padding: 14px;
+        }
+        .selected {
+          padding: 8px;
+          font-size: 16px;
+        }
+        .message-actions {
+          gap: 8px;
+        }
+        .message-actions button {
+          font-size: 14px;
+          padding: 10px 5px;
+        }
+        .communication .tile {
+          min-height: 142px;
+        }
+        .tiles.preview {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .screen-title span {
+          float: none;
+          display: block;
+          margin-top: 6px;
+        }
+        .handoff {
+          padding: 24px 16px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          scroll-behavior: auto !important;
+        }
+      }
+      @media (forced-colors: active) {
+        .panel,
+        .tile,
+        .message,
+        .button,
+        button {
+          border: 2px solid CanvasText;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="prototype">
+      <h1>PictoFlow · Dossier de conception des trois espaces</h1>
+      <p>
+        Navigation des maquettes, hors application. Données fictives. Aucune
+        connexion, aucun appel API et aucune sauvegarde. Les symboles illustrent
+        les emplacements des dessins existants.
+      </p>
+      <nav aria-label="Choisir une maquette">
+        <a href="#communication" aria-current="page">1. Communiquer</a>
+        <a href="#people">2. Personnes accompagnées</a>
+        <a href="#person">3. Une personne</a>
+        <a href="#keyboard">4. Préparer le clavier</a>
+        <a href="#administration">5. Administration</a>
+        <a href="#assisted">6. Accès accompagné</a>
+      </nav>
+    </header>
+    <p class="caption">
+      <strong id="design-heading">La communication passe en premier</strong
+      ><span id="design-description"
+        >Le clavier et le message occupent l'écran. Les outils d'accompagnement
+        et d'administration ont leurs propres espaces.</span
+      >
+    </p>
+    <main>
+      <section
+        class="frame"
+        id="communication"
+        aria-labelledby="communication-title"
+      >
+        <h2 class="screen-title" id="communication-title" tabindex="-1">
+          Interface de communication
+          <span>Maquette · /communication/{profil}</span>
+        </h2>
+        <div class="communication mock">
+          <header class="heading">
+            <h1>Lina</h1>
+            <div class="row">
+              <button>Mes phrases</button><button>Options</button>
+            </div>
+          </header>
+          <section class="panel message" aria-label="Message illustratif">
+            <h2 class="message-title">Mon message</h2>
+            <div class="message-words">
+              <span class="selected">👤 Moi</span
+              ><span class="selected">🥛 Boire</span
+              ><span class="selected">💧 Eau</span>
+            </div>
+            <div class="message-actions">
+              <button class="primary">Parler</button><button>Annuler</button
+              ><button>Effacer</button>
+            </div>
+          </section>
+          <nav class="categories" aria-label="Catégories illustratives">
+            <button class="primary">Accueil</button
+            ><button>Manger et boire</button><button>Personnes</button
+            ><button>Activités</button>
+          </nav>
+          <div class="tiles" aria-label="Exemple de clavier">
+            <button class="tile fixed">
+              <span class="position">Repère stable</span
+              ><span class="drawing" aria-hidden="true">✅</span
+              ><span class="word">Oui</span>
+            </button>
+            <button class="tile fixed">
+              <span class="position">Repère stable</span
+              ><span class="drawing" aria-hidden="true">❌</span
+              ><span class="word">Non</span>
+            </button>
+            <button class="tile fixed">
+              <span class="position">Repère stable</span
+              ><span class="drawing" aria-hidden="true">✋</span
+              ><span class="word">Stop</span>
+            </button>
+            <button class="tile fixed">
+              <span class="position">Repère stable</span
+              ><span class="drawing" aria-hidden="true"
+                ><svg width="48" height="48" viewBox="0 0 64 64">
+                  <circle
+                    cx="32"
+                    cy="32"
+                    r="26"
+                    fill="#f0b6aa"
+                    stroke="#183a32"
+                    stroke-width="3"
+                  />
+                  <path
+                    d="M15 12 24 24M40 40 51 52M12 49 24 40M40 24 52 13"
+                    stroke="#fff"
+                    stroke-width="9"
+                  />
+                  <circle
+                    cx="32"
+                    cy="32"
+                    r="12"
+                    fill="#fff"
+                    stroke="#183a32"
+                    stroke-width="3"
+                  /></svg></span
+              ><span class="word">Aide</span>
+            </button>
+            <button class="tile">
+              <span class="drawing" aria-hidden="true">💧</span
+              ><span class="word">Eau</span>
+            </button>
+            <button class="tile">
+              <span class="drawing" aria-hidden="true">🍽️</span
+              ><span class="word">Manger</span>
+            </button>
+            <button class="tile">
+              <span class="drawing" aria-hidden="true">👩</span
+              ><span class="word">Maman</span>
+            </button>
+            <button class="tile">
+              <span class="drawing" aria-hidden="true">🏠</span
+              ><span class="word">Maison</span>
+            </button>
+          </div>
+          <div class="quiet-actions">
+            <button>Une phrase ?</button><span class="badge">1 / 2</span>
+          </div>
+          <p class="note">
+            L'option « Une phrase ? » ouvre un choix court : écouter, modifier,
+            confirmer ou refuser. Elle ne déplace aucune touche et ne valide
+            rien automatiquement.
+          </p>
+        </div>
+      </section>
+
+      <section class="frame" id="people" aria-labelledby="people-title" hidden>
+        <h2 class="screen-title" id="people-title" tabindex="-1">
+          Accompagnement <span>Maquette · /accompagnement</span>
+        </h2>
+        <div class="workspace mock">
+          <aside class="sidebar">
+            <span class="brand">PictoFlow</span>
+            <nav aria-label="Accompagnement illustratif">
+              <a class="current" href="#people">Mes personnes</a>
+            </nav>
+            <p class="hint">Un accompagnement adapté à chaque personne.</p>
+          </aside>
+          <div class="content">
+            <header class="page-heading">
+              <div>
+                <span class="eyebrow">ACCOMPAGNEMENT</span>
+                <h1>Mes personnes</h1>
+                <p>
+                  Retrouver un clavier et préparer la prochaine communication.
+                </p>
+              </div>
+              <button>Mon compte</button>
+            </header>
+            <label class="search"
+              >Rechercher une personne<input placeholder="Un prénom" readonly
+            /></label>
+            <div class="cards">
+              <article class="panel">
+                <div class="person">
+                  <span class="avatar" aria-hidden="true">L</span>
+                  <div>
+                    <h2>Lina</h2>
+                    <span class="muted">Son clavier, ses mots</span>
+                  </div>
+                </div>
+                <p><span class="badge">2 propositions à examiner</span></p>
+                <div class="row">
+                  <a class="button primary" href="#person">Ouvrir son espace</a
+                  ><a class="button" href="#communication">Communiquer</a>
+                </div>
+              </article>
+              <article class="panel">
+                <div class="person">
+                  <span class="avatar" aria-hidden="true">N</span>
+                  <div>
+                    <h2>Noé</h2>
+                    <span class="muted">Son clavier, ses mots</span>
+                  </div>
+                </div>
+                <p><span class="badge">Clavier prêt</span></p>
+                <div class="row">
+                  <button>Ouvrir son espace</button><button>Communiquer</button>
+                </div>
+              </article>
+            </div>
+            <p class="note">
+              Seules les personnes attribuées à ce compte apparaissent. Les
+              boutons de création de compte, de restauration et de configuration
+              technique sont réservés à l'administration.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="frame" id="person" aria-labelledby="person-title" hidden>
+        <h2 class="screen-title" id="person-title" tabindex="-1">
+          Espace d'une personne
+          <span>Maquette · /accompagnement/personnes/{profil}</span>
+        </h2>
+        <div class="workspace mock">
+          <aside class="sidebar">
+            <span class="brand">PictoFlow</span>
+            <nav aria-label="Personnes illustratives">
+              <a href="#people">Mes personnes</a
+              ><a class="current" href="#person">Lina</a
+              ><span class="nav-item">Noé</span>
+            </nav>
+            <p class="hint">
+              Les propositions restent à vérifier avec la personne.
+            </p>
+          </aside>
+          <div class="content">
+            <header class="page-heading">
+              <div>
+                <span class="eyebrow">ACCOMPAGNER LINA</span>
+                <h1>Son clavier, ses mots</h1>
+              </div>
+              <a class="button primary" href="#communication">Communiquer</a>
+            </header>
+            <nav class="tabs" aria-label="Sections illustratives">
+              <span class="active">Vue d'ensemble</span
+              ><a href="#keyboard">Clavier</a><span>Phrases</span
+              ><span>À vérifier</span><span>Vocabulaire</span>
+            </nav>
+            <div class="columns">
+              <section class="panel">
+                <h2>Aperçu de son clavier</h2>
+                <div class="tiles preview">
+                  <div class="tile">
+                    <span class="drawing" aria-hidden="true">💧</span
+                    ><span class="word">Eau</span>
+                  </div>
+                  <div class="tile">
+                    <span class="drawing" aria-hidden="true">🍽️</span
+                    ><span class="word">Manger</span>
+                  </div>
+                  <div class="tile">
+                    <span class="drawing" aria-hidden="true">👩</span
+                    ><span class="word">Maman</span>
+                  </div>
+                  <div class="tile">
+                    <span class="drawing" aria-hidden="true">🏠</span
+                    ><span class="word">Maison</span>
+                  </div>
+                  <div class="tile">
+                    <span class="drawing" aria-hidden="true">📖</span
+                    ><span class="word">Livre</span>
+                  </div>
+                  <div class="tile">
+                    <span class="drawing" aria-hidden="true">🧸</span
+                    ><span class="word">Jouet</span>
+                  </div>
+                </div>
+                <a class="button" href="#keyboard">Personnaliser son clavier</a>
+                <p class="muted">
+                  L'aperçu ne parle pas et ne compose aucun message.
+                </p>
+              </section>
+              <div class="stack">
+                <section class="panel">
+                  <h2>À vérifier ensemble</h2>
+                  <span class="badge">Proposition, à confirmer</span>
+                  <p class="review-phrase">Je voudrais boire de l'eau.</p>
+                  <p>Lina a choisi : Moi · Boire · Eau</p>
+                  <div class="row">
+                    <button class="primary">Confirmer</button
+                    ><button>Modifier</button><button>Refuser</button>
+                  </div>
+                  <p class="muted">
+                    Ces actions apparaissent seulement avec l'autorisation de
+                    validation.
+                  </p>
+                </section>
+                <section class="panel">
+                  <h2>Évolutions acceptées</h2>
+                  <p>« Jouet » ajouté au clavier.</p>
+                  <p>Une phrase habituelle enregistrée.</p>
+                  <button>Voir les changements</button>
+                </section>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="frame"
+        id="keyboard"
+        aria-labelledby="keyboard-title"
+        hidden
+      >
+        <h2 class="screen-title" id="keyboard-title" tabindex="-1">
+          Personnalisation du clavier
+          <span>Maquette · /accompagnement/personnes/{profil}/clavier</span>
+        </h2>
+        <div class="workspace mock">
+          <aside class="sidebar">
+            <span class="brand">PictoFlow</span>
+            <nav aria-label="Préparation illustrative">
+              <a href="#people">Mes personnes</a><a href="#person">Lina</a
+              ><a class="current" href="#keyboard">Son clavier</a>
+            </nav>
+          </aside>
+          <div class="content">
+            <header class="page-heading">
+              <div>
+                <span class="eyebrow">LE CLAVIER DE LINA</span>
+                <h1>Préparer une touche</h1>
+                <p>Un dessin et un mot, puis une place choisie.</p>
+              </div>
+              <a class="button" href="#person">Retour à Lina</a>
+            </header>
+            <nav class="tabs" aria-label="Étapes illustratives">
+              <span class="active">1. Dessin et mot</span
+              ><span>2. Vérifier</span><span>3. Choisir la place</span>
+            </nav>
+            <div class="columns">
+              <section class="panel">
+                <h2>Ce que la personne reconnaît</h2>
+                <label>Mot affiché<input value="Livre" readonly /></label>
+                <p>Dessin ou photo personnelle</p>
+                <div class="tiles preview">
+                  <div class="tile">
+                    <span class="drawing" aria-hidden="true">📖</span
+                    ><span class="word">Livre</span>
+                  </div>
+                  <div class="tile">
+                    <span class="drawing" aria-hidden="true">📷</span
+                    ><span class="word">Photo</span>
+                  </div>
+                  <div class="tile">
+                    <span class="drawing" aria-hidden="true">🧸</span
+                    ><span class="word">Autre dessin</span>
+                  </div>
+                </div>
+                <button>Choisir parmi les dessins</button
+                ><label
+                  >Ce que cette touche veut dire pour Lina<input
+                    value="Un livre à lire ensemble"
+                    readonly /></label
+                ><button class="primary">Vérifier cette touche</button>
+                <p class="muted">
+                  Une proposition est vérifiée avant d'apparaître sur son
+                  clavier.
+                </p>
+              </section>
+              <section class="panel">
+                <h2>Pages et placement</h2>
+                <div class="row">
+                  <button class="primary">Accueil</button
+                  ><button>Activités</button>
+                </div>
+                <div class="tiles preview">
+                  <div class="tile fixed">
+                    <span class="position">Repère stable</span
+                    ><span class="drawing" aria-hidden="true">✋</span
+                    ><span class="word">Stop</span>
+                  </div>
+                  <div class="tile">
+                    <span class="drawing" aria-hidden="true">📖</span
+                    ><span class="word">Livre</span>
+                  </div>
+                  <div class="tile">
+                    <span class="drawing" aria-hidden="true">💧</span
+                    ><span class="word">Eau</span>
+                  </div>
+                </div>
+                <button>Prévisualiser le placement</button>
+                <p class="muted">
+                  Les repères stables ne changent pas automatiquement de place.
+                  Un déplacement reste explicite et vérifié.
+                </p>
+              </section>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="frame admin"
+        id="administration"
+        aria-labelledby="administration-title"
+        hidden
+      >
+        <h2 class="screen-title" id="administration-title" tabindex="-1">
+          Console administrateur <span>Maquette · /admin</span>
+        </h2>
+        <div class="workspace mock">
+          <aside class="sidebar">
+            <span class="brand">PictoFlow / Admin</span>
+            <nav aria-label="Administration illustrative">
+              <a class="current" href="#administration">Vue d'ensemble</a
+              ><span class="nav-item">Comptes et accès</span
+              ><span class="nav-item">Profils</span
+              ><span class="nav-item">Moteur PCL</span
+              ><span class="nav-item">Fournisseurs IA</span
+              ><span class="nav-item">Référentiels</span
+              ><span class="nav-item">Audit</span
+              ><span class="nav-item">Maintenance</span>
+            </nav>
+          </aside>
+          <div class="content">
+            <header class="page-heading">
+              <div>
+                <span class="eyebrow">ADMINISTRATION</span>
+                <h1>Vue d'ensemble</h1>
+                <p>Pilotage de la plateforme et gestion des autorisations.</p>
+              </div>
+              <button>Mon compte</button>
+            </header>
+            <p class="note" style="margin: 0 0 20px">
+              Indicateurs fictifs. Cette maquette ne vérifie aucun service réel.
+            </p>
+            <div class="metric-grid">
+              <section class="panel">
+                <h2>Comptes</h2>
+                <p class="stat">3</p>
+                <button>Gérer</button>
+              </section>
+              <section class="panel">
+                <h2>Profils</h2>
+                <p class="stat">2</p>
+                <button>Ouvrir</button>
+              </section>
+              <section class="panel">
+                <h2>Services</h2>
+                <span class="badge">État illustratif</span
+                ><button>Voir le diagnostic</button>
+              </section>
+            </div>
+            <div class="columns">
+              <section class="panel">
+                <h2>Accès aux profils</h2>
+                <p>
+                  Choisir les personnes accompagnées et les actions autorisées
+                  pour chaque compte.
+                </p>
+                <button class="primary">Comptes et autorisations</button>
+                <hr class="divider" />
+                <h2>Administration du PCL</h2>
+                <p>Inspection des profils, provenance et décisions tracées.</p>
+                <button>Ouvrir un profil technique</button>
+              </section>
+              <div class="stack">
+                <section class="panel">
+                  <h2>Fournisseurs IA</h2>
+                  <p>État et diagnostic dans la console.</p>
+                  <span class="badge">Configuration serveur existante</span>
+                  <p class="muted">
+                    Le formulaire de configuration web n'existe pas encore.
+                  </p>
+                </section>
+                <section class="panel">
+                  <h2>Sauvegarde et maintenance</h2>
+                  <p>Procédures d'exploitation réservées à l'administrateur.</p>
+                  <span class="badge">Procédures serveur existantes</span>
+                  <p class="muted">
+                    Aucun bouton de sauvegarde globale fictif.
+                  </p>
+                </section>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="frame"
+        id="assisted"
+        aria-labelledby="assisted-title"
+        hidden
+      >
+        <h2 class="screen-title" id="assisted-title" tabindex="-1">
+          Démarrage accompagné <span>Maquette · futur parcours autorisé</span>
+        </h2>
+        <div class="handoff mock">
+          <span class="eyebrow">DEPUIS L'ESPACE D'UN ADULTE AUTORISÉ</span>
+          <h1>Ouvrir le clavier de Lina</h1>
+          <p>Lina peut communiquer sans saisir votre mot de passe.</p>
+          <section class="panel">
+            <div class="person">
+              <span class="avatar" aria-hidden="true">L</span>
+              <div>
+                <h2>Lina</h2>
+                <p>Son clavier personnel</p>
+              </div>
+            </div>
+            <ol class="steps">
+              <li>
+                L'adulte choisit le profil sur lequel il dispose d'un accès.
+              </li>
+              <li>
+                Le serveur limite cette session à la communication de Lina.
+              </li>
+              <li>
+                Le retour à l'accompagnement demande de nouveau
+                l'authentification de l'adulte.
+              </li>
+            </ol>
+            <button class="primary">
+              Commencer la communication accompagnée
+            </button>
+          </section>
+          <p class="note">
+            Ce mode reste à développer. Un simple lien vers le clavier ne
+            restreint pas une session parent. Les autres onglets, le bouton
+            Retour et les appels directs à l'API doivent respecter la
+            restriction serveur.
+          </p>
+          <a class="button" href="#person"
+            >Retour à la maquette d'accompagnement</a
+          >
+        </div>
+      </section>
+    </main>
+    <p id="prototype-status" role="status">
+      Les commandes dans les écrans sont illustratives ; seuls les liens entre
+      maquettes changent l'affichage.
+    </p>
+    <footer>
+      Document de conception du 18 octobre 2026. La navigation supérieure permet
+      de comparer des écrans ; l'application réelle redirigera selon les droits
+      du compte. Les permissions, l'accès accompagné et les actions métier ne
+      sont pas simulés par ce fichier. Aucun résultat d'essai avec une personne
+      n'est revendiqué.
+    </footer>
+    <script>
+      const descriptions = {
+        communication: [
+          "La communication passe en premier",
+          "Le clavier et le message occupent l'écran. Les outils d'accompagnement et d'administration ont leurs propres espaces.",
+        ],
+        people: [
+          "Un accompagnement centré sur les personnes",
+          "Un compte retrouve uniquement les personnes auxquelles il est explicitement autorisé.",
+        ],
+        person: [
+          "Le clavier et les décisions d’une personne",
+          "Aperçu, personnalisation et évolutions acceptées, sans vocabulaire technique ni interprétation médicale.",
+        ],
+        keyboard: [
+          "Un dessin, un mot et une place choisie",
+          "Réutiliser la création, la validation et la prévisualisation existantes, avec des étapes lisibles.",
+        ],
+        administration: [
+          "Les outils techniques dans leur propre console",
+          "Comptes, autorisations, profils et pilotage. Les fonctions disponibles et les fonctions à développer restent distinctes.",
+        ],
+        assisted: [
+          "Communiquer sans gérer seul un mot de passe",
+          "Un adulte ouvre une session réellement limitée côté serveur ; son retour aux outils demande une authentification.",
+        ],
+      };
+      function showScreen(moveFocus) {
+        const requested = location.hash.slice(1);
+        const current = Object.hasOwn(descriptions, requested)
+          ? requested
+          : "communication";
+        for (const screen of document.querySelectorAll(".frame"))
+          screen.hidden = screen.id !== current;
+        for (const link of document.querySelectorAll(".prototype nav a")) {
+          if (link.hash === "#" + current)
+            link.setAttribute("aria-current", "page");
+          else link.removeAttribute("aria-current");
+        }
+        document.getElementById("design-heading").textContent =
+          descriptions[current][0];
+        document.getElementById("design-description").textContent =
+          descriptions[current][1];
+        if (moveFocus)
+          document
+            .getElementById(current + "-title")
+            .focus({ preventScroll: true });
+      }
+      window.addEventListener("hashchange", () => showScreen(true));
+      document.addEventListener("click", (event) => {
+        const button = event.target.closest(".mock button");
+        if (button)
+          document.getElementById("prototype-status").textContent =
+            "Maquette : « " +
+            button.textContent.trim() +
+            " » est une commande illustrative, sans action métier ni sauvegarde.";
+      });
+      showScreen(false);
+    </script>
+  </body>
+</html>
