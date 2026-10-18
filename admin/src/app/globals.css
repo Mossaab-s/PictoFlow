@@ -1407,6 +1407,7 @@ pre {
   }
   aside nav {
     display: flex;
+    flex-wrap: wrap;
     margin-top: 12px;
   }
   aside nav a {
