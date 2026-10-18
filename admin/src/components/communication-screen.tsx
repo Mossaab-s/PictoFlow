@@ -17,7 +17,7 @@ import {
 import KeyboardGrid from "./keyboard-grid";
 import { HumanRoleSelector, ProfileNavigation } from "./profile-navigation";
 import { useAuthentication } from "./authentication";
-import { canPrepare, canProfile } from "@/lib/access";
+import { canPrepare, canProfile, profileToolPath } from "@/lib/access";
 import { useProfileKeyboard } from "./use-profile-keyboard";
 import { TouchContent } from "./pictogram";
 import ProfileIdentity from "./profile-identity";
@@ -742,7 +742,7 @@ export default function CommunicationScreen({
           {canEdit ? (
             <Link
               className="button-link secondary"
-              href={`/admin/profiles/${profileId}/keyboard?resume=1`}
+              href={`${profileToolPath(session, profileId, "keyboard")}?resume=1`}
               aria-disabled={pending}
               onClick={(event) => {
                 if (pending) event.preventDefault();
@@ -792,7 +792,7 @@ export default function CommunicationScreen({
                 {canEdit && (
                   <Link
                     className="button-link"
-                    href={`/admin/profiles/${profileId}/keyboard`}
+                    href={profileToolPath(session, profileId, "keyboard")}
                   >
                     Créer mes premières touches
                   </Link>
@@ -851,7 +851,7 @@ export default function CommunicationScreen({
             {canEdit ? (
               <Link
                 className="button-link secondary"
-                href={`/admin/profiles/${profileId}/keyboard`}
+                href={profileToolPath(session, profileId, "keyboard")}
                 aria-disabled={busy}
                 tabIndex={busy ? -1 : undefined}
                 onClick={(event) => {
@@ -863,8 +863,8 @@ export default function CommunicationScreen({
                   : "Modifier mon clavier"}
               </Link>
             ) : (
-              <Link className="button-link secondary" href="/admin/profiles">
-                Mes profils
+              <Link className="button-link secondary" href="/communication">
+                Mes claviers
               </Link>
             )}
           </div>
@@ -1045,7 +1045,7 @@ export default function CommunicationScreen({
               )}
               <Link
                 className="text-link"
-                href={`/admin/profiles/${profileId}/memory`}
+                href={profileToolPath(session, profileId, "memory")}
               >
                 Consulter la mémoire de ce profil →
               </Link>

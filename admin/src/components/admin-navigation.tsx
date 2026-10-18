@@ -7,6 +7,7 @@ export default function AdminNavigation() {
   const session = useAuthentication();
   return (
     <nav aria-label="Navigation principale">
+      <Link href="/admin">Vue d’ensemble</Link>
       <Link href="/admin/profiles">◌ Profils</Link>
       {isAdministrator(session) && (
         <Link href="/admin/providers">↗ Providers IA</Link>
@@ -14,6 +15,8 @@ export default function AdminNavigation() {
       {session?.enabled && session.account?.is_admin && (
         <Link href="/admin/access">Comptes et accès</Link>
       )}
+      <Link href="/accompagnement">Espace d’accompagnement</Link>
+      <Link href="/communication">Espace de communication</Link>
     </nav>
   );
 }

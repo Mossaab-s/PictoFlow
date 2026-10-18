@@ -2,8 +2,11 @@
 import { useEffect, useState } from "react";
 import { api, type Profile } from "@/lib/api";
 import { profileTitle } from "@/lib/profiles";
+import { isAdministrator } from "@/lib/access";
+import { useAuthentication } from "./authentication";
 
 export default function ProfileIdentity({ profileId }: { profileId: string }) {
+  const administrator = isAdministrator(useAuthentication());
   const [profile, setProfile] = useState<Profile | null>(null);
   useEffect(() => {
     const request = new AbortController();
@@ -18,8 +21,15 @@ export default function ProfileIdentity({ profileId }: { profileId: string }) {
     return () => request.abort();
   }, [profileId]);
   return (
-    <span className="profile-identity" title={`Identifiant : ${profileId}`}>
-      {profileTitle(profile?.id === profileId ? profile : { id: profileId })}
+    <span
+      className="profile-identity"
+      title={administrator ? `Identifiant : ${profileId}` : undefined}
+    >
+      {administrator
+        ? profileTitle(profile?.id === profileId ? profile : { id: profileId })
+        : profile?.id === profileId && profile.display_name
+          ? profile.display_name
+          : "Profil personnel"}
     </span>
   );
 }

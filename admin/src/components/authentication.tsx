@@ -1,10 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { api, APIError, setCSRFToken } from "@/lib/api";
-import { type AuthSession, pathPermitted } from "@/lib/access";
+import {
+  type AuthSession,
+  entryRedirect,
+  landingPath,
+  pathPermitted,
+} from "@/lib/access";
 import { vaultDatabase } from "@/lib/offline-vault";
 import { shellPrefix } from "@/lib/offline-shell";
 
@@ -60,7 +65,9 @@ export default function Authentication({
   children: React.ReactNode;
 }) {
   const path = usePathname();
+  const router = useRouter();
   const [session, setSession] = useState<AuthSession | null>(null);
+  const [checkedPath, setCheckedPath] = useState("");
   const [error, setError] = useState("");
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
@@ -99,6 +106,7 @@ export default function Authentication({
             value = { ...value, account: null, csrf_token: null };
           setCSRFToken(value.csrf_token);
           setSession(value);
+          setCheckedPath(path);
         }
       })
       .catch(() => {
@@ -111,6 +119,19 @@ export default function Authentication({
       cancelled = true;
     };
   }, [retry, path]);
+  const destination =
+    session && (!session.enabled || session.account) && checkedPath === path
+      ? entryRedirect(session, path)
+      : null;
+  useEffect(() => {
+    if (destination) {
+      // Preserve message recovery and phrase links on known legacy aliases only.
+      const query = path.startsWith("/admin/profiles/")
+        ? window.location.search
+        : "";
+      router.replace(destination + query);
+    }
+  }, [destination, path, router]);
   useEffect(() => {
     function expired() {
       setCSRFToken(null);
@@ -170,6 +191,7 @@ export default function Authentication({
       setCSRFToken(result.csrf_token);
       localLock(false);
       setSession({ enabled: true, ...result });
+      setCheckedPath(path);
       setRetry((value) => value + 1);
       setPassword("");
       channel.current?.postMessage("changed");
@@ -219,7 +241,7 @@ export default function Authentication({
     }
   }
   if (path === "/offline") return <>{children}</>;
-  if (!session)
+  if (!session || checkedPath !== path || destination)
     return (
       <main className="page auth-page">
         <h1>Accès à PictoFlow</h1>
@@ -294,7 +316,7 @@ export default function Authentication({
   return (
     <AuthContext.Provider value={session}>
       {session.enabled &&
-        (path.startsWith("/communication/") ? (
+        (path.startsWith("/communication") ? (
           <details className="account-bar communication-account">
             <summary>Mon compte</summary>
             <div className="account-controls">{accountControls}</div>
@@ -307,8 +329,8 @@ export default function Authentication({
       ) : (
         <main className="page">
           <h1>Ce profil ou cet écran ne vous est pas accessible.</h1>
-          <Link className="button-link" href="/admin/profiles">
-            Retrouver mes profils
+          <Link className="button-link" href={landingPath(session)}>
+            Retrouver mon espace
           </Link>
         </main>
       )}

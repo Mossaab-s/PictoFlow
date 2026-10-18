@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
 export default function Page() {
-  redirect("/admin/profiles");
+  // Authentication resolves entry from the current persisted grants before mounting a space.
+  return null;
 }

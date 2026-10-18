@@ -1,5 +1,7 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import AdminNavigation from "@/components/admin-navigation";
+export const metadata: Metadata = { title: "PictoFlow · Administration" };
 
 export default function AdminLayout({
   children,
@@ -7,10 +9,10 @@ export default function AdminLayout({
   return (
     <div className="app-shell">
       <aside>
-        <Link href="/admin/profiles" className="brand">
+        <Link href="/admin" className="brand">
           <span className="brand-mark">P</span>PictoFlow
         </Link>
-        <div className="sidebar-caption">ESPACE DE TRAVAIL</div>
+        <div className="sidebar-caption">ADMINISTRATION</div>
         <AdminNavigation />
         <div className="sidebar-note">
           Le sens appartient à la personne.

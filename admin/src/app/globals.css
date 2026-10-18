@@ -14,6 +14,76 @@
   border-radius: 9px;
   padding: 16px;
 }
+.space-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
+  gap: 20px;
+  margin-block: 28px;
+}
+.space-card {
+  display: block;
+  text-decoration: none;
+  color: var(--ink);
+  min-height: 140px;
+  overflow-wrap: anywhere;
+}
+a.space-card:hover {
+  border-color: var(--accent);
+  background: #f0f6f1;
+}
+.person-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  min-height: 230px;
+}
+.person-card h2 {
+  margin: 0;
+}
+.person-avatar {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 24px;
+  background: var(--soft);
+  font-size: 32px;
+  font-weight: 700;
+}
+.support-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 24px 32px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+.support-header .brand {
+  margin: 0;
+  flex-wrap: wrap;
+}
+.support-header .brand small {
+  font-size: 14px;
+  font-weight: 400;
+}
+.support-header nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+}
+.support-header nav a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.support-header a[aria-current="page"] {
+  font-weight: 700;
+}
 .account-form .profile-capabilities label {
   display: flex;
   align-items: center;
