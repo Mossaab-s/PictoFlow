@@ -240,6 +240,7 @@ function AccountCard({
           <label>
             Profil
             <select
+              aria-label="Profil"
               value={selected}
               onChange={(event) => setProfileId(event.target.value)}
             >

@@ -14,7 +14,7 @@
   border-radius: 9px;
   padding: 16px;
 }
-.profile-capabilities label {
+.account-form .profile-capabilities label {
   display: flex;
   align-items: center;
   gap: 12px;
