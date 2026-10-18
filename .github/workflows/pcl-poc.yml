@@ -97,6 +97,25 @@ jobs:
           PICTOFLOW_API_BASE_URL=http://127.0.0.1:8001/api/v1 npm run start -- --port 3131 > /tmp/pictoflow-ux-fake-ui.log 2>&1 &
           node --input-type=module -e 'const end=Date.now()+30000; for(;;){try{if((await fetch("http://127.0.0.1:3131/api/pictoflow/health")).ok)break;}catch{} if(Date.now()>end)process.exit(1);await new Promise(r=>setTimeout(r,300));}'
           node tests/e2e/ux-fake-formulation.mjs
+      - name: Prepare isolated authenticated capability API
+        id: capability-api
+        if: ${{ !cancelled() && steps.communication-build.outcome == 'success' }}
+        working-directory: backend
+        env:
+          PICTOFLOW_ENVIRONMENT: test
+          PICTOFLOW_AUTH_ENABLED: "true"
+          PICTOFLOW_AUTH_ORIGIN: http://127.0.0.1:3132
+          PICTOFLOW_CAPABILITY_TESTING: "1"
+        run: |
+          python -m tests.bootstrap_capability_accounts
+          python -m uvicorn app.main:app --host 127.0.0.1 --port 8002 --no-access-log > /tmp/pictoflow-capability-api.log 2>&1 &
+      - name: Verify real authenticated profile capabilities
+        if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
+        working-directory: admin
+        run: |
+          PICTOFLOW_API_BASE_URL=http://127.0.0.1:8002/api/v1 npm run start -- --port 3132 > /tmp/pictoflow-capability-ui.log 2>&1 &
+          node --input-type=module -e 'const end=Date.now()+30000; for(;;){try{if((await fetch("http://127.0.0.1:3132/api/pictoflow/health")).ok)break;}catch{} if(Date.now()>end)process.exit(1);await new Promise(r=>setTimeout(r,300));}'
+          node tests/e2e/profile-capabilities.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -109,3 +128,4 @@ jobs:
             admin/.local/selection-rhythm/*.png
             admin/.local/daily-pictograms/*.png
             admin/.local/ux-communication/*.png
+            admin/.local/profile-capabilities/*.png

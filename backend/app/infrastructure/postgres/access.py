@@ -9,8 +9,10 @@ from sqlalchemy import delete, func, select, text
 
 from app.application.access import (
     PASSWORDS,
+    PRESETS,
     AccountView,
     matches_password,
+    normalized_capabilities,
     password_hash,
     token_hash,
     username,
@@ -48,20 +50,20 @@ class Accounts:
 
     @staticmethod
     def view(session, row):
-        grants = dict(
-            session.execute(
-                select(ProfileAccessRow.profile_id, ProfileAccessRow.role).where(
-                    ProfileAccessRow.account_id == row.id
-                )
-            ).all()
-        )
+        grants = session.scalars(
+            select(ProfileAccessRow).where(ProfileAccessRow.account_id == row.id)
+        ).all()
         return AccountView(
             row.id,
             row.username,
             row.display_name,
             row.is_admin,
             row.active,
-            {str(key): value for key, value in grants.items()},
+            {str(grant.profile_id): grant.role for grant in grants},
+            {
+                str(grant.profile_id): normalized_capabilities(grant.capabilities)
+                for grant in grants
+            },
         )
 
     def create(self, login: str, display_name: str, password: str, *, admin=False, actor_id=None):
@@ -205,6 +207,8 @@ class Accounts:
             return self.view(session, row)
 
     def grant(self, target_id, profile_id, role, expected_role, *, actor_id):
+        if role is not None and role not in PRESETS:
+            raise ValueError("Unknown profile access preset")
         with self.factory.begin() as session:
             self.lock(session)
             target = session.get(AccountRow, target_id)
@@ -213,14 +217,22 @@ class Accounts:
             row = session.get(ProfileAccessRow, (target_id, profile_id))
             if (row.role if row else None) != expected_role:
                 raise AccessConflict("Profile access changed; reload before saving")
+            if row and normalized_capabilities(row.capabilities) != PRESETS[row.role]:
+                raise AccessConflict("Capabilities changed; use explicit permissions before saving")
             if role is None:
                 if row:
                     session.delete(row)
             elif row:
                 row.role = role
+                row.capabilities = list(PRESETS[role])
             else:
                 session.add(
-                    ProfileAccessRow(account_id=target_id, profile_id=profile_id, role=role)
+                    ProfileAccessRow(
+                        account_id=target_id,
+                        profile_id=profile_id,
+                        role=role,
+                        capabilities=list(PRESETS[role]),
+                    )
                 )
             self.event(
                 session,
@@ -228,6 +240,48 @@ class Accounts:
                 actor_id,
                 profile_id,
                 f"{target_id}:{role or 'revoked'}",
+            )
+
+    def grant_capabilities(
+        self, target_id, profile_id, capabilities, expected_capabilities, *, actor_id
+    ):
+        desired = normalized_capabilities(capabilities) if capabilities is not None else None
+        expected = (
+            normalized_capabilities(expected_capabilities)
+            if expected_capabilities is not None
+            else None
+        )
+        with self.factory.begin() as session:
+            self.lock(session)
+            target = session.get(AccountRow, target_id)
+            if target is None or target.is_admin or session.get(ProfileRow, profile_id) is None:
+                raise AccessConflict("Choose a non-administrator account and an existing profile")
+            row = session.get(ProfileAccessRow, (target_id, profile_id))
+            current = normalized_capabilities(row.capabilities) if row else None
+            if current != expected:
+                raise AccessConflict("Profile capabilities changed; reload before saving")
+            if desired is None:
+                if row:
+                    session.delete(row)
+            else:
+                role = "communicator" if set(desired) <= set(PRESETS["communicator"]) else "editor"
+                if row:
+                    row.role, row.capabilities = role, list(desired)
+                else:
+                    session.add(
+                        ProfileAccessRow(
+                            account_id=target_id,
+                            profile_id=profile_id,
+                            role=role,
+                            capabilities=list(desired),
+                        )
+                    )
+            self.event(
+                session,
+                "profile_capabilities_changed",
+                actor_id,
+                profile_id,
+                f"{target_id}:{','.join(desired) if desired else 'revoked'}",
             )
 
 

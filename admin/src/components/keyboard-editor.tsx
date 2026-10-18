@@ -1,4 +1,6 @@
 "use client";
+import { useAuthentication } from "./authentication";
+import { canProfile } from "@/lib/access";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { api, APIError } from "@/lib/api";
@@ -43,6 +45,11 @@ export default function KeyboardEditor({
   profileId: string;
   resume?: boolean;
 }) {
+  const canCommunicate = canProfile(
+    useAuthentication(),
+    profileId,
+    "communicate",
+  );
   const data = useProfileKeyboard(profileId);
   const [role, setRole] = useState<HumanRole>("user");
   const [conceptId, setConceptId] = useState("");
@@ -222,9 +229,11 @@ export default function KeyboardEditor({
               vérifiez leur sens avant d'ajouter la touche au clavier.
             </p>
           </div>
-          <Link className="button-link" href={`/communication/${profileId}`}>
-            Ouvrir la communication →
-          </Link>
+          {canCommunicate && (
+            <Link className="button-link" href={`/communication/${profileId}`}>
+              Ouvrir la communication →
+            </Link>
+          )}
         </div>
         <nav className="preparation-steps" aria-label="Étapes de préparation">
           <a href="#keyboard-create">1. Préparer une touche</a>
@@ -248,9 +257,14 @@ export default function KeyboardEditor({
               son repère de reprise est conservé ; aucune nouvelle touche n’y
               est ajoutée automatiquement.
             </p>
-            <Link className="button-link" href={`/communication/${profileId}`}>
-              Reprendre mon message
-            </Link>
+            {canCommunicate && (
+              <Link
+                className="button-link"
+                href={`/communication/${profileId}`}
+              >
+                Reprendre mon message
+              </Link>
+            )}
           </section>
         )}
         {data.error && (

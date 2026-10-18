@@ -73,6 +73,135 @@ def grant(client, user, profile_id, role, expected=None):
     )
 
 
+def capability_grant(client, user, profile_id, values, expected=None):
+    return client.put(
+        f"/api/v1/auth/users/{user.id}/profiles/{profile_id}/capabilities",
+        json={"capabilities": values, "expected_capabilities": expected},
+    )
+
+
+def test_limited_communication_and_review_are_independent_and_revocable(secured):
+    client, service, admin = secured
+    login(client)
+    p, other = profile(client), profile(client)
+    base = f"/api/v1/profiles/{p}"
+    user = service.create("limited", "Communication fictive", PHRASE)
+    capability_grant(client, user, p, ["communicate"]).raise_for_status()
+    block = client.post(
+        base + "/blocks/personal",
+        json={
+            "request_id": str(uuid4()),
+            "label": "Eau",
+            "pictogram_key": "water",
+            "actor_role": "user",
+        },
+    ).json()
+    client.post(
+        base + f"/blocks/{block['id']}/feedback",
+        json={
+            "action": "confirm",
+            "confirm_representation": True,
+            "actor_role": "user",
+        },
+    ).raise_for_status()
+    login(client, "limited")
+    assert client.get("/api/v1/auth/session").json()["account"]["profile_capabilities"][p] == [
+        "communicate"
+    ]
+    assert client.get(f"/api/v1/profiles/{other}/keyboard").status_code == 404
+    assert capability_grant(client, user, p, ["export_profile"], ["communicate"]).status_code == 403
+    seq = client.post(base + "/sequences", json={"session_id": str(uuid4())}).json()["id"]
+    client.post(
+        base + f"/sequences/{seq}/selection", json={"action": "append", "block_id": block["id"]}
+    ).raise_for_status()
+    client.post(
+        base + f"/sequences/{seq}/selection", json={"action": "complete"}
+    ).raise_for_status()
+    candidate = client.post(base + f"/sequences/{seq}/interpret", json={}).json()["candidates"][0]
+    feedback = base + f"/interpretations/{candidate['id']}/feedback"
+    assert (
+        client.post(feedback, json={"action": "confirm", "actor_role": "professional"}).status_code
+        == 403
+    )
+    assert client.get(base + f"/interpretations/{candidate['id']}").json()["status"] == "proposed"
+    service.grant_capabilities(
+        user.id, UUID(p), ["review_meanings"], ["communicate"], actor_id=admin.id
+    )
+    # The same cookie immediately sees the reduced/changed grant, without logging in again.
+    assert client.post(base + "/sequences", json={"session_id": str(uuid4())}).status_code == 403
+    client.post(feedback, json={"action": "confirm", "actor_role": "user"}).raise_for_status()
+    assert client.get(base + f"/interpretations/{candidate['id']}").json()["status"] == "confirmed"
+    service.grant_capabilities(user.id, UUID(p), None, ["review_meanings"], actor_id=admin.id)
+    assert client.get("/api/v1/profiles").json() == []
+    assert client.get(base + "/keyboard").status_code == 404
+    assert client.post(feedback, json={"action": "reject", "actor_role": "user"}).status_code == 404
+
+
+def test_stale_and_legacy_grant_edits_cannot_overwrite_custom_capabilities(secured):
+    client, service, _ = secured
+    login(client)
+    p = profile(client)
+    user = service.create("customized", "Droits fictifs", PHRASE)
+    grant(client, user, p, "communicator").raise_for_status()
+    capability_grant(
+        client, user, p, ["communicate"], ["review_meanings", "communicate"]
+    ).raise_for_status()
+    assert grant(client, user, p, "editor", "communicator").status_code == 409
+    assert grant(client, user, p, None, "communicator").status_code == 409
+    assert (
+        capability_grant(
+            client, user, p, ["export_profile"], ["communicate", "review_meanings"]
+        ).status_code
+        == 409
+    )
+    for invalid in ([], ["admin"], ["communicate", "communicate"]):
+        assert capability_grant(client, user, p, invalid, ["communicate"]).status_code == 422
+    users = client.get("/api/v1/auth/users").json()
+    actual = next(item for item in users if item["id"] == str(user.id))
+    assert actual["profile_capabilities"][p] == ["communicate"]
+    capability_grant(client, user, p, None, ["communicate"]).raise_for_status()
+
+
+@pytest.mark.parametrize(
+    "capability,method,route,body",
+    [
+        (
+            "prepare_keyboard",
+            "POST",
+            "/blocks/personal",
+            {
+                "label": "Livre",
+                "pictogram_key": "book",
+                "actor_role": "caregiver",
+            },
+        ),
+        ("manage_meanings", "POST", "/concepts", {"canonical_key": "TEST", "label": "Sens"}),
+        ("view_history", "GET", "/audit", None),
+        ("export_profile", "GET", "/backup", None),
+    ],
+)
+def test_custom_support_permissions_do_not_grant_communication_or_maintenance(
+    secured, capability, method, route, body
+):
+    client, service, _ = secured
+    login(client)
+    p = profile(client)
+    user = service.create("supporter", "Accompagnement fictif", PHRASE)
+    capability_grant(client, user, p, [capability]).raise_for_status()
+    login(client, "supporter")
+    base = f"/api/v1/profiles/{p}"
+    if body and route == "/blocks/personal":
+        body = {**body, "request_id": str(uuid4())}
+    result = client.request(method, base + route, json=body)
+    result.raise_for_status()
+    assert client.post(base + "/sequences", json={"session_id": str(uuid4())}).status_code == 403
+    assert client.delete(base + "/memory").status_code == 403
+    assert client.get(base + "/ai-quality").status_code == 403
+    assert client.get("/api/v1/providers").status_code == 403
+    if capability != "export_profile":
+        assert client.get(base + "/backup").status_code == 403
+
+
 def test_every_pcl_route_requires_authentication_before_accessing_data(secured):
     client, service, administrator = secured
     editor = replace(administrator, is_admin=False)
@@ -105,9 +234,13 @@ def test_every_pcl_route_requires_authentication_before_accessing_data(secured):
             if method not in ("get", "post", "put", "patch", "delete"):
                 continue
             if route.startswith("/api/v1/profiles/{profile_id}"):
-                assert permits(editor, "editor", method.upper(), route.removeprefix("/api/v1")), (
-                    method,
-                    route,
+                admin_only = route in (
+                    "/api/v1/profiles/{profile_id}/ai-quality",
+                    "/api/v1/profiles/{profile_id}/memory",
+                ) and (method == "delete" or route.endswith("/ai-quality"))
+                assert (
+                    permits(editor, "editor", method.upper(), route.removeprefix("/api/v1"))
+                    != admin_only
                 )
             result = client.request(method, path, json={} if method != "get" else None)
             assert result.status_code == 401, (method, route, result.status_code)
@@ -294,7 +427,7 @@ def test_editor_can_prepare_and_backup_but_not_manage_accounts_or_restore(secure
         ).status_code
         == 403
     )
-    assert client.delete(base + "/memory").status_code == 204
+    assert client.delete(base + "/memory").status_code == 403
 
 
 def test_revocation_applies_to_existing_sessions_and_stale_grants_are_refused(secured):
