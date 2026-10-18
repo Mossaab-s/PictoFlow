@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { api, type Profile } from "@/lib/api";
-import { type Account, type ProfileRole } from "@/lib/access";
+import {
+  type Account,
+  type ProfileCapability,
+  capabilityLabels,
+  capabilityPresets,
+  profileCapabilities,
+} from "@/lib/access";
 import { profileTitle } from "@/lib/profiles";
 import { useAuthentication } from "@/components/authentication";
 
@@ -159,7 +165,8 @@ function AccountCard({
   onChange: () => void;
 }) {
   const [profileId, setProfileId] = useState("");
-  const [role, setRole] = useState<ProfileRole | "">("");
+  const [capabilities, setCapabilities] = useState<ProfileCapability[]>([]);
+  const [loadedProfile, setLoadedProfile] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -167,8 +174,16 @@ function AccountCard({
   const [notice, setNotice] = useState("");
   const selected = profileId || profiles[0]?.id || "";
   useEffect(() => {
-    setRole(user.profile_access[selected] ?? "");
-  }, [selected, user.profile_access]);
+    setCapabilities([...profileCapabilities(user, selected)]);
+    setLoadedProfile(selected);
+  }, [selected, user.profile_access, user.profile_capabilities]);
+  const preset = !capabilities.length
+    ? ""
+    : (Object.entries(capabilityPresets).find(
+        ([, values]) =>
+          values.length === capabilities.length &&
+          values.every((value) => capabilities.includes(value)),
+      )?.[0] ?? "custom");
   async function change(
     path: string,
     method: string,
@@ -210,11 +225,13 @@ function AccountCard({
           onSubmit={(event) => {
             event.preventDefault();
             void change(
-              `profiles/${selected}`,
+              `profiles/${selected}/capabilities`,
               "PUT",
               {
-                role: role || null,
-                expected_role: user.profile_access[selected] ?? null,
+                capabilities: capabilities.length ? capabilities : null,
+                expected_capabilities: user.profile_access[selected]
+                  ? profileCapabilities(user, selected)
+                  : null,
               },
               "Accès enregistré. Il s’applique dès la prochaine requête.",
             );
@@ -223,6 +240,7 @@ function AccountCard({
           <label>
             Profil
             <select
+              aria-label="Profil"
               value={selected}
               onChange={(event) => setProfileId(event.target.value)}
             >
@@ -234,24 +252,64 @@ function AccountCard({
             </select>
           </label>
           <label>
-            Accès
+            Choix rapide
             <select
-              value={role}
+              value={preset}
+              disabled={busy}
               onChange={(event) =>
-                setRole(event.target.value as ProfileRole | "")
+                setCapabilities(
+                  event.target.value === ""
+                    ? []
+                    : [
+                        ...capabilityPresets[
+                          event.target.value as keyof typeof capabilityPresets
+                        ],
+                      ],
+                )
               }
             >
               <option value="">Aucun accès</option>
-              <option value="communicator">Communiquer</option>
-              <option value="editor">Préparer et communiquer</option>
+              <option value="communicator">
+                Communiquer et valider ses phrases
+              </option>
+              <option value="editor">Accompagnement complet</option>
+              <option value="custom" disabled>
+                Autorisations personnalisées
+              </option>
             </select>
           </label>
+          <fieldset
+            className="profile-capabilities"
+            disabled={busy || !selected || loadedProfile !== selected}
+          >
+            <legend>Autorisations de ce profil</legend>
+            {(
+              Object.entries(capabilityLabels) as [ProfileCapability, string][]
+            ).map(([capability, label]) => (
+              <label key={capability}>
+                <input
+                  type="checkbox"
+                  checked={capabilities.includes(capability)}
+                  onChange={(event) =>
+                    setCapabilities((values) =>
+                      event.target.checked
+                        ? [...values, capability]
+                        : values.filter((value) => value !== capability),
+                    )
+                  }
+                />
+                {label}
+              </label>
+            ))}
+          </fieldset>
           <p>
-            Communiquer : composer, lire, demander et valider une proposition.
-            Préparer : modifier aussi le clavier, les sens et la mémoire,
-            sauvegarder ou effacer les données du profil.
+            Ces droits s’appliquent uniquement à ce profil. Tout décocher retire
+            son accès. L’effacement de la mémoire et les diagnostics techniques
+            restent réservés à l’administrateur.
           </p>
-          <button disabled={busy || !selected}>Enregistrer l’accès</button>
+          <button disabled={busy || !selected || loadedProfile !== selected}>
+            Enregistrer l’accès
+          </button>
         </form>
       )}
       <details>

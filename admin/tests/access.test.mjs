@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   canPrepare,
+  canProfile,
+  profileCapabilities,
   isAdministrator,
   pathPermitted,
 } from "../src/lib/access.ts";
@@ -21,6 +23,41 @@ const session = {
     profile_access: { [p]: "communicator" },
   },
 };
+
+test("explicit capabilities override broad role labels and do not imply review or export", () => {
+  const limited = {
+    ...session,
+    account: {
+      ...session.account,
+      profile_access: { [p]: "editor" },
+      profile_capabilities: { [p]: ["communicate"] },
+    },
+  };
+  assert(pathPermitted(limited, `/communication/${p}`));
+  assert(!canProfile(limited, p, "review_meanings"));
+  assert(!canPrepare(limited, p));
+  assert(!pathPermitted(limited, `/admin/profiles/${p}/keyboard`));
+  assert(!pathPermitted(limited, `/admin/profiles/${p}/backup`));
+  assert(!pathPermitted(limited, `/admin/profiles/${p}/ai-quality`));
+  const missing = {
+    ...limited,
+    account: { ...limited.account, profile_capabilities: {} },
+  };
+  assert.deepEqual(profileCapabilities(missing.account, p), []);
+  assert(!pathPermitted(missing, `/communication/${p}`));
+  const prepare = {
+    ...limited,
+    account: {
+      ...limited.account,
+      profile_capabilities: { [p]: ["prepare_keyboard"] },
+    },
+  };
+  assert(canPrepare(prepare, p));
+  assert(pathPermitted(prepare, `/admin/profiles/${p}/keyboard`));
+  assert(!pathPermitted(prepare, `/communication/${p}`));
+  assert(!pathPermitted(prepare, `/admin/profiles/${p}/concepts`));
+  assert(!pathPermitted(prepare, `/admin/profiles/${p}/made-up`));
+});
 
 test("communication UI exposes only granted profiles; account management and preparation need their own permission", () => {
   assert(pathPermitted(session, `/communication/${p}`));

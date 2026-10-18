@@ -8,7 +8,15 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, SecretStr, StringConstraints
 
-from app.application.access import AccountView, ProfileRole, csrf_token, permits, username
+from app.application.access import (
+    AccountView,
+    ProfileCapability,
+    ProfileRole,
+    csrf_token,
+    normalized_capabilities,
+    permits,
+    username,
+)
 from app.infrastructure.postgres.access import AccessConflict, Accounts
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Accounts"])
@@ -68,7 +76,13 @@ def require_access(request: Request):
     role = account.profile_access.get(str(profile_id)) if profile_id else None
     if profile_id and not role and not account.is_admin:
         raise HTTPException(404, "Profile not found")
-    if not permits(account, role, request.method, route):
+    if not permits(
+        account,
+        role,
+        request.method,
+        route,
+        capabilities=account.profile_capabilities.get(str(profile_id), ()),
+    ):
         raise HTTPException(403, "Profile permission required")
     if request.method not in ("GET", "HEAD", "OPTIONS"):
         with accounts(request).factory.begin() as session:
@@ -121,6 +135,18 @@ class PasswordBody(Body):
 class GrantBody(Body):
     role: ProfileRole | None
     expected_role: ProfileRole | None
+
+
+CapabilitySelection = Annotated[
+    tuple[ProfileCapability, ...],
+    Field(min_length=1, max_length=6),
+    AfterValidator(normalized_capabilities),
+]
+
+
+class CapabilityBody(Body):
+    capabilities: CapabilitySelection | None
+    expected_capabilities: CapabilitySelection | None
 
 
 @router.get("/session")
@@ -237,4 +263,19 @@ def reset_password(request: Request, user_id: UUID, body: PasswordBody):
 def profile_grant(request: Request, user_id: UUID, profile_id: UUID, body: GrantBody):
     accounts(request).grant(
         user_id, profile_id, body.role, body.expected_role, actor_id=request.state.account.id
+    )
+
+
+@router.put(
+    "/users/{user_id}/profiles/{profile_id}/capabilities",
+    status_code=204,
+    dependencies=[Depends(administrator)],
+)
+def profile_capabilities(request: Request, user_id: UUID, profile_id: UUID, body: CapabilityBody):
+    accounts(request).grant_capabilities(
+        user_id,
+        profile_id,
+        body.capabilities,
+        body.expected_capabilities,
+        actor_id=request.state.account.id,
     )

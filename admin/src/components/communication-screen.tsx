@@ -17,7 +17,7 @@ import {
 import KeyboardGrid from "./keyboard-grid";
 import { HumanRoleSelector, ProfileNavigation } from "./profile-navigation";
 import { useAuthentication } from "./authentication";
-import { canPrepare } from "@/lib/access";
+import { canPrepare, canProfile } from "@/lib/access";
 import { useProfileKeyboard } from "./use-profile-keyboard";
 import { TouchContent } from "./pictogram";
 import ProfileIdentity from "./profile-identity";
@@ -53,7 +53,9 @@ export default function CommunicationScreen({
 }) {
   const data = useProfileKeyboard(profileId);
   const online = useOnlineStatus();
-  const canEdit = canPrepare(useAuthentication(), profileId);
+  const session = useAuthentication();
+  const canEdit = canPrepare(session, profileId);
+  const canReview = canProfile(session, profileId, "review_meanings");
   const display = useDisplaySettings(profileId);
   const contrast = useContrastSetting(profileId);
   const suggestions = useMemorySuggestionMode(profileId);
@@ -340,6 +342,7 @@ export default function CommunicationScreen({
     action: "confirm" | "correct" | "reject",
     corrected?: string,
   ) {
+    if (!canReview) return;
     const result = await api<Interpretation>(
       `${base}/interpretations/${candidate.id}/feedback`,
       {
@@ -994,14 +997,22 @@ export default function CommunicationScreen({
               <h2 ref={reviewHeading} tabIndex={-1}>
                 Vérifier ce que je veux dire
               </h2>
-              <details>
-                <summary>Qui valide ce message ?</summary>
-                <HumanRoleSelector
-                  value={role}
-                  onChange={setRole}
-                  disabled={pending}
-                />
-              </details>
+              {canReview && (
+                <details>
+                  <summary>Qui valide ce message ?</summary>
+                  <HumanRoleSelector
+                    value={role}
+                    onChange={setRole}
+                    disabled={pending}
+                  />
+                </details>
+              )}
+              {!canReview && (
+                <p className="helper">
+                  Vous pouvez lire les propositions. La validation demande un
+                  accès autorisé.
+                </p>
+              )}
               {decision.state === "not_understood" ? (
                 <div className="notice">
                   <p>
@@ -1020,6 +1031,7 @@ export default function CommunicationScreen({
                     <InterpretationCard
                       key={candidate.id}
                       candidate={candidate}
+                      canReview={canReview}
                       disabled={
                         pending || (accepted && candidate.status === "proposed")
                       }
@@ -1061,11 +1073,13 @@ export default function CommunicationScreen({
 
 function InterpretationCard({
   candidate,
+  canReview,
   disabled,
   feedback,
   read,
 }: {
   candidate: Interpretation;
+  canReview: boolean;
   disabled: boolean;
   feedback: (
     action: "confirm" | "correct" | "reject",
@@ -1121,7 +1135,7 @@ function InterpretationCard({
           Lire cette phrase
         </button>
       )}
-      {candidate.status === "proposed" && (
+      {canReview && candidate.status === "proposed" && (
         <>
           <div className="actions">
             <button
@@ -1167,7 +1181,7 @@ function InterpretationCard({
           </details>
         </>
       )}
-      {accepted && (
+      {canReview && accepted && (
         <button
           className="secondary"
           disabled={disabled}

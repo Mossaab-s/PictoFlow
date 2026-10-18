@@ -20,7 +20,7 @@ import {
 import { ProfileNavigation, HumanRoleSelector } from "./profile-navigation";
 import PhraseShortcut from "./phrase-shortcut";
 import { useAuthentication } from "./authentication";
-import { canPrepare } from "@/lib/access";
+import { canPrepare, canProfile } from "@/lib/access";
 import { TouchContent } from "./pictogram";
 import MemoryEvidence, { memoryDate } from "./memory-evidence";
 
@@ -34,7 +34,9 @@ type Category = "all" | "messages" | "blocks" | "relations";
 const pageSize = 10;
 
 export default function ProfileMemory({ profileId }: { profileId: string }) {
-  const canEdit = canPrepare(useAuthentication(), profileId);
+  const session = useAuthentication();
+  const canEdit = canPrepare(session, profileId);
+  const canHistory = canProfile(session, profileId, "view_history");
   const [validated, setValidated] = useState(true);
   const [bundle, setBundle] = useState<Bundle | null>(null);
   const [loading, setLoading] = useState(true);
@@ -207,8 +209,15 @@ export default function ProfileMemory({ profileId }: { profileId: string }) {
           {validated
             ? "Les messages affichés ont été acceptés ou corrigés. La phrase retenue respecte la correction humaine."
             : "Ces éléments restent des propositions. Cette lecture ne les valide pas."}{" "}
-          Les refus restent consultables dans{" "}
-          <Link href={`/admin/profiles/${profileId}/audit`}>l’historique</Link>.
+          {canHistory && (
+            <>
+              Les refus restent consultables dans{" "}
+              <Link href={`/admin/profiles/${profileId}/audit`}>
+                l’historique
+              </Link>
+              .
+            </>
+          )}
         </p>
         {error && (
           <p className="error" role="alert">

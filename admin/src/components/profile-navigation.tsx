@@ -4,7 +4,7 @@ import { sections, type Section } from "@/lib/api";
 import type { HumanRole } from "@/lib/keyboard";
 import ProfileIdentity from "./profile-identity";
 import { useAuthentication } from "./authentication";
-import { canPrepare } from "@/lib/access";
+import { pathPermitted } from "@/lib/access";
 
 export function ProfileNavigation({
   profileId,
@@ -13,7 +13,7 @@ export function ProfileNavigation({
   profileId: string;
   section: Section;
 }) {
-  const canEdit = canPrepare(useAuthentication(), profileId);
+  const session = useAuthentication();
   return (
     <>
       <header className="topbar">
@@ -23,7 +23,9 @@ export function ProfileNavigation({
       <nav className="tabs profile-tabs" aria-label="Sections du profil">
         {Object.entries(sections)
           .filter(
-            ([value]) => canEdit || ["communication", "memory"].includes(value),
+            ([value]) =>
+              !!session &&
+              pathPermitted(session, `/admin/profiles/${profileId}/${value}`),
           )
           .map(([value, title]) => (
             <Link

@@ -106,7 +106,17 @@ class ProfileAccessRow(Base):
         sa.ForeignKey("user_communication_profile.id", ondelete="CASCADE"), primary_key=True
     )
     role: Mapped[str] = mapped_column(sa.String(20))
-    __table_args__ = (states("role", ("communicator", "editor")),)
+    capabilities: Mapped[list[str]] = mapped_column(sa.ARRAY(sa.Text))
+    __table_args__ = (
+        states("role", ("communicator", "editor")),
+        sa.CheckConstraint(
+            "cardinality(capabilities) BETWEEN 1 AND 6 AND "
+            "array_position(capabilities, NULL) IS NULL AND "
+            "capabilities <@ ARRAY['communicate','review_meanings','prepare_keyboard',"
+            "'manage_meanings','view_history','export_profile']::text[]",
+            name="valid_capabilities",
+        ),
+    )
 
 
 class LoginWindowRow(Base):

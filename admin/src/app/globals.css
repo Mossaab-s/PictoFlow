@@ -9,6 +9,22 @@
   color: var(--ink);
   background: var(--bg);
 }
+.profile-capabilities {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 16px;
+}
+.account-form .profile-capabilities label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+}
+.profile-capabilities input[type="checkbox"] {
+  width: 22px;
+  min-height: 22px;
+  flex: 0 0 22px;
+}
 .memory-page {
   max-width: 1200px;
 }

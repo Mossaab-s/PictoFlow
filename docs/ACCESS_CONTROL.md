@@ -18,22 +18,33 @@ choisir ses profils, retirer un accès, désactiver le compte ou remplacer son m
 de passe. Le navigateur ne peut pas créer un administrateur. Il faut passer par
 la console du serveur pour ajouter un autre administrateur.
 
-| Action | Communiquer | Préparer et communiquer | Administrateur |
-| --- | --- | --- | --- |
-| Voir ses profils, touches et mémoire | Profils attribués | Profils attribués | Tous |
-| Composer, lire, demander une phrase | Oui | Oui | Oui |
-| Confirmer, corriger ou rejeter une phrase | Oui | Oui | Oui |
-| Importer explicitement son brouillon local | Oui | Oui | Oui |
-| Modifier touches, pages, concepts, relations et raccourcis | Non | Oui | Oui |
-| Exporter une sauvegarde ou effacer le PCL du profil | Non | Oui | Oui |
-| Créer ou restaurer un profil | Non | Non | Oui |
-| Gérer comptes et attributions, voir le provider | Non | Non | Oui |
+| Action                                                     | Communiquer       | Préparer et communiquer | Administrateur |
+| ---------------------------------------------------------- | ----------------- | ----------------------- | -------------- |
+| Voir ses profils, touches et mémoire                       | Profils attribués | Profils attribués       | Tous           |
+| Composer, lire, demander une phrase                        | Oui               | Oui                     | Oui            |
+| Confirmer, corriger ou rejeter une phrase                  | Oui               | Oui                     | Oui            |
+| Importer explicitement son brouillon local                 | Oui               | Oui                     | Oui            |
+| Modifier touches, pages, concepts, relations et raccourcis | Non               | Oui                     | Oui            |
+| Exporter une sauvegarde du profil                          | Non               | Oui                     | Oui            |
+| Effacer le PCL ou consulter le diagnostic technique IA     | Non               | Non                     | Oui            |
+| Créer ou restaurer un profil                               | Non               | Non                     | Oui            |
+| Gérer comptes et attributions, voir le provider            | Non               | Non                     | Oui            |
 
 Un nouveau compte n’a aucun profil attribué. Les changements d’attribution et
 d’état du compte utilisent la valeur précédemment lue ; un écran périmé reçoit
 409 et doit être actualisé. Désactiver le dernier administrateur ou son propre
 compte administrateur est refusé. Le rôle déclaré « utilisateur / aidant /
 professionnel » dans une validation ne donne **aucun droit d’accès**.
+
+La migration `0012_profile_capabilities` prépare les trois espaces avec des
+autorisations explicites par profil. Le tableau ci-dessus décrit les choix
+rapides historiques ; l’administrateur peut maintenant ajuster séparément la
+communication, la validation des phrases, la préparation du clavier, les sens,
+l’historique et l’export. Une ancienne page ne peut pas écraser ces choix
+personnalisés à partir du seul rôle historique. L’effacement de la mémoire et le
+diagnostic technique IA sont réservés à l’administrateur. Les attributions
+existantes conservent leurs autres droits ; les données PCL ne changent pas.
+Voir [les contrats et la migration](PROFILE_CAPABILITIES.md).
 
 L’API vérifie la session et les attributions à chaque requête, indépendamment
 des boutons affichés. Une session déjà ouverte perd donc son accès dès la

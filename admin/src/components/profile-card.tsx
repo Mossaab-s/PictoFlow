@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { api, APIError, type Profile } from "@/lib/api";
 import { profileTitle } from "@/lib/profiles";
 import { useAuthentication } from "./authentication";
-import { canPrepare } from "@/lib/access";
+import { canPrepare, canProfile, pathPermitted } from "@/lib/access";
 
 export default function ProfileCard({
   profile,
@@ -13,7 +13,21 @@ export default function ProfileCard({
   profile: Profile;
   onUpdate: (profile: Profile) => void;
 }) {
-  const canEdit = canPrepare(useAuthentication(), profile.id);
+  const session = useAuthentication();
+  const canEdit = canPrepare(session, profile.id);
+  const canCommunicate = canProfile(session, profile.id, "communicate");
+  const destination =
+    [
+      "keyboard",
+      "communication",
+      "memory",
+      "concepts",
+      "semantic-space",
+      "backup",
+    ]
+      .map((section) => `/admin/profiles/${profile.id}/${section}`)
+      .find((path) => !!session && pathPermitted(session, path)) ??
+    "/admin/profiles";
   const [name, setName] = useState(profile.display_name ?? "");
   const [busy, setBusy] = useState(false);
   const [blocked, setBlocked] = useState(false);
@@ -75,15 +89,7 @@ export default function ProfileCard({
       </div>
       <span className="tag">Personnel</span>
       <h2>
-        <Link
-          href={
-            canEdit
-              ? `/admin/profiles/${profile.id}/concepts`
-              : `/communication/${profile.id}`
-          }
-        >
-          {profileTitle(profile)}
-        </Link>
+        <Link href={destination}>{profileTitle(profile)}</Link>
       </h2>
       <p className="identifier">{profile.id}</p>
       <div className="profile-actions">
@@ -95,9 +101,11 @@ export default function ProfileCard({
             Préparer le clavier
           </Link>
         )}
-        <Link className="button-link" href={`/communication/${profile.id}`}>
-          Communiquer
-        </Link>
+        {canCommunicate && (
+          <Link className="button-link" href={`/communication/${profile.id}`}>
+            Communiquer
+          </Link>
+        )}
       </div>
       {canEdit && (
         <details className="profile-name-editor">

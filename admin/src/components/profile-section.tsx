@@ -3,6 +3,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, Row, sections, Section } from "@/lib/api";
 import ProfileIdentity from "./profile-identity";
+import { useAuthentication } from "./authentication";
+import { pathPermitted } from "@/lib/access";
 
 export default function ProfileSection({
   profileId,
@@ -11,6 +13,7 @@ export default function ProfileSection({
   profileId: string;
   section: Exclude<Section, "memory" | "ai-quality">;
 }) {
+  const session = useAuthentication();
   const [data, setData] = useState<unknown>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -70,15 +73,21 @@ export default function ProfileSection({
         <h1>{sections[section]}</h1>
         <p className="identifier">{profileId}</p>
         <nav className="tabs" aria-label="Sections du profil">
-          {Object.entries(sections).map(([value, title]) => (
-            <Link
-              key={value}
-              aria-current={value === section ? "page" : undefined}
-              href={`/admin/profiles/${profileId}/${value}`}
-            >
-              {title}
-            </Link>
-          ))}
+          {Object.entries(sections)
+            .filter(
+              ([value]) =>
+                !!session &&
+                pathPermitted(session, `/admin/profiles/${profileId}/${value}`),
+            )
+            .map(([value, title]) => (
+              <Link
+                key={value}
+                aria-current={value === section ? "page" : undefined}
+                href={`/admin/profiles/${profileId}/${value}`}
+              >
+                {title}
+              </Link>
+            ))}
         </nav>
         {section === "concepts" && (
           <form
