@@ -35,6 +35,7 @@ export default function SupportPerson({ profileId }: { profileId: string }) {
           Choisissez une activité. Chaque proposition attend une décision
           humaine avant d’entrer dans la mémoire validée.
         </p>
+        {canPreview && <Preview profileId={profileId} />}
         <div className="space-cards">
           {Object.entries(supportSections)
             .filter(
@@ -65,7 +66,6 @@ export default function SupportPerson({ profileId }: { profileId: string }) {
             </Link>
           )}
         </div>
-        {canPreview && <Preview profileId={profileId} />}
       </section>
     </>
   );
