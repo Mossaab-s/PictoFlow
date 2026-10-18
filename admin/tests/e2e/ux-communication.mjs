@@ -94,6 +94,17 @@ try {
       .locator(".communication-keyboard .communication-tile")
       .first();
     await first.waitFor();
+    assert.equal(
+      await page
+        .locator(".communication-suggestion-options")
+        .evaluate((element) => element.open),
+      false,
+    );
+    assert.equal(await page.locator(".memory-suggestions").isVisible(), false);
+    assert.equal(
+      await page.locator(".phrase-picker").evaluate((element) => element.open),
+      false,
+    );
     const box = await first.boundingBox();
     assert(
       box.y + box.height <= height,
@@ -111,6 +122,62 @@ try {
   const keyboard = page.locator(".communication-keyboard");
   await keyboard.getByRole("button", { name: "Boire", exact: true }).click();
   await page.locator(".message-touch").first().waitFor();
+  const suggestionsLink = page.locator(
+    'a[aria-controls="communication-suggestion-options"]',
+  );
+  await suggestionsLink.focus();
+  await suggestionsLink.press("Enter");
+  await page
+    .getByRole("group", { name: "Mode de suggestions", exact: true })
+    .waitFor();
+  await page.getByRole("button", { name: "Mots", exact: true }).click();
+  await page.keyboard.press("Escape");
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('a[aria-controls="communication-suggestion-options"]')
+        ?.getAttribute("aria-expanded") === "false",
+  );
+  assert(
+    await suggestionsLink.evaluate(
+      (element) => element === document.activeElement,
+    ),
+  );
+  assert.equal(await page.locator(".message-touch").count(), 1);
+  await suggestionsLink.click();
+  await page.getByRole("button", { name: "Désactivées", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Fermer les suggestions", exact: true })
+    .click();
+  assert(
+    await suggestionsLink.evaluate(
+      (element) => element === document.activeElement,
+    ),
+  );
+  const phrasesEntry = page.getByRole("button", {
+    name: "Mes phrases",
+    exact: true,
+  });
+  await phrasesEntry.focus();
+  await phrasesEntry.press("Enter");
+  await page.locator(".phrase-picker[open]").waitFor();
+  assert.equal(
+    await page
+      .locator(".communication-tools")
+      .evaluate((element) => element.open),
+    false,
+  );
+  await page.keyboard.press("Escape");
+  assert(
+    await phrasesEntry.evaluate(
+      (element) => element === document.activeElement,
+    ),
+  );
+  assert.equal(
+    await page.locator(".phrase-picker").evaluate((element) => element.open),
+    false,
+  );
+  assert.equal(await page.locator(".message-touch").count(), 1);
   await page
     .getByRole("button", { name: "Plus d’options", exact: true })
     .click();
@@ -336,6 +403,39 @@ try {
   );
   assert.equal(await page.locator(".message-touch").count(), 1);
   await page.unroute(selectionPath);
+  await page
+    .getByRole("button", { name: "Terminer mon message", exact: true })
+    .click();
+  await page.locator(".communication-memory").waitFor();
+  assert.equal(await page.locator(".composition-memory").isVisible(), false);
+  assert(await page.locator(".interpretation-panel").isVisible());
+  assert(
+    await page
+      .locator(".interpretation-panel")
+      .evaluate(
+        (element) =>
+          !!(
+            element.compareDocumentPosition(
+              document.querySelector(".communication-memory"),
+            ) & Node.DOCUMENT_POSITION_FOLLOWING
+          ),
+      ),
+  );
+  assert.equal(
+    await page
+      .getByLabel("Contexte que je souhaite préciser, facultatif", {
+        exact: true,
+      })
+      .isVisible(),
+    false,
+  );
+  await page.getByText("Ce que ma mémoire retient", { exact: true }).click();
+  await page
+    .getByRole("region", { name: "Mon PCL et ce message", exact: true })
+    .getByText("Aucun message déjà accepté", { exact: false })
+    .waitFor();
+  await page.getByText("Ce que ma mémoire retient", { exact: true }).click();
+  assert.equal((await call(base + "/memory")).interpretations.length, 0);
   await page.unroute(restorePath);
   await page
     .getByRole("button", { name: "Recharger le message", exact: true })

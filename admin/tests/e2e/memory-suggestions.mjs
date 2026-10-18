@@ -98,6 +98,12 @@ try {
       .getByRole("heading", { name: "Mon message terminé", exact: true })
       .waitFor();
     assert((await call(profile.base + "/sequences")).length > 0);
+    if (
+      !(await page
+        .locator(".communication-suggestion-options")
+        .evaluate((element) => element.open))
+    )
+      await page.locator(".communication-suggestion-options > summary").click();
   }
   await page.goto(`${origin}/communication/${own.p}`);
   await compose();

@@ -66,8 +66,12 @@ try {
     .click();
   await page.getByText("Boire une boisson", { exact: false }).first().waitFor();
   await page
+    .getByText("Préciser le contexte, facultatif", { exact: true })
+    .click();
+  await page
     .getByLabel("Contexte que je souhaite préciser, facultatif")
     .fill("À la maison");
+  await page.getByText("Ce que ma mémoire retient", { exact: true }).click();
   const learning = page.getByRole("region", {
     name: "Mon PCL et ce message",
     exact: true,
@@ -158,6 +162,7 @@ try {
   );
   assert.equal(interpretations, 1);
   await page.reload();
+  await page.getByText("Ce que ma mémoire retient", { exact: true }).click();
   await learning
     .getByRole("button", { name: "Retrouver cette phrase", exact: true })
     .waitFor();
@@ -248,6 +253,7 @@ try {
     },
   );
   await page.goto(`${origin}/communication/${second.p}`);
+  await page.getByText("Ce que ma mémoire retient", { exact: true }).click();
   const secondLearning = page.getByRole("region", {
     name: "Mon PCL et ce message",
     exact: true,
