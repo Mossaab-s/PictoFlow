@@ -127,6 +127,7 @@ try {
     const bodies = [];
     const routeURL = `**/api/pictoflow/${base}/${endpoint}`;
     await page.route(routeURL, async (route) => {
+      if (route.request().method() !== "POST") return route.continue();
       bodies.push(route.request().postDataJSON());
       const response = await route.fetch();
       assert(response.ok());
