@@ -11,7 +11,12 @@ from app.ai.contracts import ProviderHealth
 from app.application.ai_context import AIContext, context_for
 from app.application.ai_quality import QualitySummary
 from app.application.audit import AuditService
-from app.application.blocks import BlockService, RepresentationService
+from app.application.blocks import (
+    BlockService,
+    GapEvidence,
+    GapReviewConflict,
+    RepresentationService,
+)
 from app.application.communication import (
     CommunicationService,
     InterpretationReviewConflict,
@@ -47,7 +52,7 @@ from app.domain.pcl.entities import (
     ValidationAction,
     ValidationEvent,
 )
-from app.domain.pcl.gaps import GapPolicy, SemanticGapCandidate
+from app.domain.pcl.gaps import GapPolicy, GapStatus, SemanticGapCandidate
 from app.domain.pcl.keyboard import KeyboardGroup, KeyboardPosition, KeyboardZone
 from app.domain.pcl.pictograms import PictogramKey
 from app.infrastructure.postgres.ai_quality import quality_summary
@@ -206,6 +211,7 @@ class PictogramSelectionBody(Body):
 class GapDecisionBody(Body):
     approve: bool = Field(strict=True)
     actor_role: HumanRole
+    expected_status: Literal["proposed"] | None = None
 
 
 class PositionBody(Body):
@@ -723,6 +729,11 @@ def suggestions(request: Request, profile_id: UUID):
     return listing(request, profile_id, SemanticGapCandidate)
 
 
+@router.get("/profiles/{profile_id}/suggestions/{gap_id}/evidence", response_model=GapEvidence)
+def gap_evidence(request: Request, profile_id: UUID, gap_id: UUID):
+    return blocks(request).gap_evidence(profile_id, gap_id)
+
+
 @router.post(
     "/profiles/{profile_id}/suggestions/detect", response_model=tuple[SemanticGapCandidate, ...]
 )
@@ -734,9 +745,18 @@ def detect_gaps(request: Request, profile_id: UUID):
     "/profiles/{profile_id}/suggestions/{gap_id}/decision", response_model=SemanticGapCandidate
 )
 def decide_gap(request: Request, profile_id: UUID, gap_id: UUID, body: GapDecisionBody):
-    return blocks(request).decide_gap(
-        profile_id, gap_id, approve=body.approve, actor_role=body.actor_role
-    )
+    try:
+        return blocks(request).decide_gap(
+            profile_id,
+            gap_id,
+            approve=body.approve,
+            actor_role=body.actor_role,
+            expected_status=GapStatus.PROPOSED if body.expected_status else None,
+        )
+    except GapReviewConflict:
+        raise HTTPException(
+            409, "Vocabulary need already decided; reload before deciding"
+        ) from None
 
 
 @router.post(

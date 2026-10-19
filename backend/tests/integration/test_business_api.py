@@ -60,6 +60,97 @@ def evolution_fixture(api, profile_id=None):
     return base, candidate
 
 
+def need_fixture(api):
+    base, propose = evolution_fixture(api)
+    candidates = [propose() for _ in range(7)]
+    for item in candidates[:6]:
+        api.post(
+            base + f"/interpretations/{item['id']}/feedback",
+            json={
+                "action": "correct",
+                "actor_role": "user",
+                "corrected_value": "Je voudrais boire de l’eau.",
+            },
+        ).raise_for_status()
+    needs = api.post(base + "/suggestions/detect").json()
+    assert len(needs) == 1
+    return base, needs[0], candidates
+
+
+def test_need_evidence_is_current_bounded_and_read_only(api):
+    base, need, candidates = need_fixture(api)
+    resources = ("audit", "memory", "keyboard", "suggestions")
+    before = {name: api.get(base + "/" + name).json() for name in resources}
+    response = api.get(base + f"/suggestions/{need['id']}/evidence")
+    assert response.status_code == 200
+    value = response.json()
+    assert (value["occurrence_count"], value["validated_count"]) == (7, 6)
+    assert (value["minimum_occurrences"], value["minimum_validated"]) == (5, 4)
+    assert value["eligible"] is True and value["existing_block_match"] is False
+    assert len(value["examples"]) == 5
+    assert all(
+        example["interpretation"]["status"] == "corrected"
+        and example["sequence"]["id"] == example["interpretation"]["sequence_id"]
+        for example in value["examples"]
+    )
+    assert {name: api.get(base + "/" + name).json() for name in resources} == before
+    for item in candidates[:3]:
+        api.post(
+            base + f"/interpretations/{item['id']}/feedback",
+            json={"action": "reject", "actor_role": "user"},
+        ).raise_for_status()
+    value = api.get(base + f"/suggestions/{need['id']}/evidence").json()
+    assert value["validated_count"] == 3 and value["eligible"] is False
+    assert len(value["examples"]) == 3
+    assert (
+        api.post(
+            base + f"/suggestions/{need['id']}/decision",
+            json={"approve": True, "actor_role": "user", "expected_status": "proposed"},
+        ).status_code
+        == 400
+    )
+    assert api.get(base + "/suggestions").json()[0]["status"] == "proposed"
+
+
+def test_pending_need_decisions_reject_stale_writes_and_keep_legacy_explicit_changes(api):
+    base, need, _ = need_fixture(api)
+    path = base + f"/suggestions/{need['id']}/decision"
+    response = api.post(
+        path, json={"approve": True, "actor_role": "professional", "expected_status": "proposed"}
+    )
+    assert response.status_code == 200 and response.json()["status"] == "approved"
+    before = api.get(base + "/audit").json()
+    for approve in (True, False):
+        assert (
+            api.post(
+                path,
+                json={"approve": approve, "actor_role": "caregiver", "expected_status": "proposed"},
+            ).status_code
+            == 409
+        )
+    assert api.get(base + "/audit").json() == before
+    assert (
+        api.post(
+            path, json={"approve": False, "actor_role": "user", "expected_status": "approved"}
+        ).status_code
+        == 422
+    )
+    # Omitting the new precondition preserves existing intentional legacy transitions.
+    assert (
+        api.post(path, json={"approve": False, "actor_role": "caregiver"}).json()["status"]
+        == "rejected"
+    )
+    other = api.post("/api/v1/profiles").json()["id"]
+    assert api.get(f"/api/v1/profiles/{other}/suggestions/{need['id']}/evidence").status_code == 404
+    assert (
+        api.post(
+            f"/api/v1/profiles/{other}/suggestions/{need['id']}/decision",
+            json={"approve": True, "actor_role": "user", "expected_status": "proposed"},
+        ).status_code
+        == 404
+    )
+
+
 def test_meaning_evolution_filters_and_pages_real_decisions_without_mutating_pcl(api):
     base, candidate = evolution_fixture(api)
     accepted, refused, pending = candidate(), candidate(), candidate()

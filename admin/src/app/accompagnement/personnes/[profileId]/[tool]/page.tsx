@@ -6,6 +6,7 @@ import ProfileBackup from "@/components/profile-backup";
 import ProfileSection from "@/components/profile-section";
 import PhraseReview from "@/components/phrase-review";
 import MemoryEvolution from "@/components/memory-evolution";
+import VocabularyNeeds from "@/components/vocabulary-needs";
 export default async function Page({
   params,
   searchParams,
@@ -24,6 +25,8 @@ export default async function Page({
     return <PhraseReview key={profileId} profileId={profileId} />;
   if (section === "audit")
     return <MemoryEvolution key={profileId} profileId={profileId} />;
+  if (section === "suggestions")
+    return <VocabularyNeeds key={profileId} profileId={profileId} />;
   if (section === "keyboard")
     return (
       <KeyboardEditor

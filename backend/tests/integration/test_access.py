@@ -80,6 +80,34 @@ def capability_grant(client, user, profile_id, values, expected=None):
     )
 
 
+def test_need_evidence_and_decisions_keep_independent_profile_permissions(secured):
+    from tests.integration.test_business_api import need_fixture
+
+    client, service, admin = secured
+    login(client)
+    base, need, _ = need_fixture(client)
+    p = UUID(base.rsplit("/", 1)[-1])
+    user = service.create("need-reviewer", "Vocabulaire fictif", PHRASE)
+    service.grant_capabilities(user.id, p, ["prepare_keyboard"], None, actor_id=admin.id)
+    login(client, user.username)
+    evidence = base + f"/suggestions/{need['id']}/evidence"
+    decision = base + f"/suggestions/{need['id']}/decision"
+    body = {"approve": True, "actor_role": "professional", "expected_status": "proposed"}
+    assert client.get(evidence).status_code == 200
+    assert client.post(decision, json=body).status_code == 403
+    service.grant_capabilities(
+        user.id, p, ["manage_meanings"], ["prepare_keyboard"], actor_id=admin.id
+    )
+    assert client.get(evidence).status_code == 200
+    assert client.get(base + "/interpretations").status_code == 403
+    assert client.post(decision, json=body).status_code == 200
+    service.grant_capabilities(user.id, p, ["view_history"], ["manage_meanings"], actor_id=admin.id)
+    assert client.get(evidence).status_code == 200
+    assert client.post(decision, json={**body, "approve": False}).status_code == 403
+    service.grant_capabilities(user.id, p, None, ["view_history"], actor_id=admin.id)
+    assert client.get(evidence).status_code == 404
+
+
 def accompany(client, profile_id):
     response = client.post("/api/v1/auth/accompanied", json={"profile_id": profile_id})
     response.raise_for_status()

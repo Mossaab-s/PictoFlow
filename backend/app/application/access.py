@@ -223,7 +223,10 @@ def permits(
             )
         if route == "/profiles/{profile_id}/relations":
             return bool(granted & {"manage_meanings", "view_history"})
-        if route == "/profiles/{profile_id}/suggestions":
+        if route in {
+            "/profiles/{profile_id}/suggestions",
+            "/profiles/{profile_id}/suggestions/{gap_id}/evidence",
+        }:
             return bool(granted & {"manage_meanings", "prepare_keyboard", "view_history"})
         return route == "/profiles/{profile_id}/audit" and "view_history" in granted
     operation = method, route

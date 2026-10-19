@@ -1,6 +1,6 @@
 """Human-controlled gap approval, block activation and representation replacement."""
 
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from typing import Literal
 from uuid import UUID, uuid5
 
@@ -22,10 +22,33 @@ from app.domain.pcl.entities import (
     ValidationEvent,
     utc_now,
 )
-from app.domain.pcl.gaps import GapPolicy, GapStatus, SemanticGapCandidate
+from app.domain.pcl.gaps import GapPolicy, GapStatus, SemanticGapCandidate, sequence_signature
 from app.domain.pcl.invariants import DomainInvariantError
 from app.domain.pcl.keyboard import KeyboardGroup, KeyboardPosition, KeyboardZone, project_keyboard
 from app.domain.pcl.pictograms import PICTOGRAM_SOURCE, PictogramKey, pictogram_reference
+
+
+class GapReviewConflict(RuntimeError):
+    """A pending need has already been decided by another request."""
+
+
+@dataclass(frozen=True)
+class GapExample:
+    sequence: CommunicationSequence
+    interpretation: Interpretation
+
+
+@dataclass(frozen=True)
+class GapEvidence:
+    profile_id: UUID
+    gap_id: UUID
+    minimum_occurrences: int
+    minimum_validated: int
+    occurrence_count: int
+    validated_count: int
+    eligible: bool
+    existing_block_match: bool
+    examples: tuple[GapExample, ...]
 
 
 class BlockService:
@@ -55,11 +78,60 @@ class BlockService:
                 result.append(existing[key])
         return tuple(result)
 
-    def decide_gap(self, profile_id: UUID, gap_id: UUID, *, approve: bool, actor_role: HumanRole):
+    def gap_evidence(self, profile_id: UUID, gap_id: UUID):
+        """Read evidence through the existing exact-sequence policy, without writes."""
+        with self.units() as store:
+            gap = store.get(profile_id, SemanticGapCandidate, gap_id)
+            sequences = store.list(profile_id, CommunicationSequence)
+            interpretations = store.list(profile_id, Interpretation)
+            blocks = store.list(profile_id, CommunicationBlock)
+            matching = {
+                s.id: s
+                for s in sequences
+                if s.status == "completed"
+                and sequence_signature(s) == gap.source_sequence_signature
+            }
+            accepted = tuple(
+                i
+                for i in interpretations
+                if i.sequence_id in matching and i.validated_text == gap.validated_intent
+            )
+            eligible = any(
+                g.source_sequence_signature == gap.source_sequence_signature
+                and g.validated_intent == gap.validated_intent
+                for g in self.gaps.detect(profile_id, sequences, interpretations, blocks)
+            )
+            latest = sorted(accepted, key=lambda i: (i.created_at, i.id), reverse=True)[:5]
+            return GapEvidence(
+                profile_id,
+                gap_id,
+                self.gaps.minimum_occurrences,
+                self.gaps.minimum_validated,
+                len(matching),
+                len(accepted),
+                eligible,
+                any(
+                    b.status == "validated" and b.canonical_intent == gap.validated_intent
+                    for b in blocks
+                ),
+                tuple(GapExample(matching[i.sequence_id], i) for i in latest),
+            )
+
+    def decide_gap(
+        self,
+        profile_id: UUID,
+        gap_id: UUID,
+        *,
+        approve: bool,
+        actor_role: HumanRole,
+        expected_status: GapStatus | None = None,
+    ):
         if type(approve) is not bool:
             raise DomainInvariantError("Gap approval must be explicit")
         with self.units() as store:
             previous = store.get(profile_id, SemanticGapCandidate, gap_id)
+            if expected_status is not None and previous.status != expected_status:
+                raise GapReviewConflict("Vocabulary need already decided; reload")
             if previous.status == GapStatus.RESOLVED:
                 raise DomainInvariantError("Resolved gaps cannot be reopened")
             if any(

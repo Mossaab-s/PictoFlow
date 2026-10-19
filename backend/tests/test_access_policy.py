@@ -11,6 +11,27 @@ def account():
 
 
 @pytest.mark.parametrize(
+    "capability",
+    [
+        "communicate",
+        "review_meanings",
+        "prepare_keyboard",
+        "manage_meanings",
+        "view_history",
+        "export_profile",
+    ],
+)
+def test_need_evidence_is_an_explicit_narrow_read_permission(account, capability):
+    assert permits(
+        account,
+        None,
+        "GET",
+        "/profiles/{profile_id}/suggestions/{gap_id}/evidence",
+        capabilities=(capability,),
+    ) == (capability in {"prepare_keyboard", "manage_meanings", "view_history"})
+
+
+@pytest.mark.parametrize(
     "capability,allowed,denied",
     [
         (

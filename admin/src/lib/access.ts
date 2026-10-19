@@ -112,7 +112,7 @@ export const supportSections = {
   propositions: {
     section: "suggestions",
     title: "Besoins de vocabulaire",
-    capabilities: ["prepare_keyboard", "manage_meanings"],
+    capabilities: ["prepare_keyboard", "manage_meanings", "view_history"],
   },
   historique: {
     section: "audit",
