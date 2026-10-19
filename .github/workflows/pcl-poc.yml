@@ -97,6 +97,10 @@ jobs:
           PICTOFLOW_API_BASE_URL=http://127.0.0.1:8001/api/v1 npm run start -- --port 3131 > /tmp/pictoflow-ux-fake-ui.log 2>&1 &
           node --input-type=module -e 'const end=Date.now()+30000; for(;;){try{if((await fetch("http://127.0.0.1:3131/api/pictoflow/health")).ok)break;}catch{} if(Date.now()>end)process.exit(1);await new Promise(r=>setTimeout(r,300));}'
           node tests/e2e/ux-fake-formulation.mjs
+      - name: Explain literal proposals without retrying the model
+        if: ${{ !cancelled() && steps.fake-api.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/literal-explanations.mjs
       - name: Prepare isolated authenticated capability API
         id: capability-api
         if: ${{ !cancelled() && steps.communication-build.outcome == 'success' }}
@@ -156,6 +160,7 @@ jobs:
             admin/.local/selection-rhythm/*.png
             admin/.local/daily-pictograms/*.png
             admin/.local/ux-communication/*.png
+            admin/.local/literal-explanations/*.png
             admin/.local/profile-capabilities/*.png
             admin/.local/three-spaces/*.png
             admin/.local/support-review/*.png

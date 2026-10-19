@@ -4,6 +4,7 @@ import json
 from dataclasses import dataclass
 from uuid import UUID
 
+from app.application.ai_quality import FALLBACK_REASONS, FallbackReason
 from app.application.memory_vocabulary import MemoryReference, MemorySuggestionConflict, resolve
 from app.application.semantic_space import SemanticNotFoundError
 from app.domain.pcl.entities import Interpretation
@@ -20,11 +21,12 @@ class ContextReference:
 class AIContext:
     personal_hypothesis: bool
     references: tuple[ContextReference, ...]
+    fallback_reason: FallbackReason | None = None
 
 
 def context_for(units, profile_id, interpretation_id):
     with units() as store:
-        store.get(profile_id, Interpretation, interpretation_id)
+        interpretation = store.get(profile_id, Interpretation, interpretation_id)
         history = store.audit_history(
             profile_id, target_type="interpretation", target_id=interpretation_id, limit=100
         )
@@ -47,4 +49,9 @@ def context_for(units, profile_id, interpretation_id):
             except (MemorySuggestionConflict, SemanticNotFoundError):
                 text = None
             refs.append(ContextReference(reference.interpretation_id, text is not None, text))
-        return AIContext(bool(data.get("personal_hypothesis")), tuple(refs))
+        reason = data.get("fallback_reason")
+        return AIContext(
+            bool(data.get("personal_hypothesis")),
+            tuple(refs),
+            reason if interpretation.source == "pcl" and reason in FALLBACK_REASONS else None,
+        )

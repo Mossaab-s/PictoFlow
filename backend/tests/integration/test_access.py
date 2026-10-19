@@ -329,6 +329,12 @@ def test_limited_communication_and_review_are_independent_and_revocable(secured)
         base + f"/sequences/{seq}/selection", json={"action": "complete"}
     ).raise_for_status()
     candidate = client.post(base + f"/sequences/{seq}/interpret", json={}).json()["candidates"][0]
+    context_path = f"/interpretations/{candidate['id']}/ai-context"
+    context = client.get(base + context_path)
+    assert context.status_code == 200
+    assert context.json()["fallback_reason"] == "disabled"
+    assert client.get(f"/api/v1/profiles/{other}" + context_path).status_code == 404
+    assert client.get(base + "/audit").status_code == 403
     feedback = base + f"/interpretations/{candidate['id']}/feedback"
     assert (
         client.post(feedback, json={"action": "confirm", "actor_role": "professional"}).status_code
@@ -346,6 +352,7 @@ def test_limited_communication_and_review_are_independent_and_revocable(secured)
     assert client.get("/api/v1/profiles").json() == []
     assert client.get(base + "/keyboard").status_code == 404
     assert client.post(feedback, json={"action": "reject", "actor_role": "user"}).status_code == 404
+    assert client.get(base + context_path).status_code == 404
 
 
 def test_stale_and_legacy_grant_edits_cannot_overwrite_custom_capabilities(secured):

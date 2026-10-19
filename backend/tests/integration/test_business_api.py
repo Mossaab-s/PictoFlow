@@ -60,6 +60,69 @@ def evolution_fixture(api, profile_id=None):
     return base, candidate
 
 
+def test_literal_reason_is_candidate_scoped_read_only_and_unknown_for_legacy_audit(api):
+    from types import SimpleNamespace
+    from uuid import UUID
+
+    from sqlalchemy import select
+
+    from app.application.ai_context import context_for
+    from app.application.communication import CommunicationService
+    from app.application.interpretation import InterpretationService
+    from app.application.profile_archive import RestoreRequest, parse_archive
+    from app.domain.pcl.entities import HumanRole, Interpretation
+    from app.infrastructure.postgres.models import AuditRow
+    from app.infrastructure.postgres.profile_archives import PostgresProfileArchives
+
+    base, create = evolution_fixture(api)
+    original = create()
+    profile = UUID(original["profile_id"])
+    units = api.app.state.pcl_units
+    # Even a newer attempt on the same sequence has its own recorded cause.
+    newer = (
+        InterpretationService(
+            units, CommunicationService(units), SimpleNamespace(provider_id="synthetic")
+        )
+        .fallback(profile, UUID(original["sequence_id"]), "unavailable")
+        .candidates[0]
+    )
+    assert context_for(units, profile, newer.id).fallback_reason == "unavailable"
+    path = base + f"/interpretations/{original['id']}/ai-context"
+    before = api.get(base + "/audit").json()
+    assert api.get(path).json() == {
+        "personal_hypothesis": False,
+        "references": [],
+        "fallback_reason": "disabled",
+    }
+    assert api.get(base + "/audit").json() == before
+    assert api.get(base + "/memory").json()["interpretations"] == []
+    archives = PostgresProfileArchives(units.factory)
+    restored = archives.restore(
+        RestoreRequest(
+            request_id=uuid4(),
+            actor_role=HumanRole.USER,
+            confirm=True,
+            display_name="Explications fictives restaurées",
+            snapshot=parse_archive(archives.export(profile)),
+        )
+    )
+    with units() as store:
+        copied = store.list(restored.id, Interpretation)
+    assert {context_for(units, restored.id, item.id).fallback_reason for item in copied} == {
+        "disabled",
+        "unavailable",
+    }
+    # Simulate a pre-existing audit record with no candidate-level reason.
+    with api.app.state.pcl_units() as store:
+        row = store.session.scalar(
+            select(AuditRow).where(AuditRow.target_id == UUID(original["id"]))
+        )
+        state = dict(row.new_state)
+        state.pop("presentation")
+        row.new_state = state
+    assert api.get(path).json()["fallback_reason"] is None
+
+
 def need_fixture(api):
     base, propose = evolution_fixture(api)
     candidates = [propose() for _ in range(7)]
@@ -615,7 +678,17 @@ def test_invalid_personal_touch_creates_nothing(api, change, status):
 
 
 @pytest.mark.parametrize(
-    "kind", ["invalid", "refusal", "proposal", "unfaithful", "alternatives", "generation_failure"]
+    "kind",
+    [
+        "invalid",
+        "refusal",
+        "proposal",
+        "unfaithful",
+        "alternatives",
+        "generation_failure",
+        "low",
+        "unavailable",
+    ],
 )
 def test_strict_phrase_responses_never_promote_invalid_or_unconfirmed_meaning(api, kind):
     from app.ai.manager import ProviderManager
@@ -625,9 +698,13 @@ def test_strict_phrase_responses_never_promote_invalid_or_unconfirmed_meaning(ap
     output = {"status": "proposal", "candidates": []}
     if kind == "refusal":
         output["status"] = "not_understood"
-    elif kind == "proposal":
+    elif kind in ("proposal", "low"):
         output["candidates"] = [
-            {"intent": "DRINK", "text": "Je voudrais boire.", "confidence": 0.99}
+            {
+                "intent": "DRINK",
+                "text": "Je voudrais boire.",
+                "confidence": 0.1 if kind == "low" else 0.99,
+            }
         ]
     elif kind in ("unfaithful", "alternatives"):
         output["candidates"] = [
@@ -644,6 +721,8 @@ def test_strict_phrase_responses_never_promote_invalid_or_unconfirmed_meaning(ap
     def respond(request):
         requests.append(request)
         assert json.loads(request.content)["response_format"]["type"] == "json_schema"
+        if kind == "unavailable":
+            return httpx.Response(503, json={"error": "private failure"})
         if kind == "generation_failure":
             return httpx.Response(
                 400,
@@ -701,7 +780,25 @@ def test_strict_phrase_responses_never_promote_invalid_or_unconfirmed_meaning(ap
     assert api.get(path).json()["block_ids"] == [block["id"]]
     assert api.get(path).json()["status"] == "completed"
     assert api.get(base + "/memory").json()["interpretations"] == []
-    if kind in ("invalid", "refusal", "unfaithful", "generation_failure"):
+    assert response.status_code == 200
+    candidate = response.json()["candidates"][0]
+    context_path = f"/interpretations/{candidate['id']}/ai-context"
+    before_audit = api.get(base + "/audit").json()
+    context = api.get(base + context_path)
+    assert context.status_code == 200
+    assert context.json()["fallback_reason"] == {
+        "invalid": "invalid_payload",
+        "generation_failure": "invalid_payload",
+        "refusal": "model_refusal",
+        "unfaithful": "unfaithful_words",
+        "low": "low_confidence",
+        "unavailable": "unavailable",
+    }.get(kind)
+    assert "private" not in context.text
+    assert api.get(base + "/audit").json() == before_audit
+    assert len(requests) == 1  # Reading the reason never calls the provider again.
+    assert api.get(f"/api/v1/profiles/{foreign}" + context_path).status_code == 404
+    if kind in ("invalid", "refusal", "unfaithful", "generation_failure", "low", "unavailable"):
         assert response.status_code == 200
         candidate = response.json()["candidates"][0]
         assert candidate["text"] == "Boire" and candidate["source"] == "pcl"
