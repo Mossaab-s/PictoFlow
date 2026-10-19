@@ -184,6 +184,7 @@ export default function VocabularyNeeds({ profileId }: { profileId: string }) {
         <div className="actions" role="group" aria-label="Afficher les besoins">
           <button
             aria-pressed={pending}
+            className={pending ? undefined : "secondary"}
             disabled={busy}
             onClick={() => {
               setPending(true);
@@ -194,6 +195,7 @@ export default function VocabularyNeeds({ profileId }: { profileId: string }) {
           </button>
           <button
             aria-pressed={!pending}
+            className={pending ? "secondary" : undefined}
             disabled={busy}
             onClick={() => {
               setPending(false);
@@ -381,8 +383,8 @@ function NeedCard({
       <h2>{need.validated_intent}</h2>
       <p className="helper">
         Repéré le {memoryDate(need.created_at)} · {need.occurrence_count}{" "}
-        répétitions et {need.validated_count} phrases acceptées lors du
-        repérage.
+        répétitions et {need.validated_count} phrases acceptées dans le relevé
+        enregistré.
       </p>
       <details
         onToggle={(event) => {

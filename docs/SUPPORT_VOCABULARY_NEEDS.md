@@ -36,7 +36,7 @@ interpretations of the same phrase. This is not semantic clustering or an AI
 inference. The personal profile remains the scope of every read and decision.
 
 Opening the page, searching the list and opening examples are read-only. Detection
-is an explicit action. Each card distinguishes counts recorded at detection from
+is an explicit action. Each card distinguishes counts stored in the need record from
 current counts, displays the configured thresholds and shows up to five current
 accepted examples. Example dates are labelled as proposal dates; they do not claim
 to be acceptance dates. Original touch order and repetitions are preserved.

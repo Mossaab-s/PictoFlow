@@ -183,7 +183,7 @@ try {
   ).toBeVisible();
   assert.equal(await page.locator("pre,.identifier").count(), 0);
   await page
-    .getByLabel("Je prends la décision en tant que", { exact: true })
+    .getByRole("combobox", { name: /^Je prends la décision en tant que/ })
     .selectOption("professional");
   await noOverflow();
   await card(groups[0]).scrollIntoViewIfNeeded();
@@ -340,7 +340,7 @@ try {
     .getByRole("button", { name: "Refuser ce besoin", exact: true })
     .click();
   await expect(
-    page.getByLabel("Je prends la décision en tant que", { exact: true }),
+    page.getByRole("combobox", { name: /^Je prends la décision en tant que/ }),
   ).toHaveCount(0);
   await expect(button("Actualiser les besoins")).toBeEnabled();
   assert.equal((await current(groups[3])).status, "proposed");
