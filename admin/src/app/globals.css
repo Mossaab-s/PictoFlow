@@ -1686,7 +1686,7 @@ pre {
   :is(a, button, input, select, textarea, summary, [tabindex="-1"]) {
   scroll-margin-block: 50vh 24px;
 }
-.communication-page:has(.communication-keyboard :focus-visible)
+.communication-page:has(.communication-keyboard :focus-within)
   > .message-panel {
   position: static;
 }

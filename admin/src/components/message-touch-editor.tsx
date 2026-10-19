@@ -191,6 +191,7 @@ export default function MessageTouchEditor({
         <p id="remove-message-touch-help">
           Les autres touches garderont leur ordre.
         </p>
+        {busy && <p role="status">Retrait en cours…</p>}
         <div className="actions">
           <button type="button" autoFocus disabled={busy} onClick={cancel}>
             Garder cette touche

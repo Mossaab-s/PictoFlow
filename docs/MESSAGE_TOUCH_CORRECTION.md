@@ -34,10 +34,14 @@ selection. While speech is active the existing first-Escape-to-stop rule takes
 priority. All controls support mouse, Enter and Space; the message scroller
 keeps long compositions bounded. Correction makes the message panel follow
 document flow so it cannot cover the keyboard on small screens.
+The existing keyboard-focus rule now applies to pointer focus as well as visible
+keyboard focus, avoiding a sticky-panel position change when switching from
+Enter to a mouse click on the next touch.
 
 Selection and confirmation are disabled while the current state is loading,
-unavailable, offline or being saved. A pending save cannot be cancelled halfway
-through. An offline dialog can still be dismissed, and correction can be closed.
+unavailable, offline or being saved. A pending save displays **Retrait en cours…**
+inside the dialog and cannot be cancelled halfway through. An offline dialog can
+still be dismissed, and correction can be closed.
 No removal is queued for reconnection. Correction mode and the dialog are local
 to the mounted message/profile and reset after reload; only the existing sequence
 identifier is stored for server restoration.

@@ -191,11 +191,17 @@ try {
     (r) =>
       r.request().method() === "POST" && r.url().endsWith(`/${base}/sequences`),
   );
-  await keyboard.getByRole("button", { name: "Maman", exact: true }).click();
+  await keyboard.getByRole("button", { name: "Maman", exact: true }).focus();
+  await page.keyboard.press("Enter");
   const sequenceId = (await (await created).json()).id;
   const path = base + `/sequences/${sequenceId}`;
   const selectionURL = `**/api/pictoflow/${path}/selection`;
   await expect(words).toHaveText(["Maman"]);
+  await expect
+    .poll(() =>
+      message.evaluate((element) => getComputedStyle(element).position),
+    )
+    .toBe("static");
   for (const [label, total] of [
     ["Eau", 2],
     ["Livre", 3],
@@ -203,6 +209,14 @@ try {
   ]) {
     await keyboard.getByRole("button", { name: label, exact: true }).click();
     await expect(words).toHaveCount(total);
+    await expect(
+      keyboard.getByRole("button", { name: label, exact: true }),
+    ).toBeEnabled();
+    await expect
+      .poll(() =>
+        message.evaluate((element) => getComputedStyle(element).position),
+      )
+      .toBe("static");
   }
   const noEditCount = writes.length;
   const initialAudit = await call(base + "/audit");
@@ -228,10 +242,30 @@ try {
   });
 
   await occurrence("Eau", 2, 4).press("Space");
+  let releaseRemoval;
+  const heldRemoval = new Promise((resolve) => {
+    releaseRemoval = resolve;
+  });
+  let pendingRemoval = 0;
+  await page.route(selectionURL, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    pendingRemoval++;
+    await heldRemoval;
+    await route.continue();
+  });
   await confirm.press("Enter");
+  await expect.poll(() => pendingRemoval).toBe(1);
+  await expect(confirm).toBeDisabled();
+  await expect(keep).toBeDisabled();
+  await expect(dialog.getByRole("status")).toHaveText("Retrait en cours…");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeVisible();
+  await expect(words).toHaveText(["Maman", "Eau", "Livre", "Eau"]);
+  releaseRemoval();
   await expect(dialog).not.toBeVisible();
   await expect(words).toHaveText(["Maman", "Livre", "Eau"]);
   await expect(occurrence("Livre", 2, 3)).toBeFocused();
+  await page.unroute(selectionURL);
   assert.deepEqual((await call(path)).block_ids, [
     mother.id,
     book.id,
@@ -241,6 +275,7 @@ try {
     (req) => req.postDataJSON()?.action === "remove",
   );
   assert.equal(firstRemoval.length, 1);
+  assert.equal(pendingRemoval, 1);
   assert.deepEqual(firstRemoval[0].postDataJSON(), {
     action: "remove",
     index: 1,
