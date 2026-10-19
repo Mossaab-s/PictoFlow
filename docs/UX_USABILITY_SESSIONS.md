@@ -25,6 +25,13 @@ security. Existing real backend account/profile-isolation tests cover those
 boundaries. Speech is a deterministic test adapter, not evidence that a particular
 device has a usable installed voice.
 
+The later three-space increments also add real authenticated browser scenarios
+for grants, role entry, supporter review, accompanied sessions, memory evolution,
+vocabulary needs and administration. The [complete-journey validation](POC_COMPLETE_JOURNEY.md)
+connects UI preparation, six-touch communication, explicit review and later
+personal-memory reuse with separate accounts and a structured CI report. These
+automated results remain separate from the participant observations below.
+
 `tests/ux_fake_application.py` is a separate loopback-only CI adapter guarded by
 `PICTOFLOW_UX_TESTING=1`. It configures an exact fixture from a completed synthetic
 sequence. Normal application entry points and server Docker images do not import
