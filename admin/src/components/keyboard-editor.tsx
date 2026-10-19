@@ -25,6 +25,8 @@ import PictogramPicker from "./pictogram-picker";
 import PhotoPicker from "./photo-picker";
 import TouchPreparation, { type TouchDraft } from "./touch-preparation";
 import TouchLibrary from "./touch-library";
+import TouchPlacementPicker from "./touch-placement-picker";
+import { placementLimit } from "@/lib/keyboard-placement";
 import KeyboardPageManager from "./keyboard-page-manager";
 import KeyboardChangeReview from "./keyboard-change-review";
 import KeyboardUsage from "./keyboard-usage";
@@ -483,6 +485,8 @@ export default function KeyboardEditor({
                     profileId={profileId}
                     role={role}
                     visuals={data.representations}
+                    blocks={data.blocks}
+                    positions={data.positions}
                     perform={perform}
                     notice={setNotice}
                     key={block.id}
@@ -591,6 +595,8 @@ function BlockControls({
   profileId,
   role,
   visuals,
+  blocks,
+  positions,
   perform,
   notice,
   block,
@@ -609,6 +615,8 @@ function BlockControls({
   profileId: string;
   role: HumanRole;
   visuals: Representation[];
+  blocks: Block[];
+  positions: Position[];
   perform: (task: () => Promise<void>) => Promise<void>;
   notice: (value: string) => void;
   block: Block;
@@ -856,7 +864,7 @@ function BlockControls({
                   <input
                     type="number"
                     min={1}
-                    max={1000}
+                    max={placementLimit}
                     required
                     value={slot ?? (position?.position ?? 0) + 1}
                     onChange={(event) => {
@@ -867,6 +875,27 @@ function BlockControls({
                   />
                 </label>
               </div>
+              <TouchPlacementPicker
+                key={`${zone ?? position?.zone ?? "personal"}:${groupId ?? position?.group_id ?? "home"}`}
+                profileId={profileId}
+                block={block}
+                blocks={blocks}
+                positions={positions}
+                visuals={visuals}
+                groups={groups}
+                zone={zone ?? position?.zone ?? "personal"}
+                groupId={
+                  (zone ?? position?.zone) === "stable"
+                    ? null
+                    : (groupId ?? position?.group_id ?? "") || null
+                }
+                value={slot ?? (position?.position ?? 0) + 1}
+                disabled={busy}
+                onChange={(value) => {
+                  setSlot(value);
+                  setPreview(null);
+                }}
+              />
               <button className="secondary" disabled={busy}>
                 {(zone ?? position?.zone) === position?.zone &&
                 position?.zone !== "stable"

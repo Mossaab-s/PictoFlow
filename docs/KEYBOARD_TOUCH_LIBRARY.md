@@ -48,6 +48,7 @@ second time. Entering the editor with a touch fragment opens that card after the
 profile loads. Revealing a card does not save a placement or review a phrase.
 
 Existing placement forms retain their contracts: moves within a non-stable zone
+can now choose their destination using a [visual free-case selector](VISUAL_KEYBOARD_PLACEMENT.md), and
 require a server preview and explicit confirmation; direct zone changes use the
 existing explicit placement action. Occupied or stale destinations remain
 rejected by the server, the preview is cleared after a failed confirmation, and
