@@ -143,6 +143,7 @@ try {
   );
   await button("Revenir à la place choisie").click();
   await expect(choose(2)).toHaveAttribute("aria-pressed", "true");
+  await expect(choose(2)).toBeFocused();
   await slot.fill("1000");
   await expect(choose(1000)).toHaveAttribute("aria-pressed", "true");
   await expect(button("Places suivantes")).toBeDisabled();

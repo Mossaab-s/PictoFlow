@@ -47,6 +47,7 @@ export default function TouchPlacementPicker({
   );
   const previous = useRef<HTMLButtonElement>(null);
   const next = useRef<HTMLButtonElement>(null);
+  const slots = useRef<HTMLDivElement>(null);
   const layout = placementWindow(
     profileId,
     block.id,
@@ -74,6 +75,24 @@ export default function TouchPlacementPicker({
         (page === 0 ? next : previous).current?.focus();
     });
   }
+  function returnToSelection() {
+    setRange(null);
+    requestAnimationFrame(() => {
+      const grid = slots.current;
+      if (!grid) return;
+      const selected = grid.querySelector<HTMLButtonElement>(
+        'button[aria-pressed="true"]:not(:disabled)',
+      );
+      const free = grid.querySelector<HTMLButtonElement>(
+        "button:not(:disabled)",
+      );
+      (
+        selected ??
+        free ??
+        (next.current?.disabled ? previous.current : next.current)
+      )?.focus();
+    });
+  }
   if (!available)
     return (
       <p role="alert">
@@ -99,6 +118,7 @@ export default function TouchPlacementPicker({
         <>
           <div
             className="placement-slots"
+            ref={slots}
             data-columns={grid.columns}
             role="group"
             aria-label={`Cases de ${pageName} · ${zones[zone]}`}
@@ -184,7 +204,7 @@ export default function TouchPlacementPicker({
               type="button"
               className="secondary"
               disabled={disabled}
-              onClick={() => setRange(null)}
+              onClick={returnToSelection}
             >
               Revenir à la place choisie
             </button>

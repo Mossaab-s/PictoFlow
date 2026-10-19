@@ -26,6 +26,7 @@ import PhotoPicker from "./photo-picker";
 import TouchPreparation, { type TouchDraft } from "./touch-preparation";
 import TouchLibrary from "./touch-library";
 import TouchPlacementPicker from "./touch-placement-picker";
+import { placementLimit } from "@/lib/keyboard-placement";
 import KeyboardPageManager from "./keyboard-page-manager";
 import KeyboardChangeReview from "./keyboard-change-review";
 import KeyboardUsage from "./keyboard-usage";
@@ -863,7 +864,7 @@ function BlockControls({
                   <input
                     type="number"
                     min={1}
-                    max={1000}
+                    max={placementLimit}
                     required
                     value={slot ?? (position?.position ?? 0) + 1}
                     onChange={(event) => {
