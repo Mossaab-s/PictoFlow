@@ -41,6 +41,18 @@ function forgetMessageReferences() {
   }
 }
 
+function syncMessageReferences() {
+  const epoch = accessEpoch() ?? "";
+  const marker = accompaniedMarker();
+  if (
+    marker &&
+    (sessionStorage.getItem("pictoflow:session-epoch") !== epoch ||
+      ["pending", "locked"].includes(marker))
+  )
+    forgetMessageReferences();
+  sessionStorage.setItem("pictoflow:session-epoch", epoch);
+}
+
 async function forgetLocalCommunication() {
   let referencesBlocked = false;
   try {
@@ -114,6 +126,12 @@ export default function Authentication({
   }, [session?.enabled, session?.account?.id]);
   useEffect(() => {
     let cancelled = false;
+    try {
+      syncMessageReferences();
+    } catch {
+      /* Unavailable storage cannot restore a reference. */
+    }
+    observedEpoch.current = accessEpoch();
     setOfflineBlocked(!!accompaniedMarker());
     setPendingHandoff(accompaniedMarker() === "pending");
     if (path === "/offline") return;
@@ -177,12 +195,10 @@ export default function Authentication({
       observedEpoch.current = accessEpoch();
       setOfflineBlocked(!!accompaniedMarker());
       setPendingHandoff(accompaniedMarker() === "pending");
-      if (["pending", "locked"].includes(accompaniedMarker() ?? "")) {
-        try {
-          forgetMessageReferences();
-        } catch {
-          /* No cached message may be opened during handoff. */
-        }
+      try {
+        syncMessageReferences();
+      } catch {
+        /* Unavailable storage cannot restore a reference. */
       }
       if (event instanceof MessageEvent && event.data === "logout")
         localLock(true);
@@ -326,7 +342,8 @@ export default function Authentication({
         method: "POST",
         body: JSON.stringify({ username: login, password }),
       });
-      if (accompaniedMarker()) {
+      const returningFromHandoff = !!accompaniedMarker();
+      if (returningFromHandoff) {
         await forgetLocalCommunication();
         localStorage.removeItem(accompaniedKey);
       }
@@ -336,6 +353,8 @@ export default function Authentication({
       setCheckedPath(path);
       setRetry((value) => value + 1);
       setPassword("");
+      if (returningFromHandoff)
+        router.replace(landingPath({ enabled: true, ...result }));
       channel.current?.postMessage("changed");
       publishAccessChange();
     } catch (error) {

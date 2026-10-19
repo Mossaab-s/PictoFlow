@@ -188,6 +188,7 @@ export async function unlockVault(
       JSON.parse(new TextDecoder().decode(bytes)),
     );
     if (!record || !record.snapshot) throw failure();
+    requireLocalAccess();
     return { row, key, record };
   } catch {
     throw failure();

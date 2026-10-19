@@ -106,6 +106,10 @@ def test_accompanied_admin_is_scoped_rotated_and_requires_real_reauthentication(
     assert "SameSite=strict" in response.headers["set-cookie"]
     assert [item["id"] for item in client.get("/api/v1/profiles").json()] == [p]
     assert client.get(f"/api/v1/profiles/{p}/keyboard").status_code == 200
+    assert (
+        client.get(f"/api/v1/profiles/{p}/keyboard", headers={"x-csrf-token": old_csrf}).status_code
+        == 403
+    )
     assert client.get(f"/api/v1/profiles/{other}/keyboard").status_code == 404
     for path in (
         "/auth/users",
