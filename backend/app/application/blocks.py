@@ -223,10 +223,38 @@ class BlockService:
         label: str,
         *,
         pictogram_key: PictogramKey | None = None,
+        request_id: UUID | None = None,
     ):
         with self.units() as store:
             store.get(profile_id, Concept, concept_id)
-            return self._create(store, profile_id, concept_id, label, pictogram_key=pictogram_key)
+            block_id = uuid5(profile_id, f"concept-touch:{request_id}") if request_id else None
+            if block_id:
+                try:
+                    previous = store.get(profile_id, CommunicationBlock, block_id)
+                except SemanticNotFoundError:
+                    previous = None
+                if previous is not None:
+                    if previous.concept_id != concept_id or previous.label != label:
+                        raise DomainInvariantError("This creation ID already has a different touch")
+                    visual = (
+                        store.get(profile_id, Representation, previous.representation_id)
+                        if previous.representation_id
+                        else None
+                    )
+                    if (pictogram_key is None) != (visual is None) or (
+                        visual is not None
+                        and (
+                            visual.source != PICTOGRAM_SOURCE
+                            or visual.asset_reference != pictogram_reference(pictogram_key)
+                        )
+                    ):
+                        raise DomainInvariantError(
+                            "This creation ID already has a different drawing"
+                        )
+                    return previous
+            return self._create(
+                store, profile_id, concept_id, label, pictogram_key=pictogram_key, block_id=block_id
+            )
 
     def create_personal(
         self,

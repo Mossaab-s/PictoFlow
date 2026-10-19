@@ -758,6 +758,50 @@ textarea {
   max-width: 850px;
   margin: 28px 0;
 }
+.touch-preparation-progress {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.touch-preparation-progress li {
+  flex: 1;
+  min-width: 0;
+}
+.touch-preparation-progress button {
+  width: 100%;
+  min-height: 48px;
+  padding: 8px;
+  white-space: normal;
+}
+.touch-preparation-progress [aria-current="step"] {
+  border: 2px solid var(--accent);
+  background: #e9f1e7;
+  font-weight: 700;
+}
+.touch-preparation > section {
+  display: grid;
+  min-width: 0;
+  gap: 16px;
+}
+.touch-preparation input {
+  min-width: 0;
+}
+.touch-meaning-options > summary,
+.preparation-role > summary {
+  min-height: 48px;
+  align-content: center;
+}
+.touch-meaning-options label {
+  margin-top: 16px;
+}
+.touch-preparation-meaning {
+  overflow-wrap: anywhere;
+}
+.preparation-role {
+  margin-bottom: 16px;
+}
 .pictogram-filters {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

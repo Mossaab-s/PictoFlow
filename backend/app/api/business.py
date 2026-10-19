@@ -184,6 +184,7 @@ class BlockBody(Body):
     concept_id: UUID
     label: str = Field(min_length=1, max_length=256)
     pictogram_key: PictogramKey | None = None
+    request_id: UUID | None = None
 
 
 class BlockFeedbackBody(FeedbackBody):
@@ -513,7 +514,11 @@ def attach_representation(
 @router.post("/profiles/{profile_id}/blocks", status_code=201, response_model=CommunicationBlock)
 def create_block(request: Request, profile_id: UUID, body: BlockBody):
     return blocks(request).create(
-        profile_id, body.concept_id, body.label, pictogram_key=body.pictogram_key
+        profile_id,
+        body.concept_id,
+        body.label,
+        pictogram_key=body.pictogram_key,
+        request_id=body.request_id,
     )
 
 

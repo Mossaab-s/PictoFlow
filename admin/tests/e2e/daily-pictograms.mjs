@@ -75,12 +75,18 @@ try {
     .getByLabel("Rechercher un dessin", { exact: true })
     .fill("pomme");
   await picker.getByRole("radio", { name: "Pomme", exact: true }).check();
+  await page
+    .getByRole("button", { name: "Continuer : le mot", exact: true })
+    .click();
   assert.equal(
     await page
       .getByLabel("Texte affiché sur la touche", { exact: true })
       .inputValue(),
     "Pomme",
   );
+  await page
+    .getByRole("button", { name: "Revenir à l’image", exact: true })
+    .click();
   await picker.getByRole("combobox").selectOption("care");
   await picker
     .getByLabel("Rechercher un dessin", { exact: true })
@@ -115,6 +121,12 @@ try {
     return proposed;
   }
   await page
+    .getByRole("button", { name: "Continuer : le mot", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Voir la touche à vérifier", exact: true })
+    .click();
+  await page
     .getByRole("button", { name: "Créer la touche à vérifier", exact: true })
     .click();
   const apple = await confirm("Pomme");
@@ -124,6 +136,12 @@ try {
   await picker
     .getByRole("radio", { name: "Laver les mains", exact: true })
     .check();
+  await page
+    .getByRole("button", { name: "Continuer : le mot", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Voir la touche à vérifier", exact: true })
+    .click();
   await page
     .getByRole("button", { name: "Créer la touche à vérifier", exact: true })
     .click();

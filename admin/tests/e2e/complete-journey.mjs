@@ -167,17 +167,26 @@ try {
   ]) {
     active = review;
     await creator
+      .getByLabel("Rechercher un dessin", { exact: true })
+      .fill(word);
+    await creator.getByRole("radio", { name: word, exact: true }).check();
+    await creator
+      .getByRole("button", { name: "Continuer : le mot", exact: true })
+      .click();
+    await creator
       .getByLabel("Texte affiché sur la touche", { exact: true })
       .fill(word);
+    await creator
+      .getByText("Préciser le sens (facultatif)", { exact: true })
+      .click();
     await creator
       .getByLabel("Ce que cette touche signifie pour moi, facultatif", {
         exact: false,
       })
       .fill(meaning);
     await creator
-      .getByLabel("Rechercher un dessin", { exact: true })
-      .fill(word);
-    await creator.getByRole("radio", { name: word, exact: true }).check();
+      .getByRole("button", { name: "Voir la touche à vérifier", exact: true })
+      .click();
     await creator
       .getByRole("button", { name: "Créer la touche à vérifier", exact: true })
       .click();

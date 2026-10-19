@@ -55,18 +55,27 @@ try {
     .getByRole("heading", { name: "Ajouter le mot qui me manque", exact: true })
     .waitFor();
   await page
+    .getByLabel("Rechercher un dessin", { exact: true })
+    .first()
+    .fill("Eau");
+  await page.getByRole("radio", { name: "Eau", exact: true }).check();
+  await page
+    .getByRole("button", { name: "Continuer : le mot", exact: true })
+    .click();
+  await page
     .getByLabel("Texte affiché sur la touche", { exact: true })
     .fill("Eau");
+  await page
+    .getByText("Préciser le sens (facultatif)", { exact: true })
+    .click();
   await page
     .getByLabel("Ce que cette touche signifie pour moi, facultatif", {
       exact: false,
     })
     .fill("Mon verre d’eau");
   await page
-    .getByLabel("Rechercher un dessin", { exact: true })
-    .first()
-    .fill("Eau");
-  await page.getByRole("radio", { name: "Eau", exact: true }).check();
+    .getByRole("button", { name: "Voir la touche à vérifier", exact: true })
+    .click();
   await page
     .getByRole("button", { name: "Créer la touche à vérifier", exact: true })
     .click();
