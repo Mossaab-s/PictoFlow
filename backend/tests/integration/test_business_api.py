@@ -123,6 +123,39 @@ def test_literal_reason_is_candidate_scoped_read_only_and_unknown_for_legacy_aud
     )
 
 
+@pytest.mark.parametrize("drawing", [None, "water"])
+def test_existing_meaning_touch_creation_can_be_retried_without_duplicates(api, drawing):
+    p = api.post("/api/v1/profiles").json()["id"]
+    base = f"/api/v1/profiles/{p}"
+    concept = api.post(
+        base + "/concepts", json={"canonical_key": "WATER", "label": "Mon eau"}
+    ).json()
+    body = {
+        "concept_id": concept["id"],
+        "label": "Eau",
+        "pictogram_key": drawing,
+        "request_id": str(uuid4()),
+    }
+    first = api.post(base + "/blocks", json=body)
+    assert first.status_code == 201
+    original = first.json()
+    resources = ("blocks", "concepts", "representations", "audit", "keyboard", "memory")
+    before = {name: api.get(base + "/" + name).json() for name in resources}
+    repeated = api.post(base + "/blocks", json=body)
+    assert repeated.status_code == 201 and repeated.json()["id"] == original["id"]
+    for change in ({"label": "Autre mot"}, {"pictogram_key": "drink"}):
+        assert api.post(base + "/blocks", json={**body, **change}).status_code == 400
+    assert {name: api.get(base + "/" + name).json() for name in resources} == before
+    assert before["keyboard"] == [] and before["memory"]["interpretations"] == []
+    assert original["status"] == "proposed" and original["concept_id"] == concept["id"]
+    foreign = api.post("/api/v1/profiles").json()["id"]
+    assert api.post(f"/api/v1/profiles/{foreign}/blocks", json=body).status_code == 404
+    for _ in range(2):
+        legacy = api.post(base + "/blocks", json={**body, "request_id": None})
+        assert legacy.status_code == 201 and legacy.json()["id"] != original["id"]
+    assert len(api.get(base + "/blocks").json()) == 3
+
+
 def need_fixture(api):
     base, propose = evolution_fixture(api)
     candidates = [propose() for _ in range(7)]

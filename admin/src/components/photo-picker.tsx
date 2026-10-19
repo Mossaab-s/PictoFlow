@@ -21,6 +21,31 @@ export function PhotoImage({ src }: { src: string }) {
   );
 }
 
+export function PhotoPreview({
+  file,
+  label,
+}: {
+  file: File | null;
+  label?: string;
+}) {
+  const [preview, setPreview] = useState("");
+  useEffect(() => {
+    if (!file) {
+      setPreview("");
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+  return preview ? (
+    <div className="touch-sample" aria-label="Aperçu de la photo choisie">
+      <PhotoImage key={preview} src={preview} />
+      {label && <strong className="touch-word">{label}</strong>}
+    </div>
+  ) : null;
+}
+
 export default function PhotoPicker({
   file,
   onChange,
@@ -32,18 +57,12 @@ export default function PhotoPicker({
   disabled?: boolean;
   label?: string;
 }) {
-  const [preview, setPreview] = useState("");
   const [error, setError] = useState("");
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (!file) {
-      setPreview("");
       if (input.current) input.current.value = "";
-      return;
     }
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
   }, [file]);
   return (
     <div className="photo-picker">
@@ -63,6 +82,7 @@ export default function PhotoPicker({
           }}
         />
       </label>
+      {file && <p className="helper">Photo choisie : {file.name}</p>}
       <p>
         JPEG, PNG ou WebP, jusqu’à 5 Mo. Choisissez une image fixe que vous êtes
         autorisé à utiliser.
@@ -72,12 +92,7 @@ export default function PhotoPicker({
           {error}
         </p>
       )}
-      {preview && (
-        <div className="touch-sample" aria-label="Aperçu de la photo choisie">
-          <PhotoImage key={preview} src={preview} />
-          {label && <strong className="touch-word">{label}</strong>}
-        </div>
-      )}
+      <PhotoPreview file={file} label={label} />
     </div>
   );
 }

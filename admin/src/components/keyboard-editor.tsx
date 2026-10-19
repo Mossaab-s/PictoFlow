@@ -2,7 +2,7 @@
 import { useAuthentication } from "./authentication";
 import { canProfile } from "@/lib/access";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, APIError } from "@/lib/api";
 import {
   joinKeyboard,
@@ -23,6 +23,7 @@ import { useProfileKeyboard } from "./use-profile-keyboard";
 import { Pictogram, TouchContent } from "./pictogram";
 import PictogramPicker from "./pictogram-picker";
 import PhotoPicker from "./photo-picker";
+import TouchPreparation, { type TouchDraft } from "./touch-preparation";
 import KeyboardPageManager from "./keyboard-page-manager";
 import KeyboardChangeReview from "./keyboard-change-review";
 import KeyboardUsage from "./keyboard-usage";
@@ -33,7 +34,6 @@ import {
 import { photoBase64, photoUrl, photoSource } from "@/lib/photos";
 import {
   pictogramFromReference,
-  pictograms,
   pictogramSource,
   type PictogramKey,
 } from "@/lib/pictograms";
@@ -52,12 +52,13 @@ export default function KeyboardEditor({
   );
   const data = useProfileKeyboard(profileId);
   const [role, setRole] = useState<HumanRole>("user");
-  const [conceptId, setConceptId] = useState("");
-  const [label, setLabel] = useState("");
-  const [meaning, setMeaning] = useState("");
-  const [pictogramKey, setPictogramKey] = useState<PictogramKey | null>(null);
-  const [visualMode, setVisualMode] = useState<"drawing" | "photo">("drawing");
-  const [photo, setPhoto] = useState<File | null>(null);
+  const [createdId, setCreatedId] = useState<string | null>(null);
+  useEffect(() => {
+    if (createdId && data.blocks.some((b) => b.id === createdId)) {
+      document.getElementById(`prepared-${createdId}`)?.focus();
+      setCreatedId(null);
+    }
+  }, [createdId, data.blocks]);
   const [groupLabel, setGroupLabel] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
@@ -88,7 +89,14 @@ export default function KeyboardEditor({
       setBusy(false);
     }
   }
-  async function createBlock() {
+  async function createBlock({
+    label,
+    meaning,
+    conceptId,
+    pictogramKey,
+    visualMode,
+    photo,
+  }: TouchDraft) {
     const signature = JSON.stringify([
       label.trim(),
       visualMode,
@@ -100,9 +108,10 @@ export default function KeyboardEditor({
     if (creation.current?.signature !== signature) {
       creation.current = { signature, id: newIdentity() };
     }
+    let created: Block;
     if (visualMode === "photo") {
       if (!photo) throw new Error("Choisissez une photo.");
-      await sendPhoto(`${base}/blocks/photo`, "POST", {
+      created = await sendPhoto(`${base}/blocks/photo`, "POST", {
         request_id: creation.current.id,
         actor_role: role,
         label: label.trim(),
@@ -111,26 +120,25 @@ export default function KeyboardEditor({
         photo_base64: await photoBase64(photo),
       });
     } else
-      await api<Block>(`${base}/blocks${conceptId ? "" : "/personal"}`, {
-        method: "POST",
-        body: JSON.stringify({
-          ...(conceptId
-            ? { concept_id: conceptId }
-            : {
-                request_id: creation.current.id,
-                actor_role: role,
-                ...(meaning.trim() ? { meaning: meaning.trim() } : {}),
-              }),
-          label: label.trim(),
-          pictogram_key: pictogramKey,
-        }),
-      });
+      created = await api<Block>(
+        `${base}/blocks${conceptId ? "" : "/personal"}`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            ...(conceptId
+              ? { concept_id: conceptId, request_id: creation.current.id }
+              : {
+                  request_id: creation.current.id,
+                  actor_role: role,
+                  ...(meaning.trim() ? { meaning: meaning.trim() } : {}),
+                }),
+            label: label.trim(),
+            pictogram_key: pictogramKey,
+          }),
+        },
+      );
     creation.current = null;
-    setLabel("");
-    setMeaning("");
-    setConceptId("");
-    setPictogramKey(null);
-    setPhoto(null);
+    setCreatedId(created.id);
     setNotice(
       "La touche est prête à être vérifiée. Validez-la ci-dessous pour l'afficher dans le clavier.",
     );
@@ -243,7 +251,10 @@ export default function KeyboardEditor({
           <a href="#keyboard-organize">3. Organiser</a>
           <a href="#keyboard-preview">Voir l’aperçu</a>
         </nav>
-        <HumanRoleSelector value={role} onChange={setRole} disabled={busy} />
+        <details className="preparation-role">
+          <summary>Qui prépare et valide ce clavier ?</summary>
+          <HumanRoleSelector value={role} onChange={setRole} disabled={busy} />
+        </details>
         {resume && (
           <section className="panel" aria-label="Préparer un mot manquant">
             <h2>Ajouter le mot qui me manque</h2>
@@ -298,148 +309,18 @@ export default function KeyboardEditor({
                   Choisissez un dessin et écrivez votre mot. Vous vérifierez la
                   touche avant de l'utiliser.
                 </p>
-                <form
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    void perform(createBlock);
+                <TouchPreparation
+                  concepts={data.concepts}
+                  disabled={busy}
+                  onCreate={async (draft) => {
+                    let created = false;
+                    await perform(async () => {
+                      await createBlock(draft);
+                      created = true;
+                    });
+                    return created;
                   }}
-                >
-                  <label>
-                    Texte affiché sur la touche
-                    <input
-                      value={label}
-                      onChange={(event) => setLabel(event.target.value)}
-                      required
-                      maxLength={256}
-                      placeholder="Boire"
-                      disabled={busy}
-                    />
-                  </label>
-                  {!conceptId && (
-                    <label>
-                      Ce que cette touche signifie pour moi, facultatif
-                      <input
-                        value={meaning}
-                        onChange={(event) => setMeaning(event.target.value)}
-                        maxLength={256}
-                        disabled={busy}
-                        placeholder="Par exemple : mon ours pour me rassurer"
-                      />
-                      <span className="helper">
-                        Sans précision, le mot de la touche sert de sens. Ce
-                        sens sera vérifié avec le dessin avant utilisation.
-                      </span>
-                    </label>
-                  )}
-                  <details>
-                    <summary>
-                      Utiliser un sens déjà présent{" "}
-                      {conceptId ? "(sélectionné)" : "(facultatif)"}
-                    </summary>
-                    <p>
-                      Choisissez-le si cette touche exprime un sens personnel
-                      que vous avez déjà créé.
-                    </p>
-                    <label>
-                      Sens existant
-                      <select
-                        value={conceptId}
-                        onChange={(event) => {
-                          setConceptId(event.target.value);
-                          setLabel(
-                            data.concepts.find(
-                              (concept) => concept.id === event.target.value,
-                            )?.label ?? label,
-                          );
-                        }}
-                        disabled={busy}
-                      >
-                        <option value="">
-                          Créer un nouveau sens avec mon mot
-                        </option>
-                        {data.concepts.map((concept) => (
-                          <option key={concept.id} value={concept.id}>
-                            {concept.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </details>
-                  <div
-                    className="actions"
-                    role="group"
-                    aria-label="Image de la touche"
-                  >
-                    <button
-                      type="button"
-                      className="secondary"
-                      aria-pressed={visualMode === "drawing"}
-                      disabled={busy}
-                      onClick={() => setVisualMode("drawing")}
-                    >
-                      Dessin
-                    </button>
-                    <button
-                      type="button"
-                      className="secondary"
-                      aria-pressed={visualMode === "photo"}
-                      disabled={busy}
-                      onClick={() => setVisualMode("photo")}
-                    >
-                      Photo personnelle
-                    </button>
-                  </div>
-                  {visualMode === "photo" ? (
-                    <PhotoPicker
-                      file={photo}
-                      label={label.trim() || "Votre mot"}
-                      disabled={busy}
-                      onChange={(value) => {
-                        setPhoto(value);
-                        creation.current = null;
-                      }}
-                    />
-                  ) : (
-                    <PictogramPicker
-                      value={pictogramKey}
-                      onChange={(key) => {
-                        setPictogramKey(key);
-                        if (!label.trim() && !conceptId)
-                          setLabel(
-                            pictograms.find((drawing) => drawing.key === key)
-                              ?.label ?? "",
-                          );
-                      }}
-                      disabled={busy}
-                    />
-                  )}
-                  {visualMode === "drawing" && (
-                    <div
-                      className="touch-sample"
-                      aria-label="Aperçu de la nouvelle touche"
-                    >
-                      {visualMode === "drawing" && pictogramKey ? (
-                        <Pictogram pictogramKey={pictogramKey} />
-                      ) : (
-                        <span className="pictogram-missing" aria-hidden="true">
-                          ?
-                        </span>
-                      )}
-                      <strong className="touch-word">
-                        {label.trim() || "Votre mot"}
-                      </strong>
-                    </div>
-                  )}
-                  <button
-                    disabled={
-                      busy ||
-                      !label.trim() ||
-                      (visualMode === "photo" ? !photo : !pictogramKey)
-                    }
-                  >
-                    Créer la touche à vérifier
-                  </button>
-                </form>
+                />
               </section>
             </div>
             {proposed.length > 0 && (
@@ -467,7 +348,9 @@ export default function KeyboardEditor({
                         ));
                     return (
                       <section className="panel" key={block.id}>
-                        <h3>{block.label}</h3>
+                        <h3 id={`prepared-${block.id}`} tabIndex={-1}>
+                          {block.label}
+                        </h3>
                         <div className="touch-sample">
                           <TouchContent
                             label={block.label}
