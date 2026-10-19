@@ -274,6 +274,12 @@ try {
     .getByRole("button", { name: "Se connecter", exact: true })
     .click();
   await expect(limitedPage.locator(".account-bar")).toBeVisible();
+  // Finish the authorized landing page before observing reads from denied routes.
+  // Account controls can appear before SpaceProfiles has even started its GET.
+  await expect(limitedPage).toHaveURL(origin + "/accompagnement");
+  await expect(
+    limitedPage.getByRole("heading", { name: p.display_name, exact: true }),
+  ).toBeVisible();
   const deniedReads = [];
   limitedPage.on("request", (req) => {
     if (req.url().includes("/api/pictoflow/") && !req.url().includes("/auth/"))
