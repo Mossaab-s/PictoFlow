@@ -453,6 +453,43 @@ def test_strict_invalid_output_remains_explicit_and_redacted(fixtures, output):
     asyncio.run(scenario())
 
 
+@pytest.mark.parametrize("kind", ["generation", "other", "malformed", "oversized", "authorization"])
+def test_generation_http_error_is_distinct_bounded_redacted_and_never_retried(fixtures, kind):
+    requests = []
+
+    def respond(request):
+        requests.append(request)
+        body = {"error": {"code": "json_validate_failed", "failed_generation": "private text"}}
+        status = 400
+        if kind == "other":
+            body["error"]["code"] = "invalid_request_error"
+        if kind == "authorization":
+            status = 403
+        if kind == "malformed":
+            return httpx.Response(400, content=b"private text")
+        if kind == "oversized":
+            body["error"]["failed_generation"] = "private text" * 10_000
+        return httpx.Response(status, json=body)
+
+    async def scenario():
+        provider = OpenAICompatibleProvider(
+            "https://example.test/v1",
+            "model",
+            response_format="json_schema",
+            transport=httpx.MockTransport(respond),
+        )
+        try:
+            expected = ProviderPayloadError if kind == "generation" else ProviderUnavailableError
+            with pytest.raises(expected) as error:
+                await provider.interpret(fixtures.interpretations[0].request)
+            assert "private text" not in str(error.value)
+            assert len(requests) == 1
+        finally:
+            await provider.aclose()
+
+    asyncio.run(scenario())
+
+
 def test_unsupported_compatible_response_format_is_rejected_without_a_client():
     with pytest.raises(ProviderConfigurationError):
         OpenAICompatibleProvider("https://example.test/v1", "model", response_format="text")

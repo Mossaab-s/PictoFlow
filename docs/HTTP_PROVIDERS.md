@@ -27,9 +27,14 @@ stacks and is never a browser credential.
 
 The deployed Groq model `qwen/qwen3.8-27b` supports strict mode according to the
 [Groq Structured Outputs documentation](https://console.groq.com/docs/structured-outputs).
-Enable this setting in the private server environment when deploying the phrase
-schema correction. Real calls using synthetic data validated interpretation,
-simplification and representation proposals in this mode.
+Support does not establish reliability for every prompt/schema. A small synthetic
+comparison on 19 October 2026 returned contract-valid responses in 6/6 JSON Object
+calls, versus 1/3 with the current strict interpretation envelope. Experimental
+flat strict schemas did not establish a reliable improvement and are not shipped.
+For this Qwen integration, `json_object` is the evidenced starting setting; inspect
+the scoped diagnostics and measure representative use before choosing strict mode.
+This remains a manual operator setting and does not change the deployed instance.
+See [the probe summary](evaluations/groq-json-modes-20261019.json).
 
 For PRISM, configure its origin (without a `/v1` suffix), select `prism` mode and
 provide its API key locally if required. The native adapter sends `X-API-Key`;
@@ -76,6 +81,28 @@ follow redirects, inherit proxy environment settings or log payloads. Base URLs
 cannot contain credentials, queries or fragments. Errors contain static messages
 with no raw response or secret URL. A malformed output never creates validated
 semantic state.
+
+An HTTP 400 whose bounded error object has code `json_validate_failed` is a
+`ProviderPayloadError`, not evidence that the provider is unavailable. The
+interpretation diagnostic therefore records `invalid_payload` and uses the
+existing literal fallback. Only up to 64 KiB of that error body is examined; the
+failed generation is never logged, persisted or exposed. Other HTTP errors,
+malformed error bodies and oversized error bodies retain the existing static
+unavailability error. No extra request, format downgrade or retry is introduced.
+
+Groq documents union schemas as supported. The observed failures are generation
+errors, not proof that `anyOf` is unsupported. The strict wire contract, Pydantic
+consistency rules, lexical grounding and human-acceptance requirements remain
+unchanged. Deterministic adapter and PostgreSQL API tests cover redaction, bounds,
+one HTTP attempt, accurate durable fallback counts, preserved touches and no
+accepted memory from a failed generation.
+
+The live probes used only fabricated requests (toilets, a kiss and six selected
+touches), without reading or writing personal PCL records. The sample is small
+and does not establish general model quality or intended meaning. In particular,
+a successful JSON response can still be refused or filtered by the application.
+The report distinguishes contract validity from lexical retention; neither is a
+measure of semantic truth. Model/prompt changes need their own evaluation.
 
 PRISM maps `model_response` into the same contracts, translates an interpretation
 refusal to `not_understood`, and preserves available technical metadata: trace,

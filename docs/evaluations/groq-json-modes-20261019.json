@@ -1,0 +1,197 @@
+{
+  "date": "2026-10-19",
+  "provider": "Groq",
+  "model": "qwen/qwen3.8-27b",
+  "data": "fabricated requests only; no PCL reads or writes",
+  "results": [
+    {
+      "format": "current_strict",
+      "attempts": 3,
+      "contract_valid": 1,
+      "generation_errors": 2,
+      "cases": [
+        {
+          "case": "toilets",
+          "http": 400,
+          "error_code": "json_validate_failed"
+        },
+        {
+          "case": "kiss",
+          "http": 200,
+          "status": "proposal",
+          "contract_valid": true,
+          "candidate_count": 2,
+          "grounded_candidates": 1
+        },
+        {
+          "case": "six_touches",
+          "http": 400,
+          "error_code": "json_validate_failed"
+        }
+      ]
+    },
+    {
+      "format": "flat_strict_experiment",
+      "attempts": 3,
+      "contract_valid": 1,
+      "generation_errors": 2,
+      "cases": [
+        {
+          "case": "toilets",
+          "http": 400,
+          "error_code": "json_validate_failed"
+        },
+        {
+          "case": "kiss",
+          "http": 400,
+          "error_code": "json_validate_failed"
+        },
+        {
+          "case": "six_touches",
+          "http": 200,
+          "status": "proposal",
+          "contract_valid": true,
+          "candidate_count": 1,
+          "grounded_candidates": 1
+        }
+      ]
+    },
+    {
+      "format": "inline_strict_experiment",
+      "attempts": 3,
+      "contract_valid": 2,
+      "generation_errors": 1,
+      "cases": [
+        {
+          "case": "toilets",
+          "http": 200,
+          "status": "proposal",
+          "contract_valid": true,
+          "candidate_count": 1,
+          "grounded_candidates": 1
+        },
+        {
+          "case": "kiss",
+          "http": 200,
+          "status": "not_understood",
+          "contract_valid": true,
+          "candidate_count": 0,
+          "grounded_candidates": 0
+        },
+        {
+          "case": "six_touches",
+          "http": 400,
+          "error_code": "json_validate_failed"
+        }
+      ]
+    },
+    {
+      "format": "json_object",
+      "attempts": 6,
+      "contract_valid": 6,
+      "generation_errors": 0,
+      "cases": [
+        {
+          "case": "toilets",
+          "http": 200,
+          "status": "proposal",
+          "contract_valid": true,
+          "candidate_count": 1,
+          "grounded_candidates": 1
+        },
+        {
+          "case": "kiss",
+          "http": 200,
+          "status": "proposal",
+          "contract_valid": true,
+          "candidate_count": 2,
+          "grounded_candidates": 1
+        },
+        {
+          "case": "six_touches",
+          "http": 200,
+          "status": "proposal",
+          "contract_valid": true,
+          "candidate_count": 1,
+          "grounded_candidates": 1
+        },
+        {
+          "case": "toilets",
+          "http": 200,
+          "status": "proposal",
+          "contract_valid": true,
+          "candidate_count": 1,
+          "grounded_candidates": 1
+        },
+        {
+          "case": "kiss",
+          "http": 200,
+          "status": "proposal",
+          "contract_valid": true,
+          "candidate_count": 2,
+          "grounded_candidates": 1
+        },
+        {
+          "case": "six_touches",
+          "http": 200,
+          "status": "proposal",
+          "contract_valid": true,
+          "candidate_count": 1,
+          "grounded_candidates": 1
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "Small sequential sample, not a statistical benchmark or semantic validation",
+    "HTTP success and contract validity are separate from a usable phrase",
+    "Experimental schemas are not shipped",
+    "No deployment or automatic format downgrade"
+  ],
+  "deployed_application_changed": false,
+  "source_revision": "98c311fb5c552371a19855611733d81d5cd8a6d9",
+  "temperature": 0.2,
+  "input_cases": [
+    {
+      "case": "toilets",
+      "labels": [
+        "Moi",
+        "Toilettes"
+      ],
+      "meanings": [
+        "Moi",
+        "Aller aux toilettes"
+      ]
+    },
+    {
+      "case": "kiss",
+      "labels": [
+        "Papi",
+        "Bisou"
+      ],
+      "meanings": [
+        "Mon grand-père",
+        "Embrasser"
+      ]
+    },
+    {
+      "case": "six_touches",
+      "labels": [
+        "Maman",
+        "Papa",
+        "Manger",
+        "Maison",
+        "Moi",
+        "Content"
+      ],
+      "meanings": [
+        "Maman",
+        "Papa",
+        "Manger",
+        "Maison",
+        "Moi",
+        "Content"
+      ]
+    }
+  ]
+}

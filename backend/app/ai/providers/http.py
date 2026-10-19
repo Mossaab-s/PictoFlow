@@ -25,6 +25,26 @@ RESPONSES = {
 }
 
 
+async def _structured_generation_failed(response: httpx.Response) -> bool:
+    """Recognize a bounded generation error without exposing its failed payload."""
+    if response.status_code != 400:
+        return False
+    content = bytearray()
+    async for part in response.aiter_bytes():
+        if len(content) + len(part) > 65_536:
+            return False
+        content.extend(part)
+    try:
+        body = json.loads(content)
+    except (ValueError, RecursionError, UnicodeError):
+        return False
+    return (
+        isinstance(body, dict)
+        and isinstance(body.get("error"), dict)
+        and body["error"].get("code") == "json_validate_failed"
+    )
+
+
 PROPOSAL_INSTRUCTIONS = (
     "Return only JSON matching the supplied output schema. All outputs are unvalidated proposals. "
     "Do not diagnose or invent personal facts, emotions or unknown meanings. "
@@ -199,6 +219,8 @@ class HTTPProvider:
                 method, self._base_url + path, json=payload, headers=self.headers()
             ) as response:
                 if not 200 <= response.status_code < 300:
+                    if await _structured_generation_failed(response):
+                        raise ProviderPayloadError("Provider structured generation failed")
                     raise ProviderUnavailableError("Provider HTTP operation failed")
                 content = bytearray()
                 async for part in response.aiter_bytes():
