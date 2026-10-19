@@ -292,7 +292,9 @@ try {
   await destination.selectOption(activities.id);
   await slot.fill("8"); // Écouter occupies this same personal-zone place.
   await prepare.click();
-  await expect(page.getByRole("alert")).toContainText("le clavier a changé");
+  await expect(page.locator('.error[role="alert"]')).toContainText(
+    "le clavier a changé",
+  );
   assert.deepEqual(await call(base + "/keyboard"), before.keyboard);
   await slot.fill("9");
   await prepare.click();
@@ -308,7 +310,7 @@ try {
   await expect(preview).toHaveCount(0);
   assert.deepEqual(await call(base + "/keyboard"), before.keyboard);
   await prepare.click();
-  // An actual concurrent page rename invalidates the server's signed preview.
+  // An actual concurrent page rename invalidates the server's preview.
   await call(base + `/keyboard-groups/${activities.id}`, "PATCH", {
     label: "Mes activités",
     expected_label: "Activités",
@@ -317,7 +319,9 @@ try {
   await preview
     .getByRole("button", { name: "Confirmer le déplacement", exact: true })
     .click();
-  await expect(page.getByRole("alert")).toContainText("le clavier a changé");
+  await expect(page.locator('.error[role="alert"]')).toContainText(
+    "le clavier a changé",
+  );
   await expect(preview).toHaveCount(0);
   assert.deepEqual(await call(base + "/keyboard"), before.keyboard);
   await filter.selectOption("home");
