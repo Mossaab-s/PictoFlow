@@ -161,6 +161,10 @@ try {
   await destination.selectOption(activities.id);
   await button("Places suivantes").click();
   await expect(button("Place 5 occupée par Livre")).toBeDisabled();
+  await fs.mkdir(".local/visual-placement", { recursive: true });
+  await picker.screenshot({
+    path: ".local/visual-placement/neighbours-desktop.png",
+  });
   await button("Revenir à la place choisie").click();
   await choose(2).click();
   assert.equal(writes.length, 0);
