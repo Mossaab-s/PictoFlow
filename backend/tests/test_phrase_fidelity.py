@@ -106,6 +106,41 @@ def test_demo_annotations_are_not_message_words_and_unknown_paraphrases_fail_clo
     assert not faithful_words(request("Doudou"), "Je voudrais mon ours.")
 
 
+@pytest.mark.parametrize(
+    "labels,text,expected",
+    [
+        (("Moi", "Caca"), "Je voudrais faire caca.", True),
+        (("Moi", "Pipi"), "J’ai besoin de faire pipi.", True),
+        (("Moi", "Caca"), "J’ai fait caca.", True),
+        (("Toi", "Pipi"), "Tu fais pipi ?", True),
+        (("Nous", "Caca"), "Nous faisons caca.", True),
+        (("Vous", "Pipi"), "Vous faites pipi ?", True),
+        (("Moi", "Caca", "Pipi"), "Je voudrais faire caca et faire pipi.", True),
+        (("Moi", "Caca", "Caca"), "Je voudrais faire caca, faire caca.", True),
+        (("Moi", "Non", "Caca"), "Je ne veux pas faire caca.", True),
+        (("Moi", "Faire", "Caca"), "Je voudrais faire caca.", True),
+        (("Moi", "Caca"), "Tu veux faire caca.", False),
+        (("Moi", "Caca"), "Je ne veux pas faire caca.", False),
+        (("Moi", "Non", "Caca"), "Je veux faire caca.", False),
+        (("Moi", "Caca", "Caca"), "Je voudrais faire caca.", False),
+        (("Moi", "Caca"), "Je voudrais faire pipi.", False),
+        (("Moi", "Caca"), "Je voudrais faire mal et caca.", False),
+        (("Moi", "Caca", "Mal"), "Je voudrais faire mal et caca.", False),
+        (("Moi", "Caca", "Livre"), "Je voudrais faire caca et faire un livre.", False),
+        (("Moi", "Livre"), "Je voudrais faire un livre.", False),
+        (("Moi", "Caca", "Manger"), "Je voudrais faire caca.", False),
+        (("Moi", "Faire", "Caca"), "Je voudrais caca.", False),
+        (("Moi", "Faire", "Faire", "Caca"), "Je voudrais faire caca.", False),
+        (("Moi", "Stop", "Caca"), "Je voudrais faire caca.", False),
+        (("Moi", "Oui", "Caca"), "Je voudrais faire caca.", False),
+        (("Moi", "Caca"), "Je voudrais faire caca et aller à la maison.", False),
+        (("Moi", "Caca"), "Je suis malade, je voudrais faire caca.", False),
+    ],
+)
+def test_toileting_support_verb_is_local_and_preserves_selected_content(labels, text, expected):
+    assert faithful_words(request(*labels), text) is expected
+
+
 class MemoryUnits:
     """Minimal scoped unit for exercising the actual interpreter/persistence pipeline."""
 

@@ -89,6 +89,18 @@ def faithful_words(request: InterpretationRequest, text: str) -> bool:
     if "toilettes" in required:
         allowed.add("aller")
     actual = content(text)
+    # In "faire pipi/caca", faire can be a support verb rather than an added
+    # action. Discount only adjacent occurrences with a selected noun, keeping
+    # every explicitly selected faire. Other uses of faire remain content.
+    tokens = words(text)
+    support = sum(
+        CANONICAL.get(verb, verb) == "faire" and noun in {"pipi", "caca"} and noun in required
+        for verb, noun in zip(tokens, tokens[1:], strict=False)
+    )
+    if support and actual["faire"] > required["faire"]:
+        actual["faire"] -= min(support, actual["faire"] - required["faire"])
+        if not actual["faire"]:
+            del actual["faire"]
     if required - actual or set(actual) - allowed:
         return False
     actual_persons = Counter(
