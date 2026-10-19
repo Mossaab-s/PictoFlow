@@ -33,6 +33,10 @@ class PersonalMemory:
     sequences: tuple[CommunicationSequence, ...] = ()
 
 
+class InterpretationReviewConflict(RuntimeError):
+    """A pending review cannot replace a decision made since the page was read."""
+
+
 class CommunicationService:
     def __init__(self, units: PCLUnits, policy: ConfidencePolicy | None = None):
         self.units = units
@@ -152,11 +156,15 @@ class CommunicationService:
                 )
         return decision
 
-    def validate(self, event: ValidationEvent) -> Interpretation:
+    def validate(
+        self, event: ValidationEvent, *, expected_status: InterpretationStatus | None = None
+    ) -> Interpretation:
         if type(event) is not ValidationEvent or event.target_type != TargetType.INTERPRETATION:
             raise DomainInvariantError("Typed human interpretation feedback is required")
         with self.units() as store:
             previous = store.get(event.profile_id, Interpretation, event.target_id)
+            if expected_status is not None and previous.status != expected_status:
+                raise InterpretationReviewConflict("Interpretation already reviewed; reload")
             history = store.feedback_history(event.profile_id, event.target_id)
             if history and event.created_at < history[-1].created_at:
                 raise DomainInvariantError("Feedback must follow previous decisions")
@@ -174,6 +182,10 @@ class CommunicationService:
                         and other.id != current.id
                         and other.validated_text is not None
                     ):
+                        if expected_status is not None:
+                            raise InterpretationReviewConflict(
+                                "Another hypothesis was accepted; reload"
+                            )
                         raise DomainInvariantError("Reject the previous accepted hypothesis first")
             store.save(event.profile_id, current)
             store.feedback(event)

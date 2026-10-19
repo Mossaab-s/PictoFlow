@@ -27,6 +27,76 @@ def api(postgres_connection):
         yield client
 
 
+def test_pending_review_http_conflicts_preserve_the_human_decision_and_history(api):
+    p = api.post("/api/v1/profiles").json()["id"]
+    other = api.post("/api/v1/profiles").json()["id"]
+    base = f"/api/v1/profiles/{p}"
+    block = api.post(
+        base + "/blocks/personal",
+        json={
+            "request_id": str(uuid4()),
+            "label": "Eau",
+            "pictogram_key": "water",
+            "actor_role": "user",
+        },
+    ).json()
+    api.post(
+        base + f"/blocks/{block['id']}/feedback",
+        json={"action": "confirm", "actor_role": "user", "confirm_representation": True},
+    ).raise_for_status()
+    sequence = api.post(base + "/sequences", json={"session_id": str(uuid4())}).json()
+    path = base + f"/sequences/{sequence['id']}"
+    for body in ({"action": "append", "block_id": block["id"]}, {"action": "complete"}):
+        api.post(path + "/selection", json=body).raise_for_status()
+    candidate = api.post(path + "/interpret", json={}).json()["candidates"][0]
+    feedback = base + f"/interpretations/{candidate['id']}/feedback"
+    invalid = api.post(
+        feedback,
+        json={"action": "confirm", "actor_role": "caregiver", "expected_status": "confirmed"},
+    )
+    assert invalid.status_code == 422
+    corrected = api.post(
+        feedback,
+        json={
+            "action": "correct",
+            "actor_role": "caregiver",
+            "expected_status": "proposed",
+            "corrected_value": "Je voudrais de l’eau.",
+        },
+    )
+    assert corrected.status_code == 200
+    evidence = base + f"/feedback?target_type=interpretation&target_id={candidate['id']}"
+    history_response = api.get(evidence)
+    assert history_response.status_code == 200
+    history = history_response.json()
+    assert len(history["items"]) == 1
+    audit = api.get(base + "/audit").json()
+    for action in ("confirm", "reject"):
+        assert (
+            api.post(
+                feedback,
+                json={
+                    "action": action,
+                    "actor_role": "professional",
+                    "expected_status": "proposed",
+                },
+            ).status_code
+            == 409
+        )
+    assert api.get(base + f"/interpretations/{candidate['id']}").json() == corrected.json()
+    assert api.get(evidence).json() == history
+    assert api.get(base + "/audit").json() == audit
+    assert (
+        api.post(
+            f"/api/v1/profiles/{other}/interpretations/{candidate['id']}/feedback",
+            json={"action": "reject", "actor_role": "caregiver", "expected_status": "proposed"},
+        ).status_code
+        == 404
+    )
+    # Existing intentional withdrawal clients remain compatible.
+    assert api.post(feedback, json={"action": "reject", "actor_role": "user"}).status_code == 200
+
+
 def test_http_communication_and_correction_are_profile_scoped(api, monkeypatch):
     signals = []
     monkeypatch.setattr(

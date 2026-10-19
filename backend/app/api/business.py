@@ -12,7 +12,11 @@ from app.application.ai_context import AIContext, context_for
 from app.application.ai_quality import QualitySummary
 from app.application.audit import AuditService
 from app.application.blocks import BlockService, RepresentationService
-from app.application.communication import CommunicationService, PersonalMemory
+from app.application.communication import (
+    CommunicationService,
+    InterpretationReviewConflict,
+    PersonalMemory,
+)
 from app.application.feedback_history import EvidenceTarget, FeedbackHistory
 from app.application.interpretation import InterpretationService
 from app.application.keyboard_groups import KeyboardGroupService
@@ -33,6 +37,7 @@ from app.domain.pcl.entities import (
     Concept,
     HumanRole,
     Interpretation,
+    InterpretationStatus,
     RelationType,
     Representation,
     RepresentationType,
@@ -135,6 +140,10 @@ class FeedbackBody(Body):
 class SequenceBody(Body):
     session_id: UUID
     context_id: UUID | None = None
+
+
+class InterpretationFeedbackBody(FeedbackBody):
+    expected_status: Literal["proposed"] | None = None
 
 
 class SelectionBody(Body):
@@ -611,7 +620,7 @@ def interpretation_context(request: Request, profile_id: UUID, interpretation_id
     response_model=Interpretation,
 )
 def interpretation_feedback(
-    request: Request, profile_id: UUID, interpretation_id: UUID, body: FeedbackBody
+    request: Request, profile_id: UUID, interpretation_id: UUID, body: InterpretationFeedbackBody
 ):
     try:
         return communication(request).validate(
@@ -619,9 +628,12 @@ def interpretation_feedback(
                 profile_id=profile_id,
                 target_type=TargetType.INTERPRETATION,
                 target_id=interpretation_id,
-                **body.model_dump(),
-            )
+                **body.model_dump(exclude={"expected_status"}),
+            ),
+            expected_status=InterpretationStatus.PROPOSED if body.expected_status else None,
         )
+    except InterpretationReviewConflict:
+        raise HTTPException(409, "Phrase already reviewed; reload before deciding") from None
     except MemorySuggestionConflict as error:
         raise HTTPException(409, str(error)) from None
 

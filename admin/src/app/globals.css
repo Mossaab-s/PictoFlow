@@ -20,6 +20,30 @@
   gap: 20px;
   margin-block: 28px;
 }
+.phrase-review-page .review-search {
+  display: grid;
+  gap: 8px;
+  max-width: 640px;
+}
+.review-message-list {
+  display: grid;
+  gap: 28px;
+  margin-block: 24px;
+}
+.review-message > .review-phrase {
+  margin-top: 20px;
+  background: var(--bg);
+}
+.review-phrase {
+  overflow-wrap: anywhere;
+}
+.review-phrase time {
+  color: var(--muted);
+  font-size: 13px;
+}
+.review-phrase .correction-editor form {
+  max-width: 720px;
+}
 .space-card {
   display: block;
   text-decoration: none;
