@@ -310,6 +310,7 @@ export default function KeyboardEditor({
                   touche avant de l'utiliser.
                 </p>
                 <TouchPreparation
+                  key={profileId}
                   concepts={data.concepts}
                   disabled={busy}
                   onCreate={async (draft) => {

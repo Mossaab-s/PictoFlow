@@ -56,6 +56,17 @@ await call(
     expected_capabilities: null,
   },
 );
+const secondProfile = (
+  await call("profiles", "POST", { display_name: "Autre clavier fictif" })
+).id;
+await call(
+  `auth/users/${supporter.id}/profiles/${secondProfile}/capabilities`,
+  "PUT",
+  {
+    capabilities: ["prepare_keyboard"],
+    expected_capabilities: null,
+  },
+);
 const browser = await chromium.launch({ headless: true });
 try {
   const page = await browser.newPage({
@@ -93,7 +104,7 @@ try {
     await creator.getByRole("radio", { name, exact: true }).check();
   }
   async function nextWord() {
-    await button("Continuer : le mot").click();
+    await button("Continuer : le mot").press("Enter");
     await expect(
       creator.getByRole("heading", { name: "Écrire le mot", exact: true }),
     ).toBeFocused();
@@ -220,11 +231,13 @@ try {
   await preview();
   await expect(creator.locator(".touch-word")).toHaveText("Photo de mon verre");
   await expect(creator.locator("img.touch-photo")).toBeVisible();
-  assert(
-    await creator
-      .locator("img.touch-photo")
-      .evaluate((img) => img.complete && img.naturalWidth > 0),
-  );
+  await expect
+    .poll(() =>
+      creator
+        .locator("img.touch-photo")
+        .evaluate((img) => img.complete && img.naturalWidth > 0),
+    )
+    .toBe(true);
   assert.equal(writes.length, beforePhoto);
   await creator.screenshot({
     path: ".local/keyboard-preparation/photo-review-mobile.png",
@@ -264,6 +277,22 @@ try {
   assert.equal((await call(base + "/concepts")).length, 2);
   assert.deepEqual(await call(base + "/sequences"), []);
   assert.equal((await call(base + "/memory")).interpretations.length, 0);
+  const beforeSwitch = writes.length;
+  await image("Eau");
+  await nextWord();
+  await word.fill("Mot privé du premier profil");
+  await page.goto(
+    `${origin}/accompagnement/personnes/${secondProfile}/clavier`,
+  );
+  await expect(
+    creator.getByRole("heading", { name: "Choisir l’image", exact: true }),
+  ).toBeVisible();
+  assert.equal(await word.count(), 0);
+  await image("Eau");
+  await nextWord();
+  assert.equal(await word.inputValue(), "Eau");
+  assert.deepEqual(await call(`profiles/${secondProfile}/blocks`), []);
+  assert.equal(writes.length, beforeSwitch);
   assert.equal(modelCalls, 0);
   assert.deepEqual(errors, []);
   await page.setViewportSize({ width: 320, height: 844 });
