@@ -39,6 +39,7 @@ export default function TouchPreparation({
   const heading = useRef<HTMLHeadingElement>(null);
   const headingId = useId();
   const wordId = useId();
+  const existingMeaningId = useId();
   const imageReady =
     draft.visualMode === "photo" ? !!draft.photo : !!draft.pictogramKey;
   const wordReady = !!draft.label.trim();
@@ -187,32 +188,31 @@ export default function TouchPreparation({
                   </span>
                 </label>
               )}
-              <label>
-                Sens existant
-                <select
-                  value={draft.conceptId}
-                  disabled={disabled}
-                  onChange={(event) => {
-                    const conceptId = event.target.value;
-                    setDraft({
-                      ...draft,
-                      conceptId,
-                      label:
-                        !editedWord && conceptId
-                          ? (concepts.find((c) => c.id === conceptId)?.label ??
-                            draft.label)
-                          : draft.label,
-                    });
-                  }}
-                >
-                  <option value="">Créer un nouveau sens avec mon mot</option>
-                  {concepts.map((concept) => (
-                    <option key={concept.id} value={concept.id}>
-                      {concept.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <label htmlFor={existingMeaningId}>Sens existant</label>
+              <select
+                id={existingMeaningId}
+                value={draft.conceptId}
+                disabled={disabled}
+                onChange={(event) => {
+                  const conceptId = event.target.value;
+                  setDraft({
+                    ...draft,
+                    conceptId,
+                    label:
+                      !editedWord && conceptId
+                        ? (concepts.find((c) => c.id === conceptId)?.label ??
+                          draft.label)
+                        : draft.label,
+                  });
+                }}
+              >
+                <option value="">Créer un nouveau sens avec mon mot</option>
+                {concepts.map((concept) => (
+                  <option key={concept.id} value={concept.id}>
+                    {concept.label}
+                  </option>
+                ))}
+              </select>
               <p className="helper">
                 Choisissez un sens existant seulement si cette touche exprime le
                 même sens personnel.
