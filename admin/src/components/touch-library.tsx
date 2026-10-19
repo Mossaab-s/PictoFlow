@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { Block, Concept, KeyboardGroup, Position } from "@/lib/keyboard";
 import {
   findKeyboardTouches,
@@ -26,6 +26,7 @@ export default function TouchLibrary({
 }) {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState("all");
+  const pageId = useId();
   const root = useRef<HTMLElement>(null);
   const search = useRef<HTMLInputElement>(null);
   const focusedCard = useRef<HTMLElement | null>(null);
@@ -130,9 +131,10 @@ export default function TouchLibrary({
             disabled={busy}
           />
         </label>
-        <label>
-          Afficher les touches
+        <div>
+          <label htmlFor={pageId}>Afficher les touches</label>
           <select
+            id={pageId}
             value={currentPage}
             onChange={(event) => setPage(event.target.value)}
             disabled={busy}
@@ -146,7 +148,7 @@ export default function TouchLibrary({
               </option>
             ))}
           </select>
-        </label>
+        </div>
       </div>
       <p role="status">
         {visible.size} sur {scoped.length} touches

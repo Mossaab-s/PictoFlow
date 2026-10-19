@@ -2,7 +2,7 @@
 import { useAuthentication } from "./authentication";
 import { canProfile } from "@/lib/access";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { api, APIError } from "@/lib/api";
 import {
   joinKeyboard,
@@ -631,6 +631,8 @@ function BlockControls({
   const [groupId, setGroupId] = useState<string | null>(null);
   const [preview, setPreview] = useState<KeyboardChangePreview | null>(null);
   const [revealed, setRevealed] = useState(false);
+  const zoneId = useId();
+  const pageId = useId();
   async function prepareMove(
     targetPosition: number,
     destination: string | null,
@@ -794,9 +796,10 @@ function BlockControls({
               }}
             >
               <div className="field-row">
-                <label>
-                  Zone
+                <div>
+                  <label htmlFor={zoneId}>Zone</label>
                   <select
+                    id={zoneId}
                     value={zone ?? position?.zone ?? "personal"}
                     onChange={(event) => {
                       setZone(event.target.value as Zone);
@@ -817,10 +820,11 @@ function BlockControls({
                       </option>
                     ))}
                   </select>
-                </label>
-                <label>
-                  Page
+                </div>
+                <div>
+                  <label htmlFor={pageId}>Page</label>
                   <select
+                    id={pageId}
                     value={
                       (zone ?? position?.zone) === "stable"
                         ? ""
@@ -843,7 +847,7 @@ function BlockControls({
                       </option>
                     ))}
                   </select>
-                </label>
+                </div>
                 <label>
                   Place
                   <input
