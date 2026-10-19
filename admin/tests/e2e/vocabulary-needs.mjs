@@ -369,6 +369,7 @@ try {
   );
   await page.setViewportSize({ width: 390, height: 844 });
   await noOverflow();
+  await card(groups[0]).scrollIntoViewIfNeeded();
   await page.screenshot({
     path: ".local/vocabulary-needs/decisions-mobile.png",
   });
