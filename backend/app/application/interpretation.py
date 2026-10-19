@@ -52,14 +52,16 @@ class InterpretationService:
             self.telemetry.signal(
                 "interpretation.fallback", provider=self.provider.provider_id, result_state=reason
             )
+        literal = self.literal(profile_id, sequence_id)
         return self.communication.propose(
             profile_id,
             sequence_id,
-            (self.literal(profile_id, sequence_id),),
+            (literal,),
             source="pcl",
             evidence=AttemptEvidence(
                 self.provider.provider_id, reason, received, examples, memory_examples
             ),
+            proposal_details={literal.id: {"fallback_reason": reason}},
         )
 
     def literal(self, profile_id: UUID, sequence_id: UUID):

@@ -31,6 +31,7 @@ import CompositionMemory from "./composition-memory";
 import { replayAvailable } from "@/lib/learning";
 import MemorySuggestions from "./memory-suggestions";
 import AIContext from "./ai-context";
+import LiteralExplanation from "./literal-explanation";
 import MessageResetDialog from "./message-reset-dialog";
 import { useOnlineStatus } from "./use-online-status";
 import SelectionRhythm from "./selection-rhythm";
@@ -1194,10 +1195,10 @@ function InterpretationCard({
         </p>
       )}
       {candidate.source === "pcl" && !candidate.corrected_text && (
-        <p className="notice">
-          Vos mots sont présentés tels quels. Vous pouvez les lire ou les
-          reformuler pour préciser votre message.
-        </p>
+        <LiteralExplanation
+          profileId={candidate.profile_id}
+          interpretationId={candidate.id}
+        />
       )}
       {["openai-compatible", "prism", "fake"].includes(candidate.source) && (
         <AIContext
