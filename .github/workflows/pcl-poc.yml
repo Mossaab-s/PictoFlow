@@ -160,6 +160,10 @@ jobs:
         if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
         working-directory: admin
         run: node tests/e2e/visual-placement.mjs
+      - name: Find a personal touch while communicating
+        if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/communication-search.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -176,6 +180,7 @@ jobs:
             admin/.local/keyboard-preparation/*.png
             admin/.local/touch-library/*.png
             admin/.local/visual-placement/*.png
+            admin/.local/communication-search/*.png
             admin/.local/profile-capabilities/*.png
             admin/.local/three-spaces/*.png
             admin/.local/support-review/*.png

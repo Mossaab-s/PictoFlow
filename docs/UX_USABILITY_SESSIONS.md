@@ -56,6 +56,9 @@ Use fictitious content for public screenshots and issue attachments.
    Ask them to make it heard, stop, repeat a word and undo one selection.
 3. **Move between pages.** Find a familiar touch on another page, keeping the
    message. Check whether saved positions and empty anchor spaces remain useful.
+   If appropriate for the person, try the optional [personal touch lookup](COMMUNICATION_TOUCH_LOOKUP.md),
+   distinguish identically named touches by location and close it to return to
+   the same keyboard page. Observe whether typing helps or adds effort.
 4. **Choose a personal formulation.** Explore Words and Phrases using previously
    accepted examples. Ask whether a proposal expresses their meaning. Try refusal
    and correction, then an explicit acceptance only if they choose it.
