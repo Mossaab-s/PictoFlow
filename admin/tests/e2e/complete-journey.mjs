@@ -240,6 +240,9 @@ try {
       .click();
     await expect(preview.getByText(word, { exact: true })).toBeVisible();
   }
+  await review
+    .getByLabel("Modifier la touche « Maman »", { exact: true })
+    .click();
   const mother = review.locator(".block-list > section.panel").filter({
     has: review.getByRole("heading", { name: "Maman", exact: true }),
   });

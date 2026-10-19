@@ -4,6 +4,8 @@ import {
   orderedGroups,
   shiftedPages,
   scopedPreview,
+  findKeyboardTouches,
+  touchLocation,
 } from "../src/lib/keyboard-organization.ts";
 
 const profile = "profile-a";
@@ -20,6 +22,107 @@ const groups = [
   },
   { id: "foreign", profile_id: "foreign", label: "Foreign", sort_order: 0 },
 ];
+
+const touch = (id, label, rest = {}) => ({
+  id,
+  label,
+  profile_id: profile,
+  status: "validated",
+  concept_id: id,
+  canonical_intent: null,
+  ...rest,
+});
+const words = [
+  touch("water", "Mon verre"),
+  touch("mother", "Maman"),
+  touch("book", "Livre"),
+  touch("intent", "Encore", {
+    concept_id: null,
+    canonical_intent: "Je voudrais écouter le même morceau",
+  }),
+  touch("pending", "Proposition", { status: "proposed" }),
+  touch("foreign", "Secret", { profile_id: "foreign" }),
+];
+const meanings = [
+  { id: "water", profile_id: profile, label: "L’eau fraîche du réfrigérateur" },
+  { id: "mother", profile_id: "foreign", label: "Secret étranger" },
+];
+const positions = [
+  {
+    profile_id: profile,
+    block_id: "mother",
+    zone: "stable",
+    position: 0,
+    locked: true,
+    group_id: null,
+  },
+  {
+    profile_id: profile,
+    block_id: "water",
+    zone: "personal",
+    position: 2,
+    locked: false,
+    group_id: null,
+  },
+  {
+    profile_id: profile,
+    block_id: "book",
+    zone: "personal",
+    position: 5,
+    locked: false,
+    group_id: "b",
+  },
+  {
+    profile_id: "foreign",
+    block_id: "water",
+    zone: "personal",
+    position: 4,
+    group_id: "a",
+  },
+];
+const find = (query, page) =>
+  findKeyboardTouches(profile, words, meanings, positions, query, page).map(
+    (b) => b.id,
+  );
+
+test("touch lookup searches only validated profile words and personal meanings, ignoring case and accents", () => {
+  assert.deepEqual(find("  VERRE refrigerateur  "), ["water"]);
+  assert.deepEqual(find("ecouter morceau"), ["intent"]);
+  assert.deepEqual(find("Secret"), []);
+  assert.deepEqual(find("Proposition"), []);
+  assert.deepEqual(find(""), ["water", "mother", "book", "intent"]);
+});
+test("page filters describe placements without treating global anchors or missing placements as Home", () => {
+  assert.deepEqual(find("", "home"), ["water"]);
+  assert.deepEqual(find("", "stable"), ["mother"]);
+  assert.deepEqual(find("", "group:b"), ["book"]);
+  assert.deepEqual(find("", "group:a"), []);
+  assert.deepEqual(find("verre", "group:b"), []);
+});
+test("location labels preserve blank positions, distinguish global anchors and never use foreign page names", () => {
+  assert.equal(
+    touchLocation(profile, "water", positions, groups),
+    "Accueil · Mes touches · place 3",
+  );
+  assert.equal(
+    touchLocation(profile, "mother", positions, groups),
+    "Toutes les pages · Repères stables · place 1",
+  );
+  assert.equal(
+    touchLocation(profile, "book", positions, groups),
+    "B · Mes touches · place 6",
+  );
+  assert.equal(
+    touchLocation(profile, "absent", positions, groups),
+    "À placer dans le clavier",
+  );
+  assert.equal(
+    touchLocation(profile, "book", positions, [
+      { ...groups[1], profile_id: "foreign" },
+    ]),
+    "Page indisponible · Mes touches · place 6",
+  );
+});
 test("page order is scoped, keeps identities and never changes its input", () => {
   assert.deepEqual(
     orderedGroups(profile, groups).map((g) => g.id),

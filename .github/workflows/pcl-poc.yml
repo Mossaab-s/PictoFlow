@@ -152,6 +152,10 @@ jobs:
         if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
         working-directory: admin
         run: node tests/e2e/keyboard-preparation.mjs
+      - name: Find and organize existing touches
+        if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/touch-library.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -166,6 +170,7 @@ jobs:
             admin/.local/ux-communication/*.png
             admin/.local/literal-explanations/*.png
             admin/.local/keyboard-preparation/*.png
+            admin/.local/touch-library/*.png
             admin/.local/profile-capabilities/*.png
             admin/.local/three-spaces/*.png
             admin/.local/support-review/*.png
