@@ -178,12 +178,14 @@ export default function Authentication({
   useEffect(() => {
     if (destination) {
       // Preserve message recovery and phrase links on known legacy aliases only.
-      const query = path.startsWith("/admin/profiles/")
-        ? window.location.search
-        : "";
+      const query =
+        !session?.account?.assisted_profile_id &&
+        path.startsWith("/admin/profiles/")
+          ? window.location.search
+          : "";
       router.replace(destination + query);
     }
-  }, [destination, path, router]);
+  }, [destination, path, router, session?.account?.assisted_profile_id]);
   useEffect(() => {
     function expired() {
       setCSRFToken(null);

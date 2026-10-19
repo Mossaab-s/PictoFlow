@@ -4,7 +4,14 @@ export const accompaniedKey = "pictoflow:accompanied";
 
 export function accessEpoch(): string | null {
   try {
-    return localStorage.getItem(accessEpochKey);
+    const values = [
+      localStorage.getItem(accessEpochKey),
+      localStorage.getItem(accompaniedKey),
+      localStorage.getItem("pictoflow:explicit-logout"),
+    ];
+    return values.some((value) => value !== null)
+      ? JSON.stringify(values)
+      : null;
   } catch {
     return null;
   }

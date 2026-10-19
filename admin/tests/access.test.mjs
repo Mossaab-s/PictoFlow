@@ -77,7 +77,10 @@ test("a browser-wide scope change rejects late data even before this tab receive
     values.set(accessEpochKey, "accompanied");
     release(Response.json([{ id: other }]));
     await assert.rejects(pending, /Votre accès a changé/);
+    const markerOnlyChange = api("profiles");
     markAccompanied(p);
+    release(Response.json([{ id: other }]));
+    await assert.rejects(markerOnlyChange, /Votre accès a changé/);
     assert.equal(values.get(accompaniedKey), p);
     globalThis.localStorage.setItem = () => {};
     assert.throws(
