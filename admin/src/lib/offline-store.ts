@@ -1,5 +1,12 @@
 import { checkedOffline, emptyOffline, type OfflineRecord } from "./offline.ts";
 
+function requirePersonalSession() {
+  if (globalThis.localStorage?.getItem("pictoflow:accompanied"))
+    throw new Error(
+      "Les copies hors connexion sont fermées pendant la session accompagnée.",
+    );
+}
+
 export class LocalDraftConflict extends Error {
   constructor() {
     super(
@@ -15,6 +22,7 @@ export class InvalidOfflineCopy extends Error {
   }
 }
 async function open() {
+  requirePersonalSession();
   return new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open("pictoflow-offline-v1", 1);
     request.onupgradeneeded = () =>
@@ -59,6 +67,15 @@ export async function writeOffline(
       let failure: Error | null = null;
       const request = store.get(record.profile_id);
       request.onsuccess = () => {
+        try {
+          requirePersonalSession();
+        } catch {
+          failure = new Error(
+            "Le passage de relais a fermé les copies locales.",
+          );
+          tx.abort();
+          return;
+        }
         if ((request.result?.serial ?? 0) !== expectedSerial) {
           failure = new LocalDraftConflict();
           tx.abort();

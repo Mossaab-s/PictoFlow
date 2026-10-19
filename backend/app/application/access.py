@@ -87,6 +87,7 @@ class AccountView:
     active: bool
     profile_access: dict[str, ProfileRole]
     profile_capabilities: dict[str, tuple[ProfileCapability, ...]] = field(default_factory=dict)
+    assisted_profile_id: UUID | None = None
 
 
 # Exact route templates. New endpoints must be explicitly classified before use.
@@ -198,6 +199,14 @@ def permits(
     """
     if account.is_admin:
         return True
+    if account.assisted_profile_id is not None and (
+        route
+        in {
+            "/profiles/{profile_id}/communication-snapshot",
+            "/profiles/{profile_id}/offline-drafts",
+        }
+    ):
+        return False
     granted = set(PRESETS.get(role, ()) if capabilities is None else capabilities)
     if not granted or not granted <= CAPABILITIES:
         return False

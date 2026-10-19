@@ -12,6 +12,11 @@ import {
   profileToolPath,
 } from "../src/lib/access.ts";
 import { api, APIError, setCSRFToken } from "../src/lib/api.ts";
+import {
+  accessEpochKey,
+  accompaniedKey,
+  markAccompanied,
+} from "../src/lib/access-transition.ts";
 
 const p = "11111111-1111-4111-8111-111111111111";
 const other = "22222222-2222-4222-8222-222222222222";
@@ -27,6 +32,63 @@ const session = {
     profile_access: { [p]: "communicator" },
   },
 };
+
+test("accompanied sessions stay on one keyboard even through legacy and support URLs", () => {
+  const assisted = {
+    ...session,
+    account: {
+      ...session.account,
+      assisted_profile_id: p,
+      profile_capabilities: { [p]: ["communicate"] },
+    },
+  };
+  assert.equal(landingPath(assisted), `/communication/${p}`);
+  for (const path of [
+    "/",
+    "/admin",
+    "/admin/access",
+    `/admin/profiles/${p}/keyboard`,
+    `/accompagnement/personnes/${p}`,
+    `/communication/${other}`,
+    "/offline",
+  ])
+    assert.equal(entryRedirect(assisted, path), `/communication/${p}`);
+  assert(pathPermitted(assisted, `/communication/${p}`));
+  assert(pathPermitted(assisted, `/communication/${p}/memoire`));
+  assert(!canPrepare(assisted, p));
+  assert(!canProfile(assisted, p, "review_meanings"));
+});
+
+test("a browser-wide scope change rejects late data even before this tab receives its event", async () => {
+  const previousFetch = globalThis.fetch;
+  const previousStorage = globalThis.localStorage;
+  const values = new Map([[accessEpochKey, "adult"]]);
+  globalThis.localStorage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+  };
+  let release;
+  globalThis.fetch = () =>
+    new Promise((resolve) => {
+      release = resolve;
+    });
+  try {
+    const pending = api("profiles");
+    values.set(accessEpochKey, "accompanied");
+    release(Response.json([{ id: other }]));
+    await assert.rejects(pending, /Votre accès a changé/);
+    markAccompanied(p);
+    assert.equal(values.get(accompaniedKey), p);
+    globalThis.localStorage.setItem = () => {};
+    assert.throws(
+      () => markAccompanied("pending"),
+      /ne permet pas de protéger/,
+    );
+  } finally {
+    globalThis.fetch = previousFetch;
+    globalThis.localStorage = previousStorage;
+  }
+});
 
 test("explicit capabilities override broad role labels and do not imply review or export", () => {
   const limited = {

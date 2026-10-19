@@ -2,6 +2,7 @@
 
 import re
 import secrets
+from dataclasses import replace
 from datetime import timedelta
 from uuid import UUID
 
@@ -91,16 +92,79 @@ class Accounts:
         if not token or not re.fullmatch(r"[A-Za-z0-9_-]{43}", token):
             return None
         with self.factory.begin() as session:
-            row = session.scalar(
-                select(AccountRow)
+            result = session.execute(
+                select(AccountRow, AuthSessionRow)
                 .join(AuthSessionRow, AuthSessionRow.account_id == AccountRow.id)
                 .where(
                     AuthSessionRow.token_hash == token_hash(token),
                     AuthSessionRow.expires_at > utc_now(),
                     AccountRow.active.is_(True),
                 )
+            ).one_or_none()
+            if result is None:
+                return None
+            row, browser = result
+            account = self.view(session, row)
+            if browser.assisted_profile_id is None:
+                return account
+            profile = str(browser.assisted_profile_id)
+            live = set(
+                PRESETS["communicator"]
+                if account.is_admin
+                else account.profile_capabilities.get(profile, ())
             )
-            return self.view(session, row) if row else None
+            allowed = {"communicate"}
+            if browser.assisted_review_allowed:
+                allowed.add("review_meanings")
+            capabilities = tuple(sorted(live & allowed)) if "communicate" in live else ()
+            return replace(
+                account,
+                is_admin=False,
+                profile_access={profile: "communicator"} if capabilities else {},
+                profile_capabilities={profile: capabilities} if capabilities else {},
+                assisted_profile_id=browser.assisted_profile_id,
+            )
+
+    def accompany(self, token: str, profile_id: UUID):
+        """Atomically replace this browser's token; never keep a resumable adult cookie."""
+        now = utc_now()
+        with self.factory.begin() as session:
+            # Also serializes grant edits, password changes and account suspension.
+            self.lock(session)
+            browser = session.get(AuthSessionRow, token_hash(token))
+            if browser is None or browser.expires_at <= now or browser.assisted_profile_id:
+                raise AccessConflict("Browser session changed")
+            row = session.get(AccountRow, browser.account_id)
+            if row is None or not row.active or session.get(ProfileRow, profile_id) is None:
+                raise AccessConflict("Account or profile changed")
+            account = self.view(session, row)
+            granted = set(
+                PRESETS["communicator"]
+                if account.is_admin
+                else account.profile_capabilities.get(str(profile_id), ())
+            )
+            if "communicate" not in granted:
+                raise AccessConflict("Communication access changed")
+            replacement = secrets.token_urlsafe(32)
+            expiry = min(browser.expires_at, now + timedelta(hours=1))
+            session.add(
+                AuthSessionRow(
+                    token_hash=token_hash(replacement),
+                    account_id=row.id,
+                    expires_at=expiry,
+                    assisted_profile_id=profile_id,
+                    assisted_review_allowed="review_meanings" in granted,
+                )
+            )
+            session.delete(browser)
+            self.event(
+                session,
+                "accompanied_started",
+                row.id,
+                profile_id,
+                "communication; review=" + str("review_meanings" in granted).lower(),
+            )
+            return replacement, max(1, int((expiry - now).total_seconds()))
 
     @staticmethod
     def attempt(session, key, limit, now):
@@ -154,6 +218,7 @@ class Accounts:
 
     def logout(self, token, actor_id=None):
         with self.factory.begin() as session:
+            self.lock(session)
             if token:
                 session.execute(
                     delete(AuthSessionRow).where(AuthSessionRow.token_hash == token_hash(token))

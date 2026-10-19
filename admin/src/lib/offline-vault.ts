@@ -24,7 +24,10 @@ const failure = () =>
     "Copie inaccessible : vérifiez votre phrase secrète ou préparez une nouvelle copie.",
   );
 function requireLocalAccess() {
-  if (globalThis.localStorage?.getItem("pictoflow:explicit-logout") === "1")
+  if (
+    globalThis.localStorage?.getItem("pictoflow:explicit-logout") === "1" ||
+    globalThis.localStorage?.getItem("pictoflow:accompanied")
+  )
     throw new Error(
       "Cet appareil est déconnecté. Reconnectez-vous avant d’ouvrir une copie.",
     );

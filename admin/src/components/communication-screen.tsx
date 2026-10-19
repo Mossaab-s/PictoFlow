@@ -577,9 +577,11 @@ export default function CommunicationScreen({
               parler si une voix locale est disponible. Les envois attendent
               votre action.
             </p>
-            <Link className="text-link" href="/offline">
-              Ouvrir une copie hors connexion déjà préparée
-            </Link>
+            {!session?.account?.assisted_profile_id && (
+              <Link className="text-link" href="/offline">
+                Ouvrir une copie hors connexion déjà préparée
+              </Link>
+            )}
           </div>
         )}
         {data.error && (
@@ -1081,17 +1083,19 @@ export default function CommunicationScreen({
             disabled={pending}
             contrast={contrast}
           />
-          <OfflineCommunication
-            key={profileId}
-            profileId={profileId}
-            speech={speech}
-            size={display.size}
-            canOpen={!sequence && !pending}
-            onOpen={(value) => {
-              remember(value, null);
-              setNotice("Votre message local enregistré est ouvert.");
-            }}
-          />
+          {!session?.account?.assisted_profile_id && (
+            <OfflineCommunication
+              key={profileId}
+              profileId={profileId}
+              speech={speech}
+              size={display.size}
+              canOpen={!sequence && !pending}
+              onOpen={(value) => {
+                remember(value, null);
+                setNotice("Votre message local enregistré est ouvert.");
+              }}
+            />
+          )}
           {chosen.length > 0 && (
             <details className="panel">
               <summary>Le sens personnel de mes touches</summary>

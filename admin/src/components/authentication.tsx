@@ -12,21 +12,39 @@ import {
 } from "@/lib/access";
 import { vaultDatabase } from "@/lib/offline-vault";
 import { shellPrefix } from "@/lib/offline-shell";
+import {
+  accessEpoch,
+  accessEpochKey,
+  accompaniedKey,
+  accompaniedMarker,
+  markAccompanied,
+  publishAccessChange,
+} from "@/lib/access-transition";
 
 const AuthContext = createContext<AuthSession | null>(null);
+const AccompaniedContext = createContext<{
+  busy: boolean;
+  start: (profileId: string) => Promise<void>;
+}>({ busy: false, start: async () => {} });
 const lockKey = "pictoflow:explicit-logout";
 export function useAuthentication() {
   return useContext(AuthContext);
+}
+export function useAccompaniedAccess() {
+  return useContext(AccompaniedContext);
+}
+
+function forgetMessageReferences() {
+  for (let i = sessionStorage.length - 1; i >= 0; i--) {
+    const key = sessionStorage.key(i);
+    if (key?.startsWith("pictoflow:sequence:")) sessionStorage.removeItem(key);
+  }
 }
 
 async function forgetLocalCommunication() {
   let referencesBlocked = false;
   try {
-    for (let i = sessionStorage.length - 1; i >= 0; i--) {
-      const key = sessionStorage.key(i);
-      if (key?.startsWith("pictoflow:sequence:"))
-        sessionStorage.removeItem(key);
-    }
+    forgetMessageReferences();
   } catch {
     referencesBlocked = true;
   }
@@ -77,6 +95,11 @@ export default function Authentication({
   const usernameField = useRef<HTMLInputElement>(null);
   const channel = useRef<BroadcastChannel | null>(null);
   const locked = useRef(false);
+  const handingOff = useRef(false);
+  const [transitioning, setTransitioning] = useState(false);
+  const [offlineBlocked, setOfflineBlocked] = useState(true);
+  const [pendingHandoff, setPendingHandoff] = useState(false);
+  const observedEpoch = useRef<string | null>(null);
   function localLock(value: boolean) {
     locked.current = value;
     try {
@@ -91,7 +114,10 @@ export default function Authentication({
   }, [session?.enabled, session?.account?.id]);
   useEffect(() => {
     let cancelled = false;
+    setOfflineBlocked(!!accompaniedMarker());
+    setPendingHandoff(accompaniedMarker() === "pending");
     if (path === "/offline") return;
+    if (handingOff.current || accompaniedMarker() === "pending") return;
     api<AuthSession>("auth/session")
       .then((value) => {
         if (!cancelled) {
@@ -102,6 +128,14 @@ export default function Authentication({
             /* Keep the current tab's lock. */
           }
           if (!value.enabled) localLock(false);
+          const marker = accompaniedMarker();
+          if (
+            marker &&
+            value.enabled &&
+            value.account &&
+            marker !== value.account.assisted_profile_id
+          )
+            value = { ...value, account: null, csrf_token: null };
           if (value.enabled && locked.current)
             value = { ...value, account: null, csrf_token: null };
           setCSRFToken(value.csrf_token);
@@ -140,6 +174,16 @@ export default function Authentication({
       );
     }
     function changed(event?: MessageEvent | StorageEvent | Event) {
+      observedEpoch.current = accessEpoch();
+      setOfflineBlocked(!!accompaniedMarker());
+      setPendingHandoff(accompaniedMarker() === "pending");
+      if (["pending", "locked"].includes(accompaniedMarker() ?? "")) {
+        try {
+          forgetMessageReferences();
+        } catch {
+          /* No cached message may be opened during handoff. */
+        }
+      }
       if (event instanceof MessageEvent && event.data === "logout")
         localLock(true);
       else {
@@ -154,9 +198,20 @@ export default function Authentication({
     }
     function pageShown(event: PageTransitionEvent) {
       if (event.persisted) changed();
+      else document.body.style.visibility = "";
+    }
+    function pageHidden() {
+      // BFCache must not paint an adult screen before a fresh session check.
+      document.body.style.visibility = "hidden";
+      expired();
+      setCheckedPath("");
+    }
+    function focused() {
+      if (observedEpoch.current !== accessEpoch()) changed();
     }
     function storageChanged(event: StorageEvent) {
-      if (event.key === lockKey) changed(event);
+      if ([lockKey, accessEpochKey, accompaniedKey].includes(event.key ?? ""))
+        changed(event);
     }
     if (typeof BroadcastChannel !== "undefined") {
       channel.current = new BroadcastChannel("pictoflow-access");
@@ -165,15 +220,98 @@ export default function Authentication({
     window.addEventListener("pictoflow:session-expired", expired);
     window.addEventListener("pictoflow:access-changed", changed);
     window.addEventListener("pageshow", pageShown);
+    window.addEventListener("pagehide", pageHidden);
+    window.addEventListener("focus", focused);
     window.addEventListener("storage", storageChanged);
     return () => {
       channel.current?.close();
       window.removeEventListener("pictoflow:session-expired", expired);
       window.removeEventListener("pictoflow:access-changed", changed);
       window.removeEventListener("pageshow", pageShown);
+      window.removeEventListener("pagehide", pageHidden);
+      window.removeEventListener("focus", focused);
       window.removeEventListener("storage", storageChanged);
     };
   }, []);
+  useEffect(() => {
+    if ((session && checkedPath === path) || path === "/offline")
+      document.body.style.visibility = "";
+  }, [session, checkedPath, path]);
+
+  async function startAccompanied(profileId: string) {
+    if (gate.current || !session?.csrf_token) return;
+    gate.current = true;
+    handingOff.current = true;
+    const previousCSRF = session.csrf_token;
+    setBusy(true);
+    setTransitioning(true);
+    setError("");
+    try {
+      // A durable marker is required before local copies can be cleared or the browser handed over.
+      markAccompanied("pending");
+      publishAccessChange();
+      channel.current?.postMessage("changed");
+      await forgetLocalCommunication();
+      try {
+        const response = await fetch("/api/pictoflow/auth/accompanied", {
+          method: "POST",
+          cache: "no-store",
+          signal: AbortSignal.timeout(15000),
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": previousCSRF,
+          },
+          body: JSON.stringify({ profile_id: profileId }),
+        });
+        if (!response.ok) throw new APIError(response.status);
+      } catch {
+        // A lost response may have committed. Read the cookie's current scope; never resend.
+      }
+      const response = await fetch("/api/pictoflow/auth/session", {
+        cache: "no-store",
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!response.ok) throw new Error("Passage de relais non confirmé.");
+      const value = (await response.json()) as AuthSession;
+      if (
+        !value.enabled ||
+        value.account?.assisted_profile_id !== profileId ||
+        !value.csrf_token
+      )
+        throw new Error(
+          "Passage de relais non confirmé. Reconnectez-vous avant de réessayer.",
+        );
+      markAccompanied(profileId);
+      localLock(false);
+      setCSRFToken(value.csrf_token);
+      setSession(value);
+      setCheckedPath("");
+      router.replace(`/communication/${profileId}`);
+      channel.current?.postMessage("changed");
+    } catch (failure) {
+      localLock(true);
+      try {
+        markAccompanied("locked");
+      } catch {
+        /* Retain the local login gate. */
+      }
+      setCSRFToken(null);
+      setSession({ enabled: true, account: null, csrf_token: null });
+      setCheckedPath(path);
+      setError(
+        failure instanceof Error
+          ? failure.message
+          : "Passage de relais impossible. Reconnectez-vous.",
+      );
+      channel.current?.postMessage("logout");
+    } finally {
+      handingOff.current = false;
+      gate.current = false;
+      setTransitioning(false);
+      setBusy(false);
+      publishAccessChange();
+    }
+  }
   async function connect(event: React.FormEvent) {
     event.preventDefault();
     if (gate.current) return;
@@ -188,6 +326,10 @@ export default function Authentication({
         method: "POST",
         body: JSON.stringify({ username: login, password }),
       });
+      if (accompaniedMarker()) {
+        await forgetLocalCommunication();
+        localStorage.removeItem(accompaniedKey);
+      }
       setCSRFToken(result.csrf_token);
       localLock(false);
       setSession({ enabled: true, ...result });
@@ -195,6 +337,7 @@ export default function Authentication({
       setRetry((value) => value + 1);
       setPassword("");
       channel.current?.postMessage("changed");
+      publishAccessChange();
     } catch (error) {
       setError(
         error instanceof APIError && error.status === 401
@@ -214,15 +357,40 @@ export default function Authentication({
     setBusy(true);
     setError("");
     localLock(true);
+    if (accompaniedMarker() === "pending") {
+      try {
+        markAccompanied("locked");
+      } catch {
+        /* Keep the local gate. */
+      }
+    }
     try {
       const results = Promise.allSettled([
-        api("auth/logout", { method: "POST" }),
+        (async () => {
+          // This boundary deliberately invalidates the ordinary API response fence.
+          // Recover CSRF after an interrupted handoff without restoring any tools.
+          let token = session?.csrf_token;
+          if (!token) {
+            const current = await fetch("/api/pictoflow/auth/session", {
+              cache: "no-store",
+            });
+            if (!current.ok) throw new Error("Session inaccessible.");
+            token = ((await current.json()) as AuthSession).csrf_token;
+          }
+          const response = await fetch("/api/pictoflow/auth/logout", {
+            method: "POST",
+            cache: "no-store",
+            headers: token ? { "X-CSRF-Token": token } : {},
+          });
+          if (!response.ok) throw new APIError(response.status);
+        })(),
         forgetLocalCommunication(),
       ]);
       setSession((current) =>
         current ? { ...current, account: null, csrf_token: null } : null,
       );
       channel.current?.postMessage("logout");
+      publishAccessChange();
       const [server, storage] = await results;
       if (server.status === "rejected")
         setError(
@@ -240,7 +408,33 @@ export default function Authentication({
       setBusy(false);
     }
   }
-  if (path === "/offline") return <>{children}</>;
+  if (transitioning || pendingHandoff)
+    return (
+      <main className="page auth-page">
+        <h1>Préparation du clavier</h1>
+        <p role="status">
+          Le passage de relais est en cours. Ne confiez pas encore cet appareil.
+        </p>
+        <button disabled={busy} onClick={() => void disconnect()}>
+          Fermer l’accès et se reconnecter
+        </button>
+      </main>
+    );
+  if (path === "/offline")
+    return offlineBlocked ? (
+      <main className="page auth-page">
+        <h1>Session accompagnée en ligne</h1>
+        <p>
+          Les copies hors connexion sont fermées pendant le passage de relais.
+          Reconnectez-vous pour les préparer à nouveau.
+        </p>
+        <Link className="button-link" href="/">
+          Revenir à PictoFlow
+        </Link>
+      </main>
+    ) : (
+      <>{children}</>
+    );
   if (!session || checkedPath !== path || destination)
     return (
       <main className="page auth-page">
@@ -313,27 +507,41 @@ export default function Authentication({
       {error && <p role="alert">{error}</p>}
     </>
   );
+  const assisted = !!session.account?.assisted_profile_id;
   return (
     <AuthContext.Provider value={session}>
-      {session.enabled &&
-        (path.startsWith("/communication") ? (
-          <details className="account-bar communication-account">
-            <summary>Mon compte</summary>
-            <div className="account-controls">{accountControls}</div>
-          </details>
+      <AccompaniedContext.Provider value={{ busy, start: startAccompanied }}>
+        {session.enabled &&
+          (assisted ? (
+            <div className="account-bar accompanied-bar">
+              <span>Session accompagnée · en ligne</span>
+              <button
+                className="secondary"
+                disabled={busy}
+                onClick={() => void disconnect()}
+              >
+                Revenir à l’accompagnement — se reconnecter
+              </button>
+            </div>
+          ) : path.startsWith("/communication") ? (
+            <details className="account-bar communication-account">
+              <summary>Mon compte</summary>
+              <div className="account-controls">{accountControls}</div>
+            </details>
+          ) : (
+            <div className="account-bar">{accountControls}</div>
+          ))}
+        {pathPermitted(session, path) ? (
+          children
         ) : (
-          <div className="account-bar">{accountControls}</div>
-        ))}
-      {pathPermitted(session, path) ? (
-        children
-      ) : (
-        <main className="page">
-          <h1>Ce profil ou cet écran ne vous est pas accessible.</h1>
-          <Link className="button-link" href={landingPath(session)}>
-            Retrouver mon espace
-          </Link>
-        </main>
-      )}
+          <main className="page">
+            <h1>Ce profil ou cet écran ne vous est pas accessible.</h1>
+            <Link className="button-link" href={landingPath(session)}>
+              Retrouver mon espace
+            </Link>
+          </main>
+        )}
+      </AccompaniedContext.Provider>
     </AuthContext.Provider>
   );
 }
