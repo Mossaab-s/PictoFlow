@@ -265,6 +265,8 @@ export default function Authentication({
     try {
       // A durable marker is required before local copies can be cleared or the browser handed over.
       markAccompanied("pending");
+      // Also close offline portals running a previous application build.
+      localLock(true);
       publishAccessChange();
       channel.current?.postMessage("changed");
       await forgetLocalCommunication();
