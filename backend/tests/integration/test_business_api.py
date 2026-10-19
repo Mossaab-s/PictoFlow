@@ -64,14 +64,11 @@ def test_literal_reason_is_candidate_scoped_read_only_and_unknown_for_legacy_aud
     from types import SimpleNamespace
     from uuid import UUID
 
-    from sqlalchemy import select
-
     from app.application.ai_context import context_for
     from app.application.communication import CommunicationService
     from app.application.interpretation import InterpretationService
     from app.application.profile_archive import RestoreRequest, parse_archive
     from app.domain.pcl.entities import HumanRole, Interpretation
-    from app.infrastructure.postgres.models import AuditRow
     from app.infrastructure.postgres.profile_archives import PostgresProfileArchives
 
     base, create = evolution_fixture(api)
@@ -112,15 +109,18 @@ def test_literal_reason_is_candidate_scoped_read_only_and_unknown_for_legacy_aud
         "disabled",
         "unavailable",
     }
-    # Simulate a pre-existing audit record with no candidate-level reason.
-    with api.app.state.pcl_units() as store:
-        row = store.session.scalar(
-            select(AuditRow).where(AuditRow.target_id == UUID(original["id"]))
-        )
-        state = dict(row.new_state)
-        state.pop("presentation")
-        row.new_state = state
-    assert api.get(path).json()["fallback_reason"] is None
+    # Create the old proposal/audit shape without changing append-only history.
+    legacy = Interpretation(
+        profile_id=profile,
+        sequence_id=UUID(original["sequence_id"]),
+        source="pcl",
+        text=original["text"],
+        confidence=0.5,
+    )
+    CommunicationService(units).propose(profile, legacy.sequence_id, (legacy,), source="pcl")
+    assert (
+        api.get(base + f"/interpretations/{legacy.id}/ai-context").json()["fallback_reason"] is None
+    )
 
 
 def need_fixture(api):

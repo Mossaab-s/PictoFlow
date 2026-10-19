@@ -237,7 +237,7 @@ try {
       const card = page.locator(".interpretation-card");
       await card.getByText("Modifier la phrase", { exact: true }).click();
       await card
-        .getByLabel("Je corrige la phrase", { exact: true })
+        .getByLabel("Je corrige la phrase")
         .fill("Je voudrais boire de l’eau.");
       await card
         .getByRole("button", { name: "Valider ma correction", exact: true })
