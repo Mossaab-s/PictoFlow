@@ -1,3 +1,5 @@
+import { accessEpoch } from "./access-transition.ts";
+
 let csrfToken: string | null = null;
 export function setCSRFToken(value: string | null) {
   csrfToken = value;
@@ -25,6 +27,7 @@ export class APIError extends Error {
 
 export async function api<T>(path: string, options?: RequestInit): Promise<T> {
   const requestedToken = csrfToken;
+  const requestedEpoch = accessEpoch();
   const response = await fetch(`/api/pictoflow/${path}`, {
     ...options,
     cache: "no-store",
@@ -34,7 +37,7 @@ export async function api<T>(path: string, options?: RequestInit): Promise<T> {
       ...options?.headers,
     },
   });
-  if (requestedToken !== csrfToken)
+  if (requestedToken !== csrfToken || requestedEpoch !== accessEpoch())
     throw new Error("Votre accès a changé. Rechargez cet écran.");
   if (!response.ok) {
     if (
@@ -50,7 +53,7 @@ export async function api<T>(path: string, options?: RequestInit): Promise<T> {
   }
   if (response.status === 204) return undefined as T;
   const result = (await response.json()) as T;
-  if (requestedToken !== csrfToken)
+  if (requestedToken !== csrfToken || requestedEpoch !== accessEpoch())
     throw new Error("Votre accès a changé. Rechargez cet écran.");
   return result;
 }

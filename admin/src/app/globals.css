@@ -2146,3 +2146,15 @@ pre {
 .communication-page > .message-panel[data-completed="true"] {
   position: static;
 }
+.accompanied-access {
+  margin: 16px clamp(16px, 4vw, 48px);
+}
+.accompanied-access p {
+  max-width: 70ch;
+}
+.accompanied-bar {
+  flex-wrap: wrap;
+}
+.accompanied-bar button {
+  white-space: normal;
+}

@@ -9,12 +9,29 @@ import {
   unlockVault,
 } from "../src/lib/offline-vault.ts";
 import { emptyOffline, editOffline } from "../src/lib/offline.ts";
+import { readOffline } from "../src/lib/offline-store.ts";
 
 globalThis.indexedDB = indexedDB;
 const owner = "99999999-9999-4999-8999-999999999999";
 const profile = "11111111-1111-4111-8111-111111111111";
 const block = "22222222-2222-4222-8222-222222222222";
 const secret = "une phrase secrète de test";
+
+test("accompanied handoff blocks encrypted and ordinary offline copies", async () => {
+  const previous = globalThis.localStorage;
+  const isolatedOwner = "88888888-8888-4888-8888-888888888888";
+  await createVault(record(), isolatedOwner, secret);
+  const vault = (await listVaults()).find((row) => row.owner === isolatedOwner);
+  try {
+    globalThis.localStorage = {
+      getItem: (key) => (key === "pictoflow:accompanied" ? profile : null),
+    };
+    await assert.rejects(unlockVault(vault, secret), /Copie inaccessible/);
+    await assert.rejects(readOffline(profile), /session accompagnée/);
+  } finally {
+    globalThis.localStorage = previous;
+  }
+});
 function record() {
   return {
     ...emptyOffline(profile),

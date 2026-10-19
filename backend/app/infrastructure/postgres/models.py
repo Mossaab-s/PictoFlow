@@ -95,6 +95,16 @@ class AuthSessionRow(Base):
     )
     created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), default=utc_now)
     expires_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), index=True)
+    assisted_profile_id: Mapped[UUID | None] = mapped_column(
+        sa.ForeignKey("user_communication_profile.id", ondelete="CASCADE")
+    )
+    assisted_review_allowed: Mapped[bool] = mapped_column(default=False, server_default=sa.false())
+    __table_args__ = (
+        sa.CheckConstraint(
+            "assisted_profile_id IS NOT NULL OR NOT assisted_review_allowed",
+            name="assisted_review_requires_profile",
+        ),
+    )
 
 
 class ProfileAccessRow(Base):

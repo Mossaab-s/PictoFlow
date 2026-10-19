@@ -23,6 +23,7 @@ export type Account = {
   active: boolean;
   profile_access: Record<string, ProfileRole>;
   profile_capabilities?: Record<string, ProfileCapability[]>;
+  assisted_profile_id?: string | null;
 };
 export type AuthSession = {
   enabled: boolean;
@@ -164,6 +165,8 @@ export function assignedProfiles(
 }
 
 export function landingPath(session: AuthSession): string {
+  if (session.account?.assisted_profile_id)
+    return `/communication/${session.account.assisted_profile_id}`;
   if (isAdministrator(session)) return "/admin";
   if (assignedProfiles(session, "support").length) return "/accompagnement";
   const ids = assignedProfiles(session, "communication");
@@ -191,6 +194,12 @@ export function entryRedirect(
   session: AuthSession,
   path: string,
 ): string | null {
+  if (
+    session.account?.assisted_profile_id &&
+    path !== landingPath(session) &&
+    !pathPermitted(session, path)
+  )
+    return landingPath(session);
   if (path === "/") return landingPath(session);
   if (path === "/communication" && !isAdministrator(session)) {
     const ids = assignedProfiles(session, "communication");
@@ -206,6 +215,13 @@ export function entryRedirect(
 }
 
 export function pathPermitted(session: AuthSession, path: string): boolean {
+  if (session.account?.assisted_profile_id) {
+    const root = `/communication/${session.account.assisted_profile_id}`;
+    return (
+      canProfile(session, session.account.assisted_profile_id, "communicate") &&
+      (path === root || path === root + "/memoire")
+    );
+  }
   if (!session.enabled || session.account?.is_admin) return true;
   const account = session.account;
   if (!account) return false;

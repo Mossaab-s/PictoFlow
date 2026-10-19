@@ -47,8 +47,12 @@ def authenticated(request: Request):
     if account is None:
         raise HTTPException(401, "Authentication required")
     request.state.account = account
-    if request.method not in ("GET", "HEAD", "OPTIONS"):
+    unsafe = request.method not in ("GET", "HEAD", "OPTIONS")
+    if unsafe:
         origin_check(request)
+    # Existing browser tabs send their previous CSRF on reads too. Reject stale
+    # credentials after cookie rotation, while normal image navigation stays possible.
+    if unsafe or request.headers.get("x-csrf-token"):
         expected = csrf_token(request.cookies[cookie_name(request)])
         supplied = request.headers.get("x-csrf-token", "")
         if not re.fullmatch(r"[a-f0-9]{64}", supplied) or not hmac.compare_digest(
@@ -91,7 +95,10 @@ def require_access(request: Request):
                 "request_authorized",
                 account.id,
                 UUID(profile_id) if profile_id else None,
-                request.method + " " + route,
+                ("accompanied: " if account.assisted_profile_id else "")
+                + request.method
+                + " "
+                + route,
             )
 
 
@@ -149,6 +156,41 @@ class CapabilityBody(Body):
     expected_capabilities: CapabilitySelection | None
 
 
+class AccompaniedBody(Body):
+    profile_id: UUID
+
+
+def session_cookie(request: Request, response: Response, token: str, seconds: int):
+    response.set_cookie(
+        cookie_name(request),
+        token,
+        max_age=seconds,
+        path="/",
+        secure=request.app.state.settings.auth_origin.startswith("https:"),
+        httponly=True,
+        samesite="strict",
+    )
+
+
+@router.post("/accompanied")
+def accompanied(request: Request, response: Response, body: AccompaniedBody):
+    if not request.app.state.settings.auth_enabled:
+        raise HTTPException(404, "Authentication is not enabled")
+    account = authenticated(request)
+    if account.assisted_profile_id is not None:
+        raise HTTPException(403, "Re-authentication required")
+    granted = account.profile_capabilities.get(str(body.profile_id), ())
+    if not account.is_admin and not granted:
+        raise HTTPException(404, "Profile not found")
+    if not account.is_admin and "communicate" not in granted:
+        raise HTTPException(403, "Communication permission required")
+    token, seconds = accounts(request).accompany(
+        request.cookies[cookie_name(request)], body.profile_id
+    )
+    session_cookie(request, response, token, seconds)
+    return {"account": accounts(request).current(token), "csrf_token": csrf_token(token)}
+
+
 @router.get("/session")
 def session(request: Request):
     enabled = request.app.state.settings.auth_enabled
@@ -178,15 +220,7 @@ def login(request: Request, response: Response, body: LoginBody):
     previous = request.cookies.get(cookie_name(request))
     if previous:
         accounts(request).logout(previous)
-    response.set_cookie(
-        cookie_name(request),
-        token,
-        max_age=config.auth_session_hours * 3600,
-        path="/",
-        secure=config.auth_origin.startswith("https:"),
-        httponly=True,
-        samesite="strict",
-    )
+    session_cookie(request, response, token, config.auth_session_hours * 3600)
     return {"account": accounts(request).current(token), "csrf_token": csrf_token(token)}
 
 
@@ -199,6 +233,9 @@ def logout(request: Request, response: Response):
     account = accounts(request).current(token)
     if account:
         authenticated(request)
+        if account.assisted_profile_id:
+            with accounts(request).factory.begin() as db:
+                Accounts.event(db, "accompanied_ended", account.id, account.assisted_profile_id)
     accounts(request).logout(token, account.id if account else None)
     response.delete_cookie(
         cookie_name(request),

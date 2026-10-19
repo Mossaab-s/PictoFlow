@@ -24,7 +24,10 @@ const failure = () =>
     "Copie inaccessible : vérifiez votre phrase secrète ou préparez une nouvelle copie.",
   );
 function requireLocalAccess() {
-  if (globalThis.localStorage?.getItem("pictoflow:explicit-logout") === "1")
+  if (
+    globalThis.localStorage?.getItem("pictoflow:explicit-logout") === "1" ||
+    globalThis.localStorage?.getItem("pictoflow:accompanied")
+  )
     throw new Error(
       "Cet appareil est déconnecté. Reconnectez-vous avant d’ouvrir une copie.",
     );
@@ -185,6 +188,7 @@ export async function unlockVault(
       JSON.parse(new TextDecoder().decode(bytes)),
     );
     if (!record || !record.snapshot) throw failure();
+    requireLocalAccess();
     return { row, key, record };
   } catch {
     throw failure();

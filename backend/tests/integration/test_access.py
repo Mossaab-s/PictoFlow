@@ -80,6 +80,189 @@ def capability_grant(client, user, profile_id, values, expected=None):
     )
 
 
+def accompany(client, profile_id):
+    response = client.post("/api/v1/auth/accompanied", json={"profile_id": profile_id})
+    response.raise_for_status()
+    client.headers["x-csrf-token"] = response.json()["csrf_token"]
+    return response
+
+
+def test_accompanied_admin_is_scoped_rotated_and_requires_real_reauthentication(secured):
+    client, service, admin = secured
+    login(client)
+    p, other = profile(client), profile(client)
+    old_cookie = client.cookies.get("__Host-pictoflow-session")
+    old_csrf = client.headers["x-csrf-token"]
+    response = accompany(client, p)
+    account = response.json()["account"]
+    assert account["id"] == str(admin.id)  # The authenticating adult is retained, not impersonated.
+    assert account["is_admin"] is False
+    assert account["assisted_profile_id"] == p
+    assert account["profile_capabilities"] == {p: ["communicate", "review_meanings"]}
+    assert service.current(old_cookie) is None
+    assert response.json()["csrf_token"] != old_csrf
+    assert "HttpOnly" in response.headers["set-cookie"]
+    assert "Secure" in response.headers["set-cookie"]
+    assert "SameSite=strict" in response.headers["set-cookie"]
+    assert [item["id"] for item in client.get("/api/v1/profiles").json()] == [p]
+    assert client.get(f"/api/v1/profiles/{p}/keyboard").status_code == 200
+    assert (
+        client.get(f"/api/v1/profiles/{p}/keyboard", headers={"x-csrf-token": old_csrf}).status_code
+        == 403
+    )
+    assert client.get(f"/api/v1/profiles/{other}/keyboard").status_code == 404
+    for path in (
+        "/auth/users",
+        f"/profiles/{p}/backup",
+        f"/profiles/{p}/audit",
+        f"/profiles/{p}/ai-quality",
+        f"/profiles/{p}/communication-snapshot",
+    ):
+        assert client.get("/api/v1" + path).status_code == 403
+    assert client.post("/api/v1/profiles", json={}).status_code == 403
+    assert client.post("/api/v1/auth/accompanied", json={"profile_id": other}).status_code == 403
+    assert client.post(f"/api/v1/profiles/{p}/offline-drafts", json={}).status_code == 403
+    assert client.post(f"/api/v1/profiles/{p}/blocks/personal", json={}).status_code == 403
+    assert (
+        client.post(
+            f"/api/v1/profiles/{p}/sequences",
+            json={"session_id": str(uuid4())},
+            headers={"x-csrf-token": old_csrf},
+        ).status_code
+        == 403
+    )
+    client.post(
+        f"/api/v1/profiles/{p}/sequences", json={"session_id": str(uuid4())}
+    ).raise_for_status()
+    with service.factory.begin() as db:
+        scoped = db.get(AuthSessionRow, token_hash(client.cookies.get("__Host-pictoflow-session")))
+        assert timedelta(minutes=59) < scoped.expires_at - utc_now() <= timedelta(hours=1)
+        started = db.scalar(
+            select(AccessEventRow).where(AccessEventRow.event_type == "accompanied_started")
+        )
+        assert started.actor_id == admin.id and started.target_id == UUID(p)
+        authorized = db.scalars(
+            select(AccessEventRow).where(AccessEventRow.event_type == "request_authorized")
+        ).all()
+        assert any(
+            event.actor_id == admin.id and event.detail.startswith("accompanied: POST /profiles/")
+            for event in authorized
+        )
+    client.post("/api/v1/auth/logout").raise_for_status()
+    assert client.get("/api/v1/auth/session").json()["account"] is None
+    assert (
+        client.post(
+            "/api/v1/auth/login", json={"username": "administrator", "password": "incorrect"}
+        ).status_code
+        == 401
+    )
+    assert client.get("/api/v1/auth/users").status_code == 401
+    login(client).raise_for_status()
+    assert client.get("/api/v1/auth/session").json()["account"]["is_admin"] is True
+    assert client.get("/api/v1/auth/users").status_code == 200
+
+
+def test_accompanied_grants_remain_live_and_cannot_expand_past_handoff(secured):
+    client, service, admin = secured
+    login(client)
+    p, other = profile(client), profile(client)
+    user = service.create("accompanied", "Aidant fictif", PHRASE)
+    service.grant_capabilities(
+        user.id, UUID(p), ["communicate", "prepare_keyboard"], None, actor_id=admin.id
+    )
+    service.grant_capabilities(user.id, UUID(other), ["communicate"], None, actor_id=admin.id)
+    login(client, user.username)
+    accompany(client, p)
+    assert client.get("/api/v1/auth/session").json()["account"]["profile_capabilities"] == {
+        p: ["communicate"]
+    }
+    service.grant_capabilities(
+        user.id,
+        UUID(p),
+        ["communicate", "review_meanings", "prepare_keyboard"],
+        ["communicate", "prepare_keyboard"],
+        actor_id=admin.id,
+    )
+    assert client.get("/api/v1/auth/session").json()["account"]["profile_capabilities"] == {
+        p: ["communicate"]
+    }
+    assert (
+        client.post(
+            f"/api/v1/profiles/{p}/interpretations/{uuid4()}/feedback",
+            json={"action": "confirm", "actor_role": "user"},
+        ).status_code
+        == 403
+    )
+    service.grant_capabilities(
+        user.id,
+        UUID(p),
+        ["review_meanings"],
+        ["communicate", "review_meanings", "prepare_keyboard"],
+        actor_id=admin.id,
+    )
+    current = client.get("/api/v1/auth/session").json()["account"]
+    assert current["profile_capabilities"] == {} and current["assisted_profile_id"] == p
+    assert client.get(f"/api/v1/profiles/{p}/keyboard").status_code == 404
+    assert client.get(f"/api/v1/profiles/{other}/keyboard").status_code == 404
+
+
+@pytest.mark.parametrize(
+    "failure", ["csrf", "origin", "unknown", "preparation_only", "already_scoped", "expired"]
+)
+def test_handoff_rejects_invalid_or_insufficient_sessions(secured, failure):
+    client, service, admin = secured
+    login(client)
+    p = profile(client)
+    headers = {}
+    if failure == "csrf":
+        headers["x-csrf-token"] = "invalid"
+    elif failure == "origin":
+        headers["origin"] = "https://untrusted.test"
+    elif failure == "unknown":
+        user = service.create("unassigned", "Fictif", PHRASE)
+        login(client, user.username)
+    elif failure == "preparation_only":
+        user = service.create("prepare", "Fictif", PHRASE)
+        service.grant_capabilities(user.id, UUID(p), ["prepare_keyboard"], None, actor_id=admin.id)
+        login(client, user.username)
+    elif failure == "already_scoped":
+        accompany(client, p)
+    else:
+        with service.factory.begin() as db:
+            db.scalar(select(AuthSessionRow)).expires_at = utc_now() - timedelta(seconds=1)
+    response = client.post("/api/v1/auth/accompanied", json={"profile_id": p}, headers=headers)
+    assert response.status_code == {"unknown": 404, "expired": 401}.get(failure, 403)
+
+
+def test_accompanied_downgrade_invalidates_scope_instead_of_restoring_adult(
+    secured, postgres_connection
+):
+    from alembic import command
+
+    from tests.integration.conftest import migration_config
+
+    client, service, _ = secured
+    login(client)
+    p = profile(client)
+    # Another browser's full adult login must remain independent.
+    independent, _ = service.login("administrator", PHRASE, 12)
+    accompany(client, p)
+    scoped_cookie = client.cookies.get("__Host-pictoflow-session")
+    command.downgrade(migration_config(postgres_connection), "0012_profile_capabilities")
+    with service.factory.begin() as db:
+        assert (
+            db.scalar(
+                select(func.count())
+                .select_from(AuthSessionRow.__table__)
+                .where(AuthSessionRow.token_hash == token_hash(scoped_cookie))
+            )
+            == 0
+        )
+    command.upgrade(migration_config(postgres_connection), "head")
+    assert service.current(scoped_cookie) is None
+    assert service.current(independent).is_admin
+
+
 def test_limited_communication_and_review_are_independent_and_revocable(secured):
     client, service, admin = secured
     login(client)

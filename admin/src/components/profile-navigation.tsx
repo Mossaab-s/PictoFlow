@@ -6,6 +6,7 @@ import type { HumanRole } from "@/lib/keyboard";
 import ProfileIdentity from "./profile-identity";
 import { useAuthentication } from "./authentication";
 import { pathPermitted, profileToolPath, supportSections } from "@/lib/access";
+import AccompaniedAccess from "./accompanied-access";
 
 export function ProfileNavigation({
   profileId,
@@ -59,6 +60,7 @@ export function ProfileNavigation({
               </Link>
             ))}
         </nav>
+        <AccompaniedAccess profileId={profileId} />
       </>
     );
   return (
@@ -84,6 +86,7 @@ export function ProfileNavigation({
             </Link>
           ))}
       </nav>
+      <AccompaniedAccess profileId={profileId} />
     </>
   );
 }
