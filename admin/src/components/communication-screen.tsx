@@ -15,6 +15,7 @@ import {
   type Tile,
 } from "@/lib/keyboard";
 import KeyboardGrid from "./keyboard-grid";
+import CommunicationTouchSearch from "./communication-touch-search";
 import { HumanRoleSelector, ProfileNavigation } from "./profile-navigation";
 import { useAuthentication } from "./authentication";
 import { canPrepare, canProfile, profileToolPath } from "@/lib/access";
@@ -767,17 +768,35 @@ export default function CommunicationScreen({
           {!data.loading &&
             display.ready &&
             (tiles.length ? (
-              <KeyboardGrid
-                profileId={profileId}
-                groups={data.groups}
-                tiles={tiles}
-                onSelect={(tile) => {
-                  const clickedAt = performance.now();
-                  return perform(() => select(tile, clickedAt));
-                }}
-                disabled={pending || Boolean(completed) || chosen.length >= 32}
-                displaySize={display.size}
-              />
+              <>
+                <CommunicationTouchSearch
+                  key={profileId}
+                  profileId={profileId}
+                  tiles={tiles}
+                  groups={data.groups}
+                  displaySize={display.size}
+                  disabled={
+                    pending || Boolean(completed) || chosen.length >= 32
+                  }
+                  onSelect={(tile) => {
+                    const clickedAt = performance.now();
+                    return perform(() => select(tile, clickedAt));
+                  }}
+                />
+                <KeyboardGrid
+                  profileId={profileId}
+                  groups={data.groups}
+                  tiles={tiles}
+                  onSelect={(tile) => {
+                    const clickedAt = performance.now();
+                    return perform(() => select(tile, clickedAt));
+                  }}
+                  disabled={
+                    pending || Boolean(completed) || chosen.length >= 32
+                  }
+                  displaySize={display.size}
+                />
+              </>
             ) : (
               <div className="empty">
                 <h2>Il faut d'abord préparer vos touches</h2>
