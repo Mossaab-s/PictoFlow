@@ -311,10 +311,19 @@ try {
   await expect(words).toHaveText(["Eau", "Eau"]);
   await waterPool.click();
   await expect(words).toHaveText(["Eau", "Eau", "Eau"]);
-  const sequences = await call(base + "/sequences");
-  assert.equal(sequences.length, 1);
-  const sequenceId = sequences[0].id;
-  assert.deepEqual(sequences[0].block_ids, [water.id, water.id, pool.id]);
+  // The history endpoint lists completed messages. Read the live sequence by
+  // the ID returned by its single creation request instead.
+  const starts = writes.filter(
+    (req) =>
+      req.method() === "POST" && req.url().endsWith(`/${base}/sequences`),
+  );
+  assert.equal(starts.length, 1);
+  const started = await starts[0].response();
+  assert(started?.ok());
+  const sequenceId = (await started.json()).id;
+  const live = await call(base + `/sequences/${sequenceId}`);
+  assert.equal(live.status, "in_progress");
+  assert.deepEqual(live.block_ids, [water.id, water.id, pool.id]);
   assert.deepEqual(await page.evaluate(() => window.__spoken), []);
   await message
     .getByRole("button", { name: "Parler : lire mes mots", exact: true })
@@ -435,6 +444,10 @@ try {
   await expect(waterNeeds).toBeDisabled();
   await input.fill("livre");
   await expect(bookButton).toBeDisabled();
+  const history = await call(base + "/sequences");
+  assert.equal(history.length, 1);
+  assert.equal(history[0].id, sequenceId);
+  assert.equal(history[0].block_ids.length, 31);
   for (const resource of [
     "keyboard",
     "blocks",
