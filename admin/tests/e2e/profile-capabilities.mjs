@@ -66,6 +66,9 @@ async function connect(username) {
   await page.getByLabel("Identifiant", { exact: true }).fill(username);
   await page.getByLabel("Mot de passe", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Se connecter", exact: true }).click();
+  // A click can finish before cookie replacement and the authenticated UI settle.
+  // Navigation must wait for the account bar, otherwise it can interrupt login.
+  await expect(page.locator(".account-bar")).toBeVisible();
 }
 try {
   await page.goto(origin + "/admin/access");
