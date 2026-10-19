@@ -103,6 +103,9 @@ try {
     path: ".local/admin-console/overview-desktop.png",
     fullPage: true,
   });
+  await page.locator(".admin-skip-link").focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#admin-content")).toBeFocused();
 
   // A failed readiness refresh must clear previously displayed success.
   const readinessURL = origin + "/api/pictoflow/readiness";

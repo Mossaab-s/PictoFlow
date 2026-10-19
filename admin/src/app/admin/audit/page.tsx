@@ -116,8 +116,9 @@ export default function Audit() {
                     : "Aucun profil à inspecter"}
                 </h2>
                 <p>
-                  Les journaux deviennent accessibles ici après la création d’un
-                  profil.
+                  {profiles.length
+                    ? "Essayez un autre nom ou identifiant."
+                    : "Les journaux deviennent accessibles ici après la création d’un profil."}
                 </p>
               </div>
             )}
