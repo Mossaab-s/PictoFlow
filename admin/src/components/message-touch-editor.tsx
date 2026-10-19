@@ -1,0 +1,210 @@
+"use client";
+import { useEffect, useRef, useState } from "react";
+import type { Representation, Sequence } from "@/lib/keyboard";
+import { TouchContent } from "./pictogram";
+
+type Word = { label: string; representation?: Representation };
+export type TouchRemoval = {
+  sequenceId: string;
+  blockIds: string[];
+  index: number;
+};
+
+export default function MessageTouchEditor({
+  sequence,
+  words,
+  disabled,
+  busy,
+  remove,
+}: {
+  sequence: Sequence | null;
+  words: Word[];
+  disabled: boolean;
+  busy: boolean;
+  remove: (choice: TouchRemoval) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [choice, setChoice] = useState<(TouchRemoval & { word: Word }) | null>(
+    null,
+  );
+  const root = useRef<HTMLDivElement>(null);
+  const toggle = useRef<HTMLButtonElement>(null);
+  const tokens = useRef<HTMLDivElement>(null);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const sending = useRef(false);
+  const canEdit = sequence?.status === "in_progress" && words.length > 0;
+  const active = editing && canEdit;
+
+  useEffect(() => {
+    if (!canEdit) setEditing(false);
+  }, [canEdit]);
+  useEffect(() => {
+    if (choice && !dialog.current?.open) dialog.current?.showModal();
+    if (!choice && dialog.current?.open) dialog.current.close();
+  }, [choice]);
+
+  function focusOccurrence(index: number) {
+    requestAnimationFrame(() => {
+      if (!root.current?.isConnected) return;
+      const buttons =
+        tokens.current?.querySelectorAll<HTMLButtonElement>("button");
+      const target = buttons?.[Math.min(index, buttons.length - 1)];
+      if (target && !target.disabled) target.focus();
+      else if (toggle.current && !toggle.current.disabled)
+        toggle.current.focus();
+      else tokens.current?.focus();
+    });
+  }
+  function cancel() {
+    if (sending.current) return;
+    const index = choice?.index ?? 0;
+    setChoice(null);
+    focusOccurrence(index);
+  }
+  async function confirm() {
+    if (!choice || disabled || sending.current) return;
+    sending.current = true;
+    const selected = choice;
+    try {
+      await remove(selected);
+    } finally {
+      sending.current = false;
+      // Closing does not retry an uncertain request. The parent has already reread the draft.
+      setChoice(null);
+      focusOccurrence(selected.index);
+    }
+  }
+  return (
+    <div
+      ref={root}
+      className="message-touch-editor"
+      data-editing={active}
+      onKeyDown={(event) => {
+        if (
+          event.key === "Escape" &&
+          !event.defaultPrevented &&
+          active &&
+          !choice &&
+          !busy
+        ) {
+          event.preventDefault();
+          setEditing(false);
+          requestAnimationFrame(() => toggle.current?.focus());
+        }
+      }}
+    >
+      {active && (
+        <p className="helper" id="message-edit-help">
+          Choisissez la touche à retirer, puis vérifiez votre choix.
+        </p>
+      )}
+      <div
+        ref={tokens}
+        className="message-tokens"
+        tabIndex={-1}
+        role={active ? "group" : "status"}
+        aria-label={active ? "Touches à corriger" : undefined}
+        aria-describedby={active ? "message-edit-help" : undefined}
+        aria-live={active ? undefined : "polite"}
+        aria-atomic={active ? undefined : true}
+      >
+        {words.length ? (
+          words.map((word, index) =>
+            active ? (
+              <button
+                key={index}
+                type="button"
+                className="message-touch secondary"
+                disabled={disabled}
+                aria-label={`Retirer « ${word.label} », touche ${index + 1} sur ${words.length}`}
+                onClick={() => {
+                  if (!sequence) return;
+                  setChoice({
+                    sequenceId: sequence.id,
+                    blockIds: [...sequence.block_ids],
+                    index,
+                    word,
+                  });
+                }}
+              >
+                <TouchContent
+                  label={word.label}
+                  representation={word.representation}
+                />
+                <small>Touche {index + 1}</small>
+              </button>
+            ) : (
+              <span className="message-touch" key={index}>
+                <TouchContent
+                  label={word.label}
+                  representation={word.representation}
+                />
+              </span>
+            ),
+          )
+        ) : (
+          <p>Votre message apparaîtra ici.</p>
+        )}
+      </div>
+      {canEdit && (
+        <button
+          ref={toggle}
+          type="button"
+          className="secondary message-edit-toggle"
+          aria-pressed={active}
+          disabled={busy || (!active && disabled)}
+          onClick={() => {
+            setEditing(!active);
+            if (!active) focusOccurrence(0);
+            else requestAnimationFrame(() => toggle.current?.focus());
+          }}
+        >
+          {active ? "Finir la correction" : "Corriger une touche"}
+        </button>
+      )}
+      <dialog
+        ref={dialog}
+        className="message-reset-dialog message-touch-dialog"
+        aria-labelledby="remove-message-touch-title"
+        aria-describedby="remove-message-touch-help"
+        onCancel={(event) => {
+          event.preventDefault();
+          cancel();
+        }}
+      >
+        <h2 id="remove-message-touch-title">
+          Retirer cette touche du message ?
+        </h2>
+        {choice && (
+          <>
+            <div className="removal-touch">
+              <TouchContent
+                label={choice.word.label}
+                representation={choice.word.representation}
+              />
+            </div>
+            <p>
+              Touche {choice.index + 1} sur {choice.blockIds.length}
+            </p>
+          </>
+        )}
+        <p id="remove-message-touch-help">
+          Les autres touches garderont leur ordre.
+        </p>
+        <div className="actions">
+          <button type="button" autoFocus disabled={busy} onClick={cancel}>
+            Garder cette touche
+          </button>
+          <button
+            type="button"
+            className="secondary"
+            disabled={disabled}
+            onClick={() => void confirm()}
+          >
+            Oui, retirer cette touche
+          </button>
+        </div>
+      </dialog>
+    </div>
+  );
+}

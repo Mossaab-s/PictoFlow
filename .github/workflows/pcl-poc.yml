@@ -164,6 +164,10 @@ jobs:
         if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
         working-directory: admin
         run: node tests/e2e/communication-search.mjs
+      - name: Correct one chosen message touch
+        if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/message-correction.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -181,6 +185,7 @@ jobs:
             admin/.local/touch-library/*.png
             admin/.local/visual-placement/*.png
             admin/.local/communication-search/*.png
+            admin/.local/message-correction/*.png
             admin/.local/profile-capabilities/*.png
             admin/.local/three-spaces/*.png
             admin/.local/support-review/*.png

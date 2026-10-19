@@ -21,6 +21,7 @@ from app.application.communication import (
     CommunicationService,
     InterpretationReviewConflict,
     PersonalMemory,
+    SequenceEditConflict,
 )
 from app.application.feedback_history import EvidenceTarget, FeedbackHistory
 from app.application.interpretation import InterpretationService
@@ -152,9 +153,28 @@ class InterpretationFeedbackBody(FeedbackBody):
 
 
 class SelectionBody(Body):
-    action: str = Field(pattern="^(append|undo|clear|complete|cancel)$")
+    action: str = Field(pattern="^(append|undo|clear|complete|cancel|remove)$")
     block_id: UUID | None = None
     observation: SelectionObservation | None = None
+    index: int | None = Field(default=None, ge=0, le=31, strict=True)
+    expected_block_ids: Annotated[tuple[UUID, ...] | None, Field(min_length=1, max_length=32)] = (
+        None
+    )
+
+    @model_validator(mode="after")
+    def explicit_removal(self):
+        if self.action == "remove":
+            if (
+                self.index is None
+                or self.expected_block_ids is None
+                or self.index >= len(self.expected_block_ids)
+                or self.block_id is not None
+                or self.observation is not None
+            ):
+                raise ValueError("Removal requires an ordered draft and an existing index only")
+        elif self.index is not None or self.expected_block_ids is not None:
+            raise ValueError("Only removal accepts a draft and index")
+        return self
 
 
 class InterpretationBody(Body):
@@ -572,9 +592,18 @@ def start_sequence(request: Request, profile_id: UUID, body: SequenceBody):
     "/profiles/{profile_id}/sequences/{sequence_id}/selection", response_model=CommunicationSequence
 )
 def selection(request: Request, profile_id: UUID, sequence_id: UUID, body: SelectionBody):
-    return communication(request).select(
-        profile_id, sequence_id, body.action, body.block_id, body.observation
-    )
+    try:
+        return communication(request).select(
+            profile_id,
+            sequence_id,
+            body.action,
+            body.block_id,
+            body.observation,
+            index=body.index,
+            expected_block_ids=body.expected_block_ids,
+        )
+    except SequenceEditConflict:
+        raise HTTPException(409, "Message changed; review the current draft") from None
 
 
 @router.get("/profiles/{profile_id}/sequences/{sequence_id}/rhythm", response_model=RhythmReport)
