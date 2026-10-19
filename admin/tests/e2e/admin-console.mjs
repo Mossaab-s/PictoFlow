@@ -236,6 +236,14 @@ try {
   await selected("/admin/maintenance");
   await page.goto(origin + "/admin/maintenance");
   await page.setViewportSize({ width: 390, height: 844 });
+  const menu = button("Navigation administrateur");
+  await expect(nav).toBeHidden();
+  await menu.focus();
+  await page.keyboard.press("Enter");
+  await expect(menu).toHaveAttribute("aria-expanded", "true");
+  await selected("/admin/maintenance");
+  await menu.click();
+  await expect(nav).toBeHidden();
   await noOverflow();
   await page
     .getByRole("heading", { name: "Sauvegarde et maintenance", exact: true })

@@ -1,12 +1,14 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { useAuthentication } from "./authentication";
 import { isAdministrator } from "@/lib/access";
 
 export default function AdminNavigation() {
   const session = useAuthentication();
   const path = usePathname();
+  const [expanded, setExpanded] = useState(false);
   const audit =
     path === "/admin/audit" ||
     /^\/admin\/profiles\/[^/]+\/(audit|ai-quality)$/.test(path);
@@ -31,23 +33,39 @@ export default function AdminNavigation() {
     ]);
   if (!isAdministrator(session)) return null;
   return (
-    <nav aria-label="Navigation principale">
-      <div className="admin-nav-group">
-        {destinations.map(([href, label, active]) => (
-          <Link
-            key={href}
-            href={href}
-            aria-current={active ? "page" : undefined}
-          >
-            {label}
-          </Link>
-        ))}
-      </div>
-      <div className="admin-nav-group admin-other-spaces">
-        <p>Ouvrir un autre espace</p>
-        <Link href="/accompagnement">Espace d’accompagnement</Link>
-        <Link href="/communication">Espace de communication</Link>
-      </div>
-    </nav>
+    <>
+      <button
+        className="secondary admin-menu-toggle"
+        aria-label="Navigation administrateur"
+        aria-expanded={expanded}
+        aria-controls="admin-navigation"
+        onClick={() => setExpanded(!expanded)}
+      >
+        Navigation :{" "}
+        {destinations.find(([, , active]) => active)?.[1] ?? "Console"}
+      </button>
+      <nav
+        id="admin-navigation"
+        aria-label="Navigation principale"
+        data-expanded={expanded}
+      >
+        <div className="admin-nav-group">
+          {destinations.map(([href, label, active]) => (
+            <Link
+              key={href}
+              href={href}
+              aria-current={active ? "page" : undefined}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+        <div className="admin-nav-group admin-other-spaces">
+          <p>Ouvrir un autre espace</p>
+          <Link href="/accompagnement">Espace d’accompagnement</Link>
+          <Link href="/communication">Espace de communication</Link>
+        </div>
+      </nav>
+    </>
   );
 }

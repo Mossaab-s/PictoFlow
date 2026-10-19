@@ -25,8 +25,9 @@ Separate destinations: Accompaniment / Communication
 
 The persistent navigation indicates the current console section, including deep
 profile audit/AI-quality links and profile restoration. A keyboard skip link
-reaches the console content. Navigation wraps on mobile and can scroll on short
-desktop screens. Existing routes and links continue to work.
+reaches the console content. On mobile, a keyboard-operable toggle shows the
+current section and expands the navigation links on request. The desktop sidebar
+can scroll on short screens. Existing routes and links continue to work.
 
 `/admin` reads the existing `/health` and `/readiness` endpoints. Each refresh
 discards the prior snapshot; independent failures remain explicit. API health

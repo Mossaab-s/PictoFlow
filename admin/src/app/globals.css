@@ -1090,6 +1090,9 @@ textarea {
   display: grid;
   gap: 4px;
 }
+.admin-menu-toggle {
+  display: none;
+}
 .admin-other-spaces {
   border-top: 1px solid var(--line);
   margin-top: 12px;
@@ -1533,6 +1536,16 @@ pre {
   }
   .admin-nav-group {
     display: contents;
+  }
+  .admin-menu-toggle {
+    display: block;
+    margin-top: 16px;
+    max-width: 100%;
+    white-space: normal;
+    text-align: left;
+  }
+  .app-shell > aside nav[data-expanded="false"] {
+    display: none;
   }
   .admin-other-spaces p {
     flex-basis: 100%;
