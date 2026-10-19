@@ -136,6 +136,10 @@ jobs:
         if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
         working-directory: admin
         run: node tests/e2e/vocabulary-needs.mjs
+      - name: Inspect the read-only administrator console
+        if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/admin-console.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -154,3 +158,4 @@ jobs:
             admin/.local/accompanied-session/*.png
             admin/.local/memory-evolution/*.png
             admin/.local/vocabulary-needs/*.png
+            admin/.local/admin-console/*.png

@@ -8,6 +8,9 @@ export default function AdminLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <div className="app-shell">
+      <a className="admin-skip-link" href="#admin-content">
+        Aller au contenu de la console
+      </a>
       <aside>
         <Link href="/admin" className="brand">
           <span className="brand-mark">P</span>PictoFlow
@@ -21,7 +24,9 @@ export default function AdminLayout({
         </div>
         <div className="dev-label">Prototype local · V1</div>
       </aside>
-      <main>{children}</main>
+      <main id="admin-content" tabIndex={-1}>
+        {children}
+      </main>
     </div>
   );
 }

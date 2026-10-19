@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useAuthentication } from "@/components/authentication";
+import AdminServiceStatus from "@/components/admin-service-status";
 export default function Page() {
   const session = useAuthentication();
   return (
@@ -28,6 +29,25 @@ export default function Page() {
             Consulter la disponibilité du fournisseur configuré sur le serveur.
           </p>
         </Link>
+        <Link className="panel space-card" href="/admin/audit">
+          <h2>Audit et diagnostics</h2>
+          <p>
+            Inspecter les traces PCL et la qualité des propositions pour un
+            profil.
+          </p>
+        </Link>
+        <Link className="panel space-card" href="/admin/maintenance">
+          <h2>Sauvegarde et maintenance</h2>
+          <p>
+            Retrouver les exports, la restauration de profils et les procédures
+            serveur.
+          </p>
+        </Link>
+      </div>
+      <AdminServiceStatus />
+      <h2>Ouvrir un autre espace</h2>
+      <p>Préparer les outils d’une personne ou communiquer avec son clavier.</p>
+      <div className="space-cards">
         <Link className="panel space-card" href="/accompagnement">
           <h2>Accompagnement</h2>
           <p>Préparer un clavier et consulter les évolutions personnelles.</p>
