@@ -27,6 +27,163 @@ def api(postgres_connection):
         yield client
 
 
+def evolution_fixture(api, profile_id=None):
+    p = profile_id or api.post("/api/v1/profiles").json()["id"]
+    base = f"/api/v1/profiles/{p}"
+    block = api.post(
+        base + "/blocks/personal",
+        json={
+            "request_id": str(uuid4()),
+            "label": "Eau",
+            "pictogram_key": "water",
+            "actor_role": "user",
+        },
+    ).json()
+    api.post(
+        base + f"/blocks/{block['id']}/feedback",
+        json={"action": "confirm", "actor_role": "user", "confirm_representation": True},
+    ).raise_for_status()
+
+    def candidate():
+        sequence = api.post(base + "/sequences", json={"session_id": str(uuid4())}).json()
+        for body in (
+            {"action": "append", "block_id": block["id"]},
+            {"action": "append", "block_id": block["id"]},
+            {"action": "complete"},
+        ):
+            api.post(base + f"/sequences/{sequence['id']}/selection", json=body).raise_for_status()
+        value = api.post(base + f"/sequences/{sequence['id']}/interpret", json={}).json()[
+            "candidates"
+        ][0]
+        return value
+
+    return base, candidate
+
+
+def test_meaning_evolution_filters_and_pages_real_decisions_without_mutating_pcl(api):
+    base, candidate = evolution_fixture(api)
+    accepted, refused, pending = candidate(), candidate(), candidate()
+    feedback = base + f"/interpretations/{accepted['id']}/feedback"
+    for body in (
+        {"action": "confirm", "actor_role": "user"},
+        {
+            "action": "correct",
+            "actor_role": "professional",
+            "corrected_value": "Je voudrais de l’eau.",
+        },
+        {"action": "reject", "actor_role": "caregiver"},
+    ):
+        api.post(feedback, json=body).raise_for_status()
+    api.post(
+        base + f"/interpretations/{refused['id']}/feedback",
+        json={"action": "reject", "actor_role": "user"},
+    ).raise_for_status()
+    resources = ("audit", "memory", "memory?validated=false", "keyboard", "interpretations")
+    before = {name: api.get(base + "/" + name).json() for name in resources}
+    params = {"newest_first": True, "meaning_changes_only": True, "limit": 20}
+    response = api.get(base + "/audit", params=params)
+    assert response.status_code == 200
+    events = response.json()
+    assert [e["event_type"] for e in events] == [
+        "interpretation_reject",
+        "interpretation_correct",
+        "interpretation_confirm",
+    ]
+    assert all(e["target_id"] == accepted["id"] for e in events)
+    assert events[1]["source"] == "human:professional"
+    assert json.loads(events[1]["new_state"])["corrected_text"] == "Je voudrais de l’eau."
+    assert json.loads(events[0]["previous_state"])["status"] == "corrected"
+    first = api.get(base + "/audit", params={**params, "limit": 1}).json()
+    assert first == events[:1]
+    second = api.get(
+        base + "/audit", params={**params, "limit": 1, "before": first[0]["id"]}
+    ).json()
+    assert second == events[1:2]
+    third = api.get(base + "/audit", params={**params, "before": second[0]["id"]}).json()
+    assert third == events[2:]
+    assert api.get(base + "/audit", params={**params, "before": third[0]["id"]}).json() == []
+    assert {name: api.get(base + "/" + name).json() for name in resources} == before
+    assert api.get(base + f"/interpretations/{pending['id']}").json()["status"] == "proposed"
+    assert api.get(base + "/audit", params={"meaning_changes_only": True}).json() == list(
+        reversed(events)
+    )
+
+
+def test_history_cursors_are_profile_target_and_filter_scoped_and_exclude_newer_writes(api):
+    base, candidate = evolution_fixture(api)
+    item = candidate()
+    feedback = base + f"/interpretations/{item['id']}/feedback"
+    api.post(feedback, json={"action": "confirm", "actor_role": "user"}).raise_for_status()
+    params = {"newest_first": True, "meaning_changes_only": True}
+    cursor = api.get(base + "/audit", params=params).json()[0]["id"]
+    api.post(
+        feedback,
+        json={
+            "action": "correct",
+            "actor_role": "user",
+            "corrected_value": "De l’eau, s’il vous plaît.",
+        },
+    ).raise_for_status()
+    assert api.get(base + "/audit", params={**params, "before": cursor}).json() == []
+    other, other_candidate = evolution_fixture(api)
+    other_item = other_candidate()
+    api.post(
+        other + f"/interpretations/{other_item['id']}/feedback",
+        json={"action": "confirm", "actor_role": "user"},
+    ).raise_for_status()
+    foreign = api.get(other + "/audit", params=params).json()[0]["id"]
+    assert api.get(base + "/audit", params={**params, "before": foreign}).status_code == 404
+    assert (
+        api.get(
+            base + "/audit",
+            params={**params, "before": cursor, "target_type": "communication_block"},
+        ).status_code
+        == 404
+    )
+    assert api.get(base + "/audit", params={"before": cursor}).status_code == 400
+    assert api.get(base + "/audit", params={**params, "before": "invalid"}).status_code == 422
+    unfiltered = api.get(base + "/audit").json()
+    nondecision = next(e["id"] for e in unfiltered if e["event_type"] == "sequence_started")
+    assert api.get(base + "/audit", params={**params, "before": nondecision}).status_code == 404
+
+
+def test_newest_history_cursor_has_a_stable_id_tiebreaker(api):
+    from datetime import timedelta
+    from uuid import UUID
+
+    from app.domain.pcl.entities import utc_now
+    from app.infrastructure.postgres.models import AuditRow
+
+    base, candidate = evolution_fixture(api)
+    item = candidate()
+    api.post(
+        base + f"/interpretations/{item['id']}/feedback",
+        json={"action": "confirm", "actor_role": "user"},
+    ).raise_for_status()
+    params = {"newest_first": True, "meaning_changes_only": True, "limit": 2}
+    template = api.get(base + "/audit", params=params).json()[0]
+    at = utc_now() + timedelta(hours=1)
+    with api.app.state.pcl_units() as store:
+        for number in range(1, 5):
+            store.session.add(
+                AuditRow(
+                    id=UUID(int=number),
+                    profile_id=UUID(template["profile_id"]),
+                    target_type="interpretation",
+                    target_id=UUID(item["id"]),
+                    interpretation_id=UUID(item["id"]),
+                    event_type="interpretation_confirm",
+                    previous_state=json.loads(template["previous_state"]),
+                    new_state=json.loads(template["new_state"]),
+                    source="human:user",
+                    created_at=at,
+                )
+            )
+    first = api.get(base + "/audit", params=params).json()
+    second = api.get(base + "/audit", params={**params, "before": first[-1]["id"]}).json()
+    assert [e["id"] for e in first + second] == [str(UUID(int=i)) for i in (4, 3, 2, 1)]
+
+
 def test_pending_review_http_conflicts_preserve_the_human_decision_and_history(api):
     p = api.post("/api/v1/profiles").json()["id"]
     other = api.post("/api/v1/profiles").json()["id"]

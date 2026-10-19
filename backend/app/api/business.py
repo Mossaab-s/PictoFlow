@@ -833,9 +833,18 @@ def audit(
     target_type: TargetType | None = None,
     target_id: UUID | None = None,
     limit: int = 500,
+    newest_first: bool = False,
+    before: UUID | None = None,
+    meaning_changes_only: bool = False,
 ):
     return AuditService(units(request)).history(
-        profile_id, target_type=target_type, target_id=target_id, limit=limit
+        profile_id,
+        target_type=target_type,
+        target_id=target_id,
+        limit=limit,
+        newest_first=newest_first,
+        before=before,
+        meaning_changes_only=meaning_changes_only,
     )
 
 
