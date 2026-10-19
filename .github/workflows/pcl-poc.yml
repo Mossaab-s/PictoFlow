@@ -140,6 +140,10 @@ jobs:
         if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
         working-directory: admin
         run: node tests/e2e/admin-console.mjs
+      - name: Verify the complete authenticated POC journey
+        if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/complete-journey.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -159,3 +163,5 @@ jobs:
             admin/.local/memory-evolution/*.png
             admin/.local/vocabulary-needs/*.png
             admin/.local/admin-console/*.png
+            admin/.local/complete-journey/*.png
+            admin/.local/complete-journey/report.json
