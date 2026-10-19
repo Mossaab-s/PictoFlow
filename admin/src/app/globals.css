@@ -37,6 +37,30 @@
   gap: 24px;
   margin-block: 24px;
 }
+.vocabulary-needs-page .review-search {
+  display: grid;
+  gap: 8px;
+  max-width: 640px;
+}
+.need-list {
+  display: grid;
+  gap: 24px;
+  margin-block: 24px;
+}
+.vocabulary-need {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.need-examples {
+  padding-left: 24px;
+}
+.need-examples li {
+  margin-block: 16px;
+}
+.need-examples time {
+  color: var(--muted);
+  font-size: 13px;
+}
 .memory-change {
   min-width: 0;
   overflow-wrap: anywhere;
