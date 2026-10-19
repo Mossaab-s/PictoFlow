@@ -181,11 +181,9 @@ try {
     await creator
       .getByRole("button", { name: "Créer la touche à vérifier", exact: true })
       .click();
-    const proposed = review
-      .locator(".block-list > section.panel")
-      .filter({
-        has: review.getByRole("heading", { name: word, exact: true }),
-      });
+    const proposed = review.locator(".block-list > section.panel").filter({
+      has: review.getByRole("heading", { name: word, exact: true }),
+    });
     await proposed
       .getByRole("button", { name: "Valider le dessin et le mot", exact: true })
       .waitFor();
@@ -233,11 +231,9 @@ try {
       .click();
     await expect(preview.getByText(word, { exact: true })).toBeVisible();
   }
-  const mother = review
-    .locator(".block-list > section.panel")
-    .filter({
-      has: review.getByRole("heading", { name: "Maman", exact: true }),
-    });
+  const mother = review.locator(".block-list > section.panel").filter({
+    has: review.getByRole("heading", { name: "Maman", exact: true }),
+  });
   await mother.getByRole("combobox", { name: /^Zone/ }).selectOption("stable");
   await mother.getByLabel("Place", { exact: true }).fill("1");
   await mother
