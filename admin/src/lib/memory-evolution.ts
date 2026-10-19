@@ -100,11 +100,13 @@ export function evolutionPage(
   limit: number,
 ) {
   const scoped = events.filter((event) => event.profile_id === profileId);
+  const items = scoped
+    .slice(0, limit)
+    .map((event) => memoryChange(profileId, event))
+    .filter((item): item is MemoryChange => item !== null);
   return {
-    items: scoped
-      .slice(0, limit)
-      .map((event) => memoryChange(profileId, event))
-      .filter((item): item is MemoryChange => item !== null),
+    items,
+    unreadable: Math.min(limit, scoped.length) - items.length,
     next_cursor: scoped.length > limit ? scoped[limit - 1].id : null,
   };
 }

@@ -105,5 +105,6 @@ test("history pagination consumes raw scoped rows while retaining a cursor past 
     ["event"],
   );
   assert.equal(page.next_cursor, "unreadable");
+  assert.equal(page.unreadable, 1);
   assert.equal(evolutionPage(profile, [third], 2).next_cursor, null);
 });

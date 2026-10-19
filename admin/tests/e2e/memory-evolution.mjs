@@ -232,6 +232,7 @@ try {
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await noOverflow();
+  await cards.first().scrollIntoViewIfNeeded();
   await page.screenshot({ path: ".local/memory-evolution/history-mobile.png" });
   await page.goto(`${origin}/accompagnement/personnes/${p}`);
   const preview = page.getByRole("region", {

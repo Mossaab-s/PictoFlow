@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import { chromium, request } from "@playwright/test";
+import { chromium, request, expect } from "@playwright/test";
 const origin = "http://127.0.0.1:3130";
 const api = await request.newContext({ baseURL: origin });
 async function call(path, data) {
@@ -243,6 +243,10 @@ try {
   await online
     .getByRole("heading", { name: "Se connecter à PictoFlow", exact: true })
     .waitFor();
+  // The login screen closes access immediately; cleanup finishes before its submit is enabled.
+  await expect(
+    online.getByRole("button", { name: "Se connecter", exact: true }),
+  ).toBeEnabled();
   await page
     .getByRole("heading", { name: "Ouvrir ma copie protégée", exact: true })
     .waitFor();

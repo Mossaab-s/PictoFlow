@@ -47,6 +47,7 @@ export default function MemoryEvolution({
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [unreadable, setUnreadable] = useState(0);
   const request = useRef<AbortController | null>(null);
   const gate = useRef(false);
   const revision = useRef(0);
@@ -83,6 +84,7 @@ export default function MemoryEvolution({
         ]);
         if (controller.signal.aborted) return;
         const page = evolutionPage(profileId, events, limit);
+        setUnreadable((previous) => (before ? previous : 0) + page.unreadable);
         setItems((previous) => [
           ...new Map(
             [...(before ? previous : []), ...page.items].map((item) => [
@@ -195,7 +197,13 @@ export default function MemoryEvolution({
                   />
                 ))}
               </ol>
-              {!items.length && !loading && (
+              {unreadable > 0 && (
+                <p role="status">
+                  Certaines décisions anciennes ne peuvent pas être affichées
+                  complètement.
+                </p>
+              )}
+              {!items.length && !loading && !unreadable && (
                 <div className="empty">
                   <h2>Aucune phrase retenue pour le moment</h2>
                   <p>
@@ -246,6 +254,7 @@ function Change({
     ? item.event.source.slice(6)
     : "";
   const Heading = compact ? "h3" : "h2";
+  const Subheading = compact ? "h4" : "h3";
   return (
     <li>
       <article
@@ -264,53 +273,23 @@ function Change({
             ? humanRoles[role as keyof typeof humanRoles]
             : "Rôle non renseigné"}
         </p>
-        {sequence ? (
-          <>
-            <p className="helper">
-              Touches d’origine, dans l’ordre choisi. Dessins et mots actuels.
-            </p>
-            <ol className="memory-touches" aria-label="Pictogrammes du message">
-              {sequence.block_ids.map((id, index) => {
-                const block = context.blocks.find((value) => value.id === id);
-                return (
-                  <li key={index}>
-                    <TouchContent
-                      label={block?.label ?? "Touche indisponible"}
-                      representation={
-                        block
-                          ? blockRepresentation(
-                              profileId,
-                              block,
-                              context.visuals,
-                            )
-                          : undefined
-                      }
-                    />
-                  </li>
-                );
-              })}
-            </ol>
-          </>
-        ) : (
-          <p>Touches d’origine indisponibles.</p>
-        )}
         {item.action === "correct" && (
           <>
-            <h4>
+            <Subheading>
               {item.previousText
                 ? "Phrase retenue auparavant"
                 : "Proposition de départ"}
-            </h4>
+            </Subheading>
             <p className="memory-change-text">
               {item.previousText ?? item.before.text}
             </p>
           </>
         )}
-        <h4>
+        <Subheading>
           {item.action === "withdraw"
             ? "Phrase retirée à cette date"
             : "Phrase retenue à cette date"}
-        </h4>
+        </Subheading>
         <p className="memory-change-text">
           {item.acceptedText ?? item.previousText}
         </p>
@@ -324,6 +303,14 @@ function Change({
           </strong>
           {accepted && <p>{accepted}</p>}
         </div>
+        <details className="memory-original" open={!compact}>
+          <summary>Pictogrammes à l’origine du message</summary>
+          <OriginalTouches
+            profileId={profileId}
+            sequence={sequence}
+            context={context}
+          />
+        </details>
         {!compact && (
           <MemoryEvidence
             key={`${item.event.id}:${context.revision}`}
@@ -334,5 +321,41 @@ function Change({
         )}
       </article>
     </li>
+  );
+}
+
+function OriginalTouches({
+  profileId,
+  sequence,
+  context,
+}: {
+  profileId: string;
+  sequence: Sequence | undefined;
+  context: Context;
+}) {
+  if (!sequence) return <p>Touches d’origine indisponibles.</p>;
+  return (
+    <>
+      <p className="helper">
+        Touches dans l’ordre choisi. Dessins et mots actuels.
+      </p>
+      <ol className="memory-touches" aria-label="Pictogrammes du message">
+        {sequence.block_ids.map((id, index) => {
+          const block = context.blocks.find((value) => value.id === id);
+          return (
+            <li key={index}>
+              <TouchContent
+                label={block?.label ?? "Touche indisponible"}
+                representation={
+                  block
+                    ? blockRepresentation(profileId, block, context.visuals)
+                    : undefined
+                }
+              />
+            </li>
+          );
+        })}
+      </ol>
+    </>
   );
 }
