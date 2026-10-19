@@ -12,6 +12,7 @@ import { ProfileNavigation } from "./profile-navigation";
 import ProfileIdentity from "./profile-identity";
 import KeyboardPreparationPreview from "./keyboard-preparation-preview";
 import { useProfileKeyboard } from "./use-profile-keyboard";
+import MemoryEvolution from "./memory-evolution";
 export default function SupportPerson({ profileId }: { profileId: string }) {
   const session = useAuthentication();
   const previewRights: ProfileCapability[] = [
@@ -66,6 +67,9 @@ export default function SupportPerson({ profileId }: { profileId: string }) {
             </Link>
           )}
         </div>
+        {canProfile(session, profileId, "view_history") && (
+          <MemoryEvolution key={profileId} profileId={profileId} compact />
+        )}
       </section>
     </>
   );

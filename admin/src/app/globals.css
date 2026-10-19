@@ -30,6 +30,39 @@
   gap: 28px;
   margin-block: 24px;
 }
+.memory-evolution-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 24px;
+  margin-block: 24px;
+}
+.memory-change {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.memory-change header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.memory-change header :is(h2, h3) {
+  margin: 0;
+}
+.memory-change time {
+  font-size: 14px;
+  color: var(--muted);
+}
+.memory-change-text {
+  font-size: 21px;
+  line-height: 1.5;
+}
+.memory-change-current {
+  border-left: 3px solid var(--accent);
+  padding-left: 16px;
+}
 .review-message > .review-phrase {
   margin-top: 20px;
   background: var(--bg);

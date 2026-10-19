@@ -32,7 +32,7 @@ export type Evidence = {
 export type EvidencePage = { items: Evidence[]; next_cursor: string | null };
 
 export function messageText(
-  item: Interpretation,
+  item: Pick<Interpretation, "status" | "text" | "corrected_text">,
   validated: boolean,
 ): string | null {
   if (!validated) return item.status === "proposed" ? item.text : null;

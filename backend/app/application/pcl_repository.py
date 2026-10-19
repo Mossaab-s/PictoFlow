@@ -114,7 +114,15 @@ class PCLRepository(Protocol):
     def remove_photo(self, profile_id: UUID, photo_id: UUID) -> None: ...
 
     def audit_history(
-        self, profile_id: UUID, *, target_type: str | None, target_id: UUID | None, limit: int
+        self,
+        profile_id: UUID,
+        *,
+        target_type: str | None,
+        target_id: UUID | None,
+        limit: int,
+        newest_first: bool = False,
+        before: UUID | None = None,
+        meaning_changes_only: bool = False,
     ) -> tuple[SemanticAuditEvent, ...]: ...
 
 

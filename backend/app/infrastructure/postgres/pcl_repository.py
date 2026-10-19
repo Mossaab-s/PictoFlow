@@ -513,7 +513,15 @@ class PostgresPCLRepository:
         )
 
     def audit_history(
-        self, profile_id: UUID, *, target_type: str | None, target_id: UUID | None, limit: int
+        self,
+        profile_id: UUID,
+        *,
+        target_type: str | None,
+        target_id: UUID | None,
+        limit: int,
+        newest_first: bool = False,
+        before: UUID | None = None,
+        meaning_changes_only: bool = False,
     ):
         self._scope(profile_id)
         query = select(AuditRow).where(AuditRow.profile_id == profile_id)
@@ -521,7 +529,29 @@ class PostgresPCLRepository:
             query = query.where(AuditRow.target_type == target_type)
         if target_id is not None:
             query = query.where(AuditRow.target_id == target_id)
-        rows = self.session.scalars(query.order_by(AuditRow.created_at, AuditRow.id).limit(limit))
+        if meaning_changes_only:
+            accepted = ("confirmed", "corrected")
+            query = query.where(
+                AuditRow.target_type == "interpretation",
+                AuditRow.event_type.in_(
+                    ("interpretation_confirm", "interpretation_correct", "interpretation_reject")
+                ),
+                (AuditRow.new_state["status"].astext.in_(accepted))
+                | (AuditRow.previous_state["status"].astext.in_(accepted)),
+            )
+        if before is not None:
+            cursor = self.session.scalar(query.where(AuditRow.id == before))
+            if cursor is None:
+                raise SemanticNotFoundError("History cursor not found in this scope")
+            query = query.where(
+                tuple_(AuditRow.created_at, AuditRow.id) < tuple_(cursor.created_at, cursor.id)
+            )
+        ordering = (
+            (AuditRow.created_at.desc(), AuditRow.id.desc())
+            if newest_first
+            else (AuditRow.created_at, AuditRow.id)
+        )
+        rows = self.session.scalars(query.order_by(*ordering).limit(limit))
         return tuple(
             SemanticAuditEvent(
                 id=row.id,
