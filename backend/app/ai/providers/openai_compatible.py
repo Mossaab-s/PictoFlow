@@ -1,5 +1,8 @@
 """Configurable Chat Completions JSON adapter without vendor SDK or PCL access."""
 
+import json
+from copy import deepcopy
+
 from pydantic import TypeAdapter
 
 from app.ai.contracts import Key, ProviderMetadata
@@ -58,11 +61,20 @@ class OpenAICompatibleProvider(HTTPProvider):
         response_format = {"type": "json_object"}
         if self._response_format == "json_schema":
             if operation == "interpret":
-                # Keep decoding flat; the Pydantic contract enforces the cross-field rule.
-                schema["properties"]["candidates"]["description"] = (
-                    "One to three candidates when status is proposal; "
-                    "an empty array when status is not_understood."
-                )
+                # A nested union encodes the cross-field invariant in the transport schema.
+                definitions = schema.pop("$defs", {})
+                proposed, refused = deepcopy(schema), deepcopy(schema)
+                proposed["properties"]["status"] = {"type": "string", "enum": ["proposal"]}
+                proposed["properties"]["candidates"]["minItems"] = 1
+                refused["properties"]["status"] = {"type": "string", "enum": ["not_understood"]}
+                refused["properties"]["candidates"]["maxItems"] = 0
+                schema = {
+                    "type": "object",
+                    "properties": {"result": {"anyOf": [proposed, refused]}},
+                    "required": ["result"],
+                    "additionalProperties": False,
+                    "$defs": definitions,
+                }
             response_format = {
                 "type": "json_schema",
                 "json_schema": {"name": f"pictoflow_{operation}", "strict": True, "schema": schema},
@@ -101,6 +113,11 @@ class OpenAICompatibleProvider(HTTPProvider):
             content = choice["message"]["content"]
             if not isinstance(content, str):
                 raise ValueError
+            if self._response_format == "json_schema" and operation == "interpret":
+                output = json.loads(content)
+                if not isinstance(output, dict) or set(output) != {"result"}:
+                    raise ValueError
+                content = output["result"]
             proposal = parse(RESPONSES[operation], content)
             usage = result.get("usage") or {}
             metadata = ProviderMetadata(

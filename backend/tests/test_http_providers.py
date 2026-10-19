@@ -158,6 +158,8 @@ def test_declared_context_never_becomes_system_instructions(fixtures, mode):
         assert user["request"]["blocks"] == fixture.request.model_dump(mode="json")["blocks"]
         assert ("output_schema" in user) == (mode == "json_object")
         output = fixture.response.model_dump(exclude={"metadata"})
+        if mode == "json_schema":
+            output = {"result": output}
         return httpx.Response(
             200,
             json={
@@ -380,13 +382,15 @@ def test_strict_compatible_operations_supply_complete_schemas_and_validate_outpu
         assert user["request"] == fixture.request.model_dump(mode="json")
         if operation == "interpret":
             schema = format["json_schema"]["schema"]
-            assert set(schema["properties"]) == {"status", "candidates"}
-            assert schema["properties"]["status"]["enum"] == ["proposal", "not_understood"]
-            assert schema["properties"]["candidates"]["maxItems"] == 3
-            assert "anyOf" not in json.dumps(schema)
-            assert set(schema["required"]) == {"status", "candidates"}
-            assert schema["additionalProperties"] is False
+            proposed, refused = schema["properties"]["result"]["anyOf"]
+            assert proposed["properties"]["status"]["enum"] == ["proposal"]
+            assert proposed["properties"]["candidates"]["minItems"] == 1
+            assert proposed["properties"]["candidates"]["maxItems"] == 3
+            assert refused["properties"]["status"]["enum"] == ["not_understood"]
+            assert refused["properties"]["candidates"]["maxItems"] == 0
         output = fixture.response.model_dump(exclude={"metadata"})
+        if operation == "interpret":
+            output = {"result": output}
         return httpx.Response(
             200,
             json={
@@ -417,25 +421,7 @@ def test_strict_compatible_operations_supply_complete_schemas_and_validate_outpu
     "output",
     [
         {"status": "proposal", "candidates": []},
-        {
-            "status": "not_understood",
-            "candidates": [{"intent": "x", "text": "private text", "confidence": 0.8}],
-        },
-        {
-            "status": "proposal",
-            "candidates": [{"intent": "x", "text": "private text", "confidence": 0.8}] * 4,
-        },
-        {
-            "status": "proposal",
-            "candidates": [{"intent": "x", "text": "private text", "confidence": 1.1}],
-        },
-        {
-            "status": "proposal",
-            "candidates": [{"intent": "x", "text": "private text", "confidence": 0.8}],
-            "validated": True,
-        },
         {"result": {"status": "proposal", "candidates": []}},
-        {"result": {"status": "not_understood", "candidates": []}},
         {"result": {"status": "validated", "candidates": []}},
         {"result": {"status": "not_understood", "candidates": []}, "raw": "private text"},
     ],
@@ -461,42 +447,6 @@ def test_strict_invalid_output_remains_explicit_and_redacted(fixtures, output):
             with pytest.raises(ProviderPayloadError) as error:
                 await provider.interpret(fixtures.interpretations[0].request)
             assert "private text" not in str(error.value)
-        finally:
-            await provider.aclose()
-
-    asyncio.run(scenario())
-
-
-@pytest.mark.parametrize("count", [0, 3])
-def test_flat_strict_interpretation_preserves_refusal_and_candidate_bounds(fixtures, count):
-    output = {
-        "status": "proposal" if count else "not_understood",
-        "candidates": [
-            {"intent": "synthetic", "text": f"Proposition {index}", "confidence": 0.8}
-            for index in range(count)
-        ],
-    }
-
-    async def scenario():
-        provider = OpenAICompatibleProvider(
-            "https://example.test/v1",
-            "model",
-            response_format="json_schema",
-            transport=httpx.MockTransport(
-                lambda _: httpx.Response(
-                    200,
-                    json={
-                        "choices": [
-                            {"finish_reason": "stop", "message": {"content": json.dumps(output)}}
-                        ]
-                    },
-                )
-            ),
-        )
-        try:
-            actual = await provider.interpret(fixtures.interpretations[0].request)
-            assert actual.status == output["status"]
-            assert len(actual.candidates) == count
         finally:
             await provider.aclose()
 

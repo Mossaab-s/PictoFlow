@@ -660,7 +660,7 @@ def test_strict_phrase_responses_never_promote_invalid_or_unconfirmed_meaning(ap
                 "choices": [
                     {
                         "finish_reason": "stop",
-                        "message": {"content": json.dumps(output)},
+                        "message": {"content": json.dumps({"result": output})},
                     }
                 ]
             },
@@ -719,6 +719,7 @@ def test_strict_phrase_responses_never_promote_invalid_or_unconfirmed_meaning(ap
             assert quality["fallbacks"]["invalid_payload"] == 1
             assert quality["fallbacks"].get("unavailable", 0) == 0
             assert "private malformed generation" not in json.dumps(quality)
+            assert "private malformed generation" not in json.dumps(api.get(base + "/audit").json())
     elif kind == "alternatives":
         assert response.status_code == 200
         candidates = response.json()["candidates"]
