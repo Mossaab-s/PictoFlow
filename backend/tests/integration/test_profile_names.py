@@ -228,9 +228,7 @@ def test_names_do_not_enter_provider_payloads_or_technical_signals(api, monkeypa
                     {
                         "finish_reason": "stop",
                         "message": {
-                            "content": json.dumps(
-                                {"result": {"status": "not_understood", "candidates": []}}
-                            ),
+                            "content": json.dumps({"status": "not_understood", "candidates": []}),
                         },
                     }
                 ]

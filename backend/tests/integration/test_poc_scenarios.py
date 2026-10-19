@@ -111,7 +111,7 @@ def test_scenario_choice_retention_recall_withdrawal_and_profile_isolation(api, 
                 "choices": [
                     {
                         "finish_reason": "stop",
-                        "message": {"content": json.dumps({"result": output})},
+                        "message": {"content": json.dumps(output)},
                     }
                 ]
             },

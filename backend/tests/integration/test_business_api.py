@@ -614,7 +614,9 @@ def test_invalid_personal_touch_creates_nothing(api, change, status):
         assert api.get(base + "/" + name).json() == []
 
 
-@pytest.mark.parametrize("kind", ["invalid", "refusal", "proposal", "unfaithful", "alternatives"])
+@pytest.mark.parametrize(
+    "kind", ["invalid", "refusal", "proposal", "unfaithful", "alternatives", "generation_failure"]
+)
 def test_strict_phrase_responses_never_promote_invalid_or_unconfirmed_meaning(api, kind):
     from app.ai.manager import ProviderManager
     from app.ai.providers.openai_compatible import OpenAICompatibleProvider
@@ -642,13 +644,23 @@ def test_strict_phrase_responses_never_promote_invalid_or_unconfirmed_meaning(ap
     def respond(request):
         requests.append(request)
         assert json.loads(request.content)["response_format"]["type"] == "json_schema"
+        if kind == "generation_failure":
+            return httpx.Response(
+                400,
+                json={
+                    "error": {
+                        "code": "json_validate_failed",
+                        "failed_generation": "private malformed generation",
+                    }
+                },
+            )
         return httpx.Response(
             200,
             json={
                 "choices": [
                     {
                         "finish_reason": "stop",
-                        "message": {"content": json.dumps({"result": output})},
+                        "message": {"content": json.dumps(output)},
                     }
                 ]
             },
@@ -689,7 +701,7 @@ def test_strict_phrase_responses_never_promote_invalid_or_unconfirmed_meaning(ap
     assert api.get(path).json()["block_ids"] == [block["id"]]
     assert api.get(path).json()["status"] == "completed"
     assert api.get(base + "/memory").json()["interpretations"] == []
-    if kind in ("invalid", "refusal", "unfaithful"):
+    if kind in ("invalid", "refusal", "unfaithful", "generation_failure"):
         assert response.status_code == 200
         candidate = response.json()["candidates"][0]
         assert candidate["text"] == "Boire" and candidate["source"] == "pcl"
@@ -702,6 +714,11 @@ def test_strict_phrase_responses_never_promote_invalid_or_unconfirmed_meaning(ap
             candidate["created_at"]
         )
         assert stored[0] == {**candidate, "created_at": stored[0]["created_at"]}
+        if kind == "generation_failure":
+            quality = api.get(base + "/ai-quality").json()
+            assert quality["fallbacks"]["invalid_payload"] == 1
+            assert quality["fallbacks"].get("unavailable", 0) == 0
+            assert "private malformed generation" not in json.dumps(quality)
     elif kind == "alternatives":
         assert response.status_code == 200
         candidates = response.json()["candidates"]

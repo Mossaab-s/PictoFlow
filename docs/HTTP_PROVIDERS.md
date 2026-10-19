@@ -27,9 +27,10 @@ stacks and is never a browser credential.
 
 The deployed Groq model `qwen/qwen3.8-27b` supports strict mode according to the
 [Groq Structured Outputs documentation](https://console.groq.com/docs/structured-outputs).
-Enable this setting in the private server environment when deploying the phrase
-schema correction. Real calls using synthetic data validated interpretation,
-simplification and representation proposals in this mode.
+This setting remains an operator choice in the private server environment.
+Earlier synthetic calls exercised strict operations, but do not establish the
+reliability of every schema revision. The flat interpretation change below needs
+its own live comparison; merging its code does not change the running settings.
 
 For PRISM, configure its origin (without a `/v1` suffix), select `prism` mode and
 provide its API key locally if required. The native adapter sends `X-API-Key`;
@@ -63,11 +64,15 @@ referenced `$defs`**. Dropping the scalar aliases used by candidate fields creat
 dangling references and can result in an empty or invalid provider proposal,
 which cannot be used as a provider proposal. Regression tests resolve every reference for all
 three operations. In strict mode, all object properties are required and objects
-are closed. Nullable scalars use explicit type unions. Interpretation uses a
-transport-only `result` union to encode both allowed outcomes: a proposal with
-one to three candidates, or a refusal with none. Pydantic still validates the
-unwrapped proposal, including confidence bounds and prohibition of validation
-commands. For interpretation, a malformed reply returns a literal, unvalidated
+are closed. Nullable scalars use explicit type unions. Interpretation uses the
+same flat `status` / `candidates` shape in JSON Object and strict modes. It no
+longer requests a transport-only `result` envelope with duplicated union branches.
+The schema keeps the status enum, candidate limit, complete references and field
+bounds. The status-dependent rule is enforced by Pydantic: a proposal requires
+one to three candidates; a refusal requires none. A decoder-compliant response
+that violates this rule still fails validation. Unexpected wrappers or validation
+commands are not repaired or accepted. For interpretation, a malformed reply
+returns a literal, unvalidated
 proposal of the selected words. Simplification and representation operations
 still reject invalid responses with 502. Provider payloads are not displayed.
 
@@ -76,6 +81,33 @@ follow redirects, inherit proxy environment settings or log payloads. Base URLs
 cannot contain credentials, queries or fragments. Errors contain static messages
 with no raw response or secret URL. A malformed output never creates validated
 semantic state.
+
+An HTTP 400 whose bounded error object has code `json_validate_failed` is a
+`ProviderPayloadError`, not evidence that the provider is unavailable. The
+interpretation diagnostic therefore records `invalid_payload` and uses the
+existing literal fallback. Only up to 64 KiB of that error body is examined; the
+failed generation is never logged, persisted or exposed. Other HTTP errors,
+malformed error bodies and oversized error bodies retain the existing static
+unavailability error. No extra request, format downgrade or retry is introduced.
+
+### Verification of the flat interpretation transport
+
+The change is supported by deterministic adapter and real PostgreSQL API tests:
+valid flat proposals and refusals, inconsistent status/candidate combinations,
+too many candidates, invalid scores, unknown commands, malformed envelopes,
+bounded generation errors, accurate fallback diagnostics, unchanged selected
+touches and no automatic acceptance. Existing strict scenario fixtures now use
+the flat wire response; simplification, representation, PRISM and JSON Object
+contracts remain unchanged.
+
+The earlier recorded Groq failures show generation errors with the nested
+contract; they do not prove a particular feature such as `anyOf` is unsupported.
+Groq documents union schemas as supported. Flattening removes avoidable transport
+complexity while retaining application checks. A direct-host synthetic probe
+returned HTTP 403 before useful generation results, so it did not establish a
+live before/after improvement. External generation reliability and French phrase
+quality remain to be measured with the configured model. This change does not
+modify lexical grounding or interpret personal meaning automatically.
 
 PRISM maps `model_response` into the same contracts, translates an interpretation
 refusal to `not_understood`, and preserves available technical metadata: trace,
