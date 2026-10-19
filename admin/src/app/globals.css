@@ -1070,6 +1070,63 @@ textarea {
   grid-template-columns: 240px minmax(0, 1fr);
   min-height: 100vh;
 }
+.app-shell > aside {
+  overflow-y: auto;
+}
+.admin-skip-link {
+  position: fixed;
+  top: -200px;
+  left: 8px;
+  z-index: 1000;
+  padding: 16px;
+  color: var(--ink);
+  background: white;
+  border: 2px solid var(--accent);
+}
+.admin-skip-link:focus {
+  top: 8px;
+}
+.admin-nav-group {
+  display: grid;
+  gap: 4px;
+}
+.admin-menu-toggle {
+  display: none;
+}
+.admin-other-spaces {
+  border-top: 1px solid var(--line);
+  margin-top: 12px;
+  padding-top: 12px;
+}
+.admin-other-spaces p {
+  font-size: 12px;
+  margin: 4px 12px;
+  color: var(--muted);
+}
+.admin-nav-group a[aria-current="page"] {
+  background: var(--soft);
+  font-weight: 700;
+}
+.admin-service-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 16px;
+}
+.admin-service-grid dt {
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.admin-service-grid dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.admin-audit-profile {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.admin-services {
+  margin-block: 40px;
+}
 aside {
   background: #fff;
   border-right: 1px solid var(--line);
@@ -1473,6 +1530,26 @@ pre {
 @media (max-width: 620px) {
   .app-shell {
     display: block;
+  }
+  .app-shell > aside {
+    overflow-y: visible;
+  }
+  .admin-nav-group {
+    display: contents;
+  }
+  .admin-menu-toggle {
+    display: block;
+    margin-top: 16px;
+    max-width: 100%;
+    white-space: normal;
+    text-align: left;
+  }
+  .app-shell > aside nav[data-expanded="false"] {
+    display: none;
+  }
+  .admin-other-spaces p {
+    flex-basis: 100%;
+    margin: 12px 8px 4px;
   }
   aside {
     position: static;
