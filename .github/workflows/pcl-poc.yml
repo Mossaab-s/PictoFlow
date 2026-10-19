@@ -156,6 +156,10 @@ jobs:
         if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
         working-directory: admin
         run: node tests/e2e/touch-library.mjs
+      - name: Choose a free destination visually
+        if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/visual-placement.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -171,6 +175,7 @@ jobs:
             admin/.local/literal-explanations/*.png
             admin/.local/keyboard-preparation/*.png
             admin/.local/touch-library/*.png
+            admin/.local/visual-placement/*.png
             admin/.local/profile-capabilities/*.png
             admin/.local/three-spaces/*.png
             admin/.local/support-review/*.png
