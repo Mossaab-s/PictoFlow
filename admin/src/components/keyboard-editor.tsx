@@ -2,7 +2,7 @@
 import { useAuthentication } from "./authentication";
 import { canProfile } from "@/lib/access";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { api, APIError } from "@/lib/api";
 import {
   joinKeyboard,
@@ -24,6 +24,7 @@ import { Pictogram, TouchContent } from "./pictogram";
 import PictogramPicker from "./pictogram-picker";
 import PhotoPicker from "./photo-picker";
 import TouchPreparation, { type TouchDraft } from "./touch-preparation";
+import TouchLibrary from "./touch-library";
 import KeyboardPageManager from "./keyboard-page-manager";
 import KeyboardChangeReview from "./keyboard-change-review";
 import KeyboardUsage from "./keyboard-usage";
@@ -248,6 +249,9 @@ export default function KeyboardEditor({
           {proposed.length > 0 && (
             <a href="#keyboard-review">2. Vérifier ({proposed.length})</a>
           )}
+          {validated.length > 0 && (
+            <a href="#keyboard-touches">Modifier une touche</a>
+          )}
           <a href="#keyboard-organize">3. Organiser</a>
           <a href="#keyboard-preview">Voir l’aperçu</a>
         </nav>
@@ -464,55 +468,57 @@ export default function KeyboardEditor({
               )}
             />
             {validated.length > 0 && (
-              <section className="review-section">
-                <h2>Modifier les touches et leurs places</h2>
-                <p>
-                  Les repères stables gardent leur place. Chaque déplacement est
-                  une décision explicite.
-                </p>
-                <div className="block-list">
-                  {validated.map((block) => (
-                    <BlockControls
-                      profileId={profileId}
-                      role={role}
-                      visuals={data.representations}
-                      perform={perform}
-                      notice={setNotice}
-                      key={block.id}
-                      block={block}
-                      representation={blockRepresentation(
-                        profileId,
-                        block,
-                        data.representations,
-                      )}
-                      concept={
-                        data.concepts.find(
-                          (concept) => concept.id === block.concept_id,
-                        )?.label ??
-                        block.canonical_intent ??
-                        ""
-                      }
-                      position={data.positions.find(
-                        (position) => position.block_id === block.id,
-                      )}
-                      groups={data.groups}
-                      busy={busy}
-                      place={(zone, position, groupId) =>
-                        perform(() => place(block, zone, position, groupId))
-                      }
-                      correct={(value) =>
-                        perform(() => feedback(block.id, "correct", value))
-                      }
-                      selectPictogram={(key) =>
-                        perform(() => selectPictogram(block, key))
-                      }
-                      selectPhoto={(file, requestId) =>
-                        perform(() => selectPhoto(block, file, requestId))
-                      }
-                    />
-                  ))}
-                </div>
-              </section>
+              <TouchLibrary
+                key={`library:${profileId}`}
+                profileId={profileId}
+                blocks={validated}
+                concepts={data.concepts}
+                positions={data.positions}
+                groups={data.groups}
+                busy={busy}
+                renderBlock={(block, hidden, location) => (
+                  <BlockControls
+                    hidden={hidden}
+                    location={location}
+                    profileId={profileId}
+                    role={role}
+                    visuals={data.representations}
+                    perform={perform}
+                    notice={setNotice}
+                    key={block.id}
+                    block={block}
+                    representation={blockRepresentation(
+                      profileId,
+                      block,
+                      data.representations,
+                    )}
+                    concept={
+                      data.concepts.find(
+                        (concept) => concept.id === block.concept_id,
+                      )?.label ??
+                      block.canonical_intent ??
+                      ""
+                    }
+                    position={data.positions.find(
+                      (position) => position.block_id === block.id,
+                    )}
+                    groups={data.groups}
+                    busy={busy}
+                    place={(zone, position, groupId) =>
+                      perform(() => place(block, zone, position, groupId))
+                    }
+                    correct={(value) =>
+                      perform(() => feedback(block.id, "correct", value))
+                    }
+                    selectPictogram={(key) =>
+                      perform(() => selectPictogram(block, key))
+                    }
+                    selectPhoto={(file, requestId) =>
+                      perform(() => selectPhoto(block, file, requestId))
+                    }
+                  />
+                )}
+              />
             )}
             {data.representations.some(
               (visual) =>
@@ -580,6 +586,8 @@ export default function KeyboardEditor({
 }
 
 function BlockControls({
+  hidden,
+  location,
   profileId,
   role,
   visuals,
@@ -596,6 +604,8 @@ function BlockControls({
   selectPhoto,
   groups,
 }: {
+  hidden: boolean;
+  location: string;
   profileId: string;
   role: HumanRole;
   visuals: Representation[];
@@ -623,6 +633,9 @@ function BlockControls({
   const [photo, setPhoto] = useState<File | null>(null);
   const [groupId, setGroupId] = useState<string | null>(null);
   const [preview, setPreview] = useState<KeyboardChangePreview | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  const zoneId = useId();
+  const pageId = useId();
   async function prepareMove(
     targetPosition: number,
     destination: string | null,
@@ -676,203 +689,231 @@ function BlockControls({
       ? pictogramFromReference(representation.asset_reference)?.key
       : undefined;
   return (
-    <section className="panel" id={`touch-${block.id}`} tabIndex={-1}>
-      <h3>{block.label}</h3>
-      <div className="touch-sample">
-        <TouchContent label={block.label} representation={representation} />
-      </div>
-      <p>Sens : {concept}</p>
-      {block.concept_id && (
-        <details>
-          <summary>
-            {currentDrawing ? "Modifier le dessin" : "Ajouter un dessin"} de «{" "}
-            {block.label} »
-          </summary>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (drawing) void selectPictogram(drawing);
-            }}
-          >
-            <PictogramPicker
-              value={drawing ?? currentDrawing ?? null}
-              onChange={setDrawing}
-              disabled={busy}
-            />
-            {drawing && (
-              <div
-                className="touch-sample"
-                aria-label="Aperçu du dessin choisi"
-              >
-                <Pictogram pictogramKey={drawing} />
-                <strong className="touch-word">{block.label}</strong>
-              </div>
-            )}
-            <button
-              className="secondary"
-              disabled={busy || !drawing || drawing === currentDrawing}
-            >
-              Valider le nouveau dessin de « {block.label} »
-            </button>
-          </form>
-          <p>Le mot, le sens et la place de la touche sont conservés.</p>
-        </details>
-      )}
-      {block.concept_id && (
-        <details>
-          <summary>Choisir une photo pour « {block.label} »</summary>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (photo) void selectPhoto(photo, photoRequest.current);
-            }}
-          >
-            <PhotoPicker
-              file={photo}
-              label={block.label}
-              disabled={busy}
-              onChange={(file) => {
-                setPhoto(file);
-                photoRequest.current = newIdentity();
-              }}
-            />
-            <button className="secondary" disabled={busy || !photo}>
-              Valider la photo de « {block.label} »
-            </button>
-          </form>
-          <p>
-            Le mot, le sens et la place sont conservés. L’ancien choix reste
-            dans l’historique.
-          </p>
-        </details>
-      )}
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          const targetZone = zone ?? position?.zone ?? "personal";
-          const targetPosition = (slot ?? (position?.position ?? 0) + 1) - 1;
-          const destination =
-            targetZone === "stable"
-              ? null
-              : (groupId ?? position?.group_id ?? "") || null;
-          if (targetZone === position?.zone && targetZone !== "stable")
-            void perform(() => prepareMove(targetPosition, destination));
-          else {
-            setPreview(null);
-            void place(targetZone, targetPosition, destination);
-          }
+    <section
+      className="panel touch-library-card"
+      id={`touch-${block.id}`}
+      tabIndex={-1}
+      hidden={hidden}
+    >
+      <details
+        onToggle={(event) => {
+          if (event.currentTarget.open) setRevealed(true);
         }}
       >
-        <div className="field-row">
-          <label>
-            Zone
-            <select
-              value={zone ?? position?.zone ?? "personal"}
-              onChange={(event) => {
-                setZone(event.target.value as Zone);
-                setPreview(null);
-              }}
-              disabled={busy}
-            >
-              {(Object.keys(zones) as Zone[]).map((value) => (
-                <option
-                  value={value}
-                  key={value}
-                  disabled={
-                    value === "stable" && block.origin === "pcl_suggestion"
-                  }
-                >
-                  {zones[value]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Page
-            <select
-              value={
-                (zone ?? position?.zone) === "stable"
-                  ? ""
-                  : (groupId ?? position?.group_id ?? "")
-              }
-              disabled={busy || (zone ?? position?.zone) === "stable"}
-              onChange={(event) => {
-                setGroupId(event.target.value);
-                setPreview(null);
-              }}
-            >
-              <option value="">
-                {(zone ?? position?.zone) === "stable"
-                  ? "Toutes les pages (repère stable)"
-                  : "Accueil"}
-              </option>
-              {groups.map((group) => (
-                <option key={group.id} value={group.id}>
-                  {group.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Place
-            <input
-              type="number"
-              min={1}
-              max={1000}
-              required
-              value={slot ?? (position?.position ?? 0) + 1}
-              onChange={(event) => {
-                setSlot(Number(event.target.value));
-                setPreview(null);
-              }}
-              disabled={busy}
-            />
-          </label>
-        </div>
-        <button className="secondary" disabled={busy}>
-          {(zone ?? position?.zone) === position?.zone &&
-          position?.zone !== "stable"
-            ? `Prévisualiser le déplacement de « ${block.label} »`
-            : `Enregistrer la place de « ${block.label} »`}
-        </button>
-      </form>
-      {preview && (
-        <KeyboardChangeReview
-          key={preview.preview_token}
-          profileId={profileId}
-          preview={preview}
-          visuals={visuals}
-          busy={busy}
-          apply={() => perform(applyMove)}
-          cancel={() => setPreview(null)}
-        />
-      )}
-      <details>
-        <summary>Modifier le texte de « {block.label} »</summary>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            void correct(label ?? block.label);
-          }}
+        <summary
+          aria-label={`Modifier la touche « ${block.label} »`}
+          aria-describedby={`location-${block.id}`}
         >
-          <label>
-            Texte de la touche
-            <input
-              value={label ?? block.label}
-              onChange={(event) => setLabel(event.target.value)}
-              maxLength={256}
-              required
-              disabled={busy}
-            />
-          </label>
-          <button
-            className="secondary"
-            disabled={busy || !(label ?? block.label).trim()}
-          >
-            Confirmer le nouveau texte
-          </button>
-        </form>
-        <p>Le sens personnel de la touche est conservé.</p>
+          <span className="touch-library-image">
+            <TouchContent label={block.label} representation={representation} />
+          </span>
+          <span className="touch-library-location" id={`location-${block.id}`}>
+            {location}
+          </span>
+          <span className="touch-library-edit">Modifier cette touche</span>
+        </summary>
+        {revealed && (
+          <div className="touch-library-settings">
+            <h3>{block.label}</h3>
+            <p>Sens : {concept}</p>
+            {block.concept_id && (
+              <details>
+                <summary>
+                  {currentDrawing ? "Modifier le dessin" : "Ajouter un dessin"}{" "}
+                  de « {block.label} »
+                </summary>
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    if (drawing) void selectPictogram(drawing);
+                  }}
+                >
+                  <PictogramPicker
+                    value={drawing ?? currentDrawing ?? null}
+                    onChange={setDrawing}
+                    disabled={busy}
+                  />
+                  {drawing && (
+                    <div
+                      className="touch-sample"
+                      aria-label="Aperçu du dessin choisi"
+                    >
+                      <Pictogram pictogramKey={drawing} />
+                      <strong className="touch-word">{block.label}</strong>
+                    </div>
+                  )}
+                  <button
+                    className="secondary"
+                    disabled={busy || !drawing || drawing === currentDrawing}
+                  >
+                    Valider le nouveau dessin de « {block.label} »
+                  </button>
+                </form>
+                <p>Le mot, le sens et la place de la touche sont conservés.</p>
+              </details>
+            )}
+            {block.concept_id && (
+              <details>
+                <summary>Choisir une photo pour « {block.label} »</summary>
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    if (photo) void selectPhoto(photo, photoRequest.current);
+                  }}
+                >
+                  <PhotoPicker
+                    file={photo}
+                    label={block.label}
+                    disabled={busy}
+                    onChange={(file) => {
+                      setPhoto(file);
+                      photoRequest.current = newIdentity();
+                    }}
+                  />
+                  <button className="secondary" disabled={busy || !photo}>
+                    Valider la photo de « {block.label} »
+                  </button>
+                </form>
+                <p>
+                  Le mot, le sens et la place sont conservés. L’ancien choix
+                  reste dans l’historique.
+                </p>
+              </details>
+            )}
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                const targetZone = zone ?? position?.zone ?? "personal";
+                const targetPosition =
+                  (slot ?? (position?.position ?? 0) + 1) - 1;
+                const destination =
+                  targetZone === "stable"
+                    ? null
+                    : (groupId ?? position?.group_id ?? "") || null;
+                if (targetZone === position?.zone && targetZone !== "stable")
+                  void perform(() => prepareMove(targetPosition, destination));
+                else {
+                  setPreview(null);
+                  void place(targetZone, targetPosition, destination);
+                }
+              }}
+            >
+              <div className="field-row">
+                <div>
+                  <label htmlFor={zoneId}>Zone</label>
+                  <select
+                    id={zoneId}
+                    value={zone ?? position?.zone ?? "personal"}
+                    onChange={(event) => {
+                      setZone(event.target.value as Zone);
+                      setPreview(null);
+                    }}
+                    disabled={busy}
+                  >
+                    {(Object.keys(zones) as Zone[]).map((value) => (
+                      <option
+                        value={value}
+                        key={value}
+                        disabled={
+                          value === "stable" &&
+                          block.origin === "pcl_suggestion"
+                        }
+                      >
+                        {zones[value]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor={pageId}>Page</label>
+                  <select
+                    id={pageId}
+                    value={
+                      (zone ?? position?.zone) === "stable"
+                        ? ""
+                        : (groupId ?? position?.group_id ?? "")
+                    }
+                    disabled={busy || (zone ?? position?.zone) === "stable"}
+                    onChange={(event) => {
+                      setGroupId(event.target.value);
+                      setPreview(null);
+                    }}
+                  >
+                    <option value="">
+                      {(zone ?? position?.zone) === "stable"
+                        ? "Toutes les pages (repère stable)"
+                        : "Accueil"}
+                    </option>
+                    {groups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <label>
+                  Place
+                  <input
+                    type="number"
+                    min={1}
+                    max={1000}
+                    required
+                    value={slot ?? (position?.position ?? 0) + 1}
+                    onChange={(event) => {
+                      setSlot(Number(event.target.value));
+                      setPreview(null);
+                    }}
+                    disabled={busy}
+                  />
+                </label>
+              </div>
+              <button className="secondary" disabled={busy}>
+                {(zone ?? position?.zone) === position?.zone &&
+                position?.zone !== "stable"
+                  ? `Prévisualiser le déplacement de « ${block.label} »`
+                  : `Enregistrer la place de « ${block.label} »`}
+              </button>
+            </form>
+            {preview && (
+              <KeyboardChangeReview
+                key={preview.preview_token}
+                profileId={profileId}
+                preview={preview}
+                visuals={visuals}
+                busy={busy}
+                apply={() => perform(applyMove)}
+                cancel={() => setPreview(null)}
+              />
+            )}
+            <details>
+              <summary>Modifier le texte de « {block.label} »</summary>
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void correct(label ?? block.label);
+                }}
+              >
+                <label>
+                  Texte de la touche
+                  <input
+                    value={label ?? block.label}
+                    onChange={(event) => setLabel(event.target.value)}
+                    maxLength={256}
+                    required
+                    disabled={busy}
+                  />
+                </label>
+                <button
+                  className="secondary"
+                  disabled={busy || !(label ?? block.label).trim()}
+                >
+                  Confirmer le nouveau texte
+                </button>
+              </form>
+              <p>Le sens personnel de la touche est conservé.</p>
+            </details>
+          </div>
+        )}
       </details>
     </section>
   );

@@ -53,6 +53,8 @@ After a successful creation, the editor refreshes server state and focuses the
 new proposal. The separate drawing/word validation remains explicit. Refusal
 preserves the proposal's history. Existing stable anchors, placement previews,
 page organization and keyboard preview remain available.
+Existing validated touches can be found and edited through the
+[searchable touch library](KEYBOARD_TOUCH_LIBRARY.md).
 
 The missing-word return journey still keeps the ongoing communication sequence;
 the newly prepared touch is never appended to it automatically. Preparing or
