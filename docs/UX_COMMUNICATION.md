@@ -20,8 +20,10 @@ More options: display, voice, usual phrases, preparation, offline copy, rhythm
 Human review and personal-memory explanation when applicable
 ```
 
-The message stays near the top while the keyboard is browsed. Long compositions
-have a bounded scrollable area; small-height viewports use normal page flow.
+The message sits above the keyboard in normal document flow. Long compositions
+have a bounded scrollable area; jump links reach message and keyboard directly.
+Its position does not switch with input focus: this prevents controls from moving
+under a mouse click when alternating keyboard and mouse or returning to Parler.
 Options preserve the current composition and can return focus to their opener.
 Choosing a saved phrase opens its own phrase area so the selected phrase is visible,
 without opening display/voice/preparation tools.
@@ -60,8 +62,8 @@ Display and local-voice choices are grouped in the secondary tools, with a
 non-interactive sample of an existing touch. The current per-profile/browser
 settings and stable-anchor grid contract are reused. Escape closes options and
 returns focus when it is not being used to stop speech. A floating Stop remains
-reachable during reading; short viewports and keyboard navigation avoid a sticky
-message obscuring focus. Late selection responses do not reclaim another control's
+reachable during reading; the message follows page flow without covering focused
+controls. Late selection responses do not reclaim another control's
 focus. Existing skip links remain available at the first Tab.
 
 Browser checks cover persisted size/contrast, narrow large-touch reflow, forced
@@ -137,7 +139,7 @@ Native disclosure descendants remain mounted: temporary input, chosen phrases an
 word drafts are not discarded on close. Existing read-only memory loading still
 runs; collapsing is presentation, not a new access or request boundary. Escape
 first stops active speech; a later Escape can close the focused panel. An open
-secondary area disables the sticky composer so it cannot obscure focused controls.
+secondary area keeps the same normal-flow composer so it cannot obscure focused controls.
 
 Browser checks exercise initial compactness, direct phrases without settings,
 suggestion mode preservation, keyboard open/close/focus, the completed-message

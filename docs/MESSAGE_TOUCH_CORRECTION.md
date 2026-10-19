@@ -32,11 +32,12 @@ the end, or the empty message area. **Finir la correction** or Escape outside th
 dialog returns to the correction opener. Escape inside the dialog cancels the
 selection. While speech is active the existing first-Escape-to-stop rule takes
 priority. All controls support mouse, Enter and Space; the message scroller
-keeps long compositions bounded. Correction makes the message panel follow
-document flow so it cannot cover the keyboard on small screens.
-The existing keyboard-focus rule now applies to pointer focus as well as visible
-keyboard focus, avoiding a sticky-panel position change when switching from
-Enter to a mouse click on the next touch.
+keeps long compositions bounded. The online message panel now consistently
+follows normal document flow. Its former sticky/non-sticky switch on keyboard
+focus could move controls between pointer down and click, losing a selection or
+the deliberate **Parler** action when alternating keyboard and mouse. Keeping
+geometry independent of focus also prevents the enlarged message toolbar from
+covering input targets. Existing jump links still reach message and keyboard.
 
 Selection and confirmation are disabled while the current state is loading,
 unavailable, offline or being saved. A pending save displays **Retrait en cours…**

@@ -56,8 +56,9 @@ clearing returns focus to the field. Pagination keeps a usable navigation button
 focused at range boundaries. A completed selection retains the result's focus
 unless the person has already moved elsewhere. Escape first stops active speech
 through the existing communication handler; a subsequent Escape closes search.
-While search is open, the message panel follows normal document flow so its
-sticky position does not cover the search controls on small screens.
+The message panel follows normal document flow, consistently with the later
+[message correction journey](MESSAGE_TOUCH_CORRECTION.md), so it cannot cover
+the search controls on small screens.
 
 Pending actions, network disconnection, a completed message and the 32-touch limit
 disable result selection just as they disable the normal keyboard. Local lookup
