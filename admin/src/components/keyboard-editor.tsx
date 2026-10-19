@@ -249,6 +249,9 @@ export default function KeyboardEditor({
           {proposed.length > 0 && (
             <a href="#keyboard-review">2. Vérifier ({proposed.length})</a>
           )}
+          {validated.length > 0 && (
+            <a href="#keyboard-touches">Modifier une touche</a>
+          )}
           <a href="#keyboard-organize">3. Organiser</a>
           <a href="#keyboard-preview">Voir l’aperçu</a>
         </nav>

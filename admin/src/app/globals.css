@@ -2381,12 +2381,28 @@ pre {
   border-top: 1px solid var(--line);
   padding-top: 16px;
 }
+.touch-library-settings .field-row {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(80px, 120px);
+}
+.touch-library-settings .field-row > * {
+  min-width: 0;
+}
+.touch-library-card:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+#keyboard-touches {
+  scroll-margin-top: 24px;
+}
 .touch-library-filters :is(input, select) {
   min-width: 0;
   width: 100%;
 }
 @media (max-width: 620px) {
   .touch-library-filters {
+    grid-template-columns: 1fr;
+  }
+  .touch-library-settings .field-row {
     grid-template-columns: 1fr;
   }
 }

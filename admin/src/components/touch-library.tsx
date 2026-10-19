@@ -107,6 +107,8 @@ export default function TouchLibrary({
   return (
     <section
       className="review-section touch-library"
+      id="keyboard-touches"
+      tabIndex={-1}
       ref={root}
       onFocusCapture={(event) => {
         focusedCard.current = event.target.closest<HTMLElement>(

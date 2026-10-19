@@ -154,8 +154,9 @@ for (const resource of [
   before[resource] = await call(base + "/" + resource);
 const otherBefore = await call(`profiles/${second}/keyboard`);
 const browser = await chromium.launch({ headless: true });
+let page;
 try {
-  const page = await browser.newPage({
+  page = await browser.newPage({
     viewport: { width: 1280, height: 900 },
   });
   page.setDefaultTimeout(15000);
@@ -196,6 +197,10 @@ try {
       .getByRole("button", { name: "Afficher toutes les touches", exact: true })
       .click();
   await expect(library.getByRole("status")).toHaveText("6 sur 6 touches");
+  await page
+    .getByRole("link", { name: "Modifier une touche", exact: true })
+    .click();
+  await expect(library).toBeFocused();
   assert.equal(
     await library.getByRole("combobox", { name: "Zone", exact: true }).count(),
     0,
@@ -384,6 +389,15 @@ try {
   console.log(
     "Authenticated touch library verified: scoped word/meaning search, page filters, retained local drafts, repeated direct links, keyboard activation, occupied/stale previews, explicit cancel/confirm, stable anchors, profile reset and no AI or memory changes.",
   );
+} catch (error) {
+  if (page) {
+    await fs.mkdir(".local/touch-library", { recursive: true });
+    await page.screenshot({
+      path: ".local/touch-library/failure.png",
+      fullPage: true,
+    });
+  }
+  throw error;
 } finally {
   await browser.close();
   await admin.dispose();
