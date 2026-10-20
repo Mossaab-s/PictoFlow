@@ -64,16 +64,17 @@ try {
       `pictoflow:sequence:${p}`,
     );
   }
-  async function next() {
+  async function next(confirm = true) {
     await page
       .getByRole("button", { name: "Nouveau message", exact: true })
       .click();
-    await page
-      .getByRole("button", {
-        name: "Oui, commencer un autre message",
-        exact: true,
-      })
-      .click();
+    if (confirm)
+      await page
+        .getByRole("button", {
+          name: "Oui, commencer un autre message",
+          exact: true,
+        })
+        .click();
     await page
       .getByText("Votre message apparaîtra ici.", { exact: true })
       .waitFor();
@@ -129,7 +130,7 @@ try {
   await expect(
     card.getByText("Mémoire validée", { exact: true }),
   ).toBeVisible();
-  await next();
+  await next(false);
   const third = await compose();
   await page
     .getByRole("button", { name: "Proposer une phrase", exact: true })
