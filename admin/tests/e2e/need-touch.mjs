@@ -299,6 +299,22 @@ try {
     "approved",
   );
 
+  for (const id of candidates[1].slice(0, 2))
+    await call(base + `/interpretations/${id}/feedback`, "POST", {
+      action: "reject",
+      actor_role: "user",
+    });
+  await preparation
+    .getByRole("button", { name: "Recharger le besoin", exact: true })
+    .click();
+  await expect(preparation).toContainText("sa validation est bloquée");
+  await expect(
+    review(linked).getByRole("button", {
+      name: "Valider le dessin et le mot",
+      exact: true,
+    }),
+  ).toBeDisabled();
+
   // A stale approval and a failed read cannot become a new touch.
   const evidenceRoute = `**/profiles/${profile}/suggestions/${need(2).id}/evidence`;
   await page.route(evidenceRoute, (intercepted) =>
@@ -349,6 +365,37 @@ try {
   await expect(creator).toHaveCount(0);
   assert.equal(modelCalls, 0);
   assert.deepEqual(errors, []);
+  await call(grant, "PUT", {
+    capabilities: ["communicate"],
+    expected_capabilities: ["prepare_keyboard"],
+  });
+  const limited = await request.newContext({
+    baseURL: origin,
+    extraHTTPHeaders: { Origin: origin },
+  });
+  try {
+    const response = await limited.post("/api/pictoflow/auth/login", {
+      data: { username: supporter.username, password },
+    });
+    assert(response.ok());
+    const token = (await response.json()).csrf_token;
+    const denied = await limited.post(
+      `/api/pictoflow/${base}/suggestions/${need(0).id}/illustrated-block`,
+      {
+        headers: { "X-CSRF-Token": token },
+        data: {
+          request_id: crypto.randomUUID(),
+          label: "Autre",
+          pictogram_key: "water",
+          expected_intent: expressions[0],
+          actor_role: "professional",
+        },
+      },
+    );
+    assert.equal(denied.status(), 403);
+  } finally {
+    await limited.dispose();
+  }
   console.log(
     "Accepted need → drawing/word → explicit review → chosen placement verified; lost response, refusal, stale evidence, read outage and mobile recovery preserved.",
   );

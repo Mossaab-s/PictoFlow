@@ -26,6 +26,7 @@ export default function NeedTouchPreparation({
   visuals,
   disabled,
   onCreate,
+  onAvailability,
 }: {
   profileId: string;
   needId: string;
@@ -33,6 +34,7 @@ export default function NeedTouchPreparation({
   visuals: Representation[];
   disabled: boolean;
   onCreate: (need: VocabularyNeed, draft: TouchDraft) => Promise<boolean>;
+  onAvailability: (available: boolean) => void;
 }) {
   const session = useAuthentication();
   const [state, setState] = useState<{
@@ -77,6 +79,17 @@ export default function NeedTouchPreparation({
     return () => request.current?.abort();
   }, [load, blocks]);
   const existing = needTouch(profileId, needId, blocks);
+  useEffect(() => {
+    onAvailability(
+      !loading &&
+        !error &&
+        !!state &&
+        (state.need.status === "resolved" ||
+          (state.need.status === "approved" &&
+            state.evidence.eligible &&
+            !state.evidence.existing_block_match)),
+    );
+  }, [state, loading, error, onAvailability]);
   const needsPath = profileToolPath(session, profileId, "suggestions");
   return (
     <section className="panel need-touch-preparation">
@@ -108,6 +121,15 @@ export default function NeedTouchPreparation({
           </p>
           {existing ? (
             <>
+              {state.need.status !== "resolved" &&
+                (state.need.status !== "approved" ||
+                  !state.evidence.eligible) && (
+                  <p>
+                    La touche est conservée, mais sa validation est bloquée tant
+                    que le besoin n’est plus accepté ou que ses exemples ne
+                    suffisent plus.
+                  </p>
+                )}
               <div className="touch-sample">
                 <TouchContent
                   label={existing.label}

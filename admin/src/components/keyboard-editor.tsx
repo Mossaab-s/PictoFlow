@@ -60,6 +60,7 @@ export default function KeyboardEditor({
   const data = useProfileKeyboard(profileId);
   const [role, setRole] = useState<HumanRole>("user");
   const [createdId, setCreatedId] = useState<string | null>(null);
+  const [needAvailable, setNeedAvailable] = useState(false);
   useEffect(() => {
     if (createdId && data.blocks.some((b) => b.id === createdId)) {
       document.getElementById(`prepared-${createdId}`)?.focus();
@@ -344,6 +345,7 @@ export default function KeyboardEditor({
                   blocks={data.blocks}
                   visuals={data.representations}
                   disabled={busy || !!data.error}
+                  onAvailability={setNeedAvailable}
                   onCreate={async (need, draft) => {
                     let created = false;
                     await perform(async () => {
@@ -436,6 +438,9 @@ export default function KeyboardEditor({
                             disabled={
                               busy ||
                               (needId !== null && !!data.error) ||
+                              (needId !== null &&
+                                block.semantic_gap_id === needId &&
+                                !needAvailable) ||
                               (!!block.representation_id && !supported)
                             }
                           >
