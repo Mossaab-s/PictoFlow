@@ -2,6 +2,8 @@
 
 Correction also supports [moving](MESSAGE_TOUCH_ORDER.md) and
 [replacing a chosen touch](MESSAGE_TOUCH_REPLACEMENT.md) after explicit review.
+An [insertion operation](MESSAGE_TOUCH_INSERTION.md) adds a forgotten touch before
+or after a chosen occurrence while retaining the rest of the draft.
 
 An in-progress, nonempty message offers **Corriger une touche**. This optional
 mode turns the existing message pictures and words into buttons with explicit

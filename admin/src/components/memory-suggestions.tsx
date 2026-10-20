@@ -146,6 +146,12 @@ export default function MemorySuggestions({
       className="panel memory-suggestions"
       aria-label="Suggestions de ma mémoire"
       id="communication-suggestions"
+      onMouseDownCapture={(event) => {
+        if (event.button !== 0 || !(event.target instanceof Element)) return;
+        const button = event.target.closest("button");
+        // Focus a visible pointer target without scrolling it away before mouseup/click.
+        if (button && !button.disabled) button.focus({ preventScroll: true });
+      }}
     >
       <h2 ref={heading} tabIndex={-1}>
         Suggestions de ma mémoire

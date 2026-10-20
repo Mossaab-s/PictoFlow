@@ -67,23 +67,25 @@ class CommunicationService:
         expected_block_ids: tuple[UUID, ...] | None = None,
         target_index: int | None = None,
     ):
-        if action in {"remove", "move", "replace"}:
+        if action in {"remove", "move", "replace", "insert"}:
             if (
                 type(index) is not int
                 or not isinstance(expected_block_ids, tuple)
                 or not 1 <= len(expected_block_ids) <= 32
-                or not 0 <= index < len(expected_block_ids)
-                or (action != "replace" and block_id is not None)
+                or not 0 <= index <= len(expected_block_ids) - (0 if action == "insert" else 1)
+                or (action not in {"replace", "insert"} and block_id is not None)
             ):
                 raise DomainInvariantError("Editing requires an exact ordered draft and index")
             for expected in expected_block_ids:
                 identifier(expected, "expected_block_id")
         elif index is not None or expected_block_ids is not None:
             raise DomainInvariantError("Only explicit edits accept an expected draft and index")
-        if action == "replace":
+        if action in {"replace", "insert"}:
             identifier(block_id, "block_id")
-            if block_id == expected_block_ids[index]:
+            if action == "replace" and block_id == expected_block_ids[index]:
                 raise DomainInvariantError("Replacement must choose a different block")
+            if action == "insert" and len(expected_block_ids) >= 32:
+                raise DomainInvariantError("Insertion requires a draft of 1 to 31 selections")
         if action == "move":
             if type(target_index) is not int or not 0 <= target_index < len(expected_block_ids):
                 raise DomainInvariantError("Moving requires an existing destination index")
@@ -95,12 +97,12 @@ class CommunicationService:
                 raise DomainInvariantError("Only an explicit selection can carry an observation")
         with self.units() as store:
             previous = store.get(profile_id, CommunicationSequence, sequence_id)
-            if action in {"remove", "move", "replace"} and (
+            if action in {"remove", "move", "replace", "insert"} and (
                 previous.status != SequenceStatus.IN_PROGRESS
                 or previous.block_ids != expected_block_ids
             ):
                 raise SequenceEditConflict("Message changed; review the current draft")
-            if action in {"append", "replace"}:
+            if action in {"append", "replace", "insert"}:
                 block = store.get(profile_id, CommunicationBlock, block_id)
                 if block.status != ProposalStatus.VALIDATED:
                     raise DomainInvariantError("Only validated blocks can be selected")
@@ -116,6 +118,8 @@ class CommunicationService:
                 details = {"moved_from_index": index, "moved_to_index": target_index}
             elif action == "replace":
                 details = {"replaced_index": index}
+            elif action == "insert":
+                details = {"inserted_index": index}
             store.save(profile_id, current)
             store.audit(
                 profile_id,
