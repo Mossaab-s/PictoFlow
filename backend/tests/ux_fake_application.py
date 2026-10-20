@@ -1,6 +1,7 @@
 """Isolated browser-CI adapter; never imported by the application or server image."""
 
 import os
+from hashlib import sha256
 from typing import Literal
 from uuid import UUID
 
@@ -18,6 +19,18 @@ if os.environ.get("PICTOFLOW_UX_TESTING") != "1":
     raise RuntimeError("This synthetic fixture adapter is for isolated browser CI only")
 
 app = create_app(Settings(environment="test", auth_enabled=False, ai_provider="disabled"))
+app.state.fixture_calls = 0
+
+
+class CountingFakeProvider(FakeProvider):
+    async def interpret(self, request):
+        app.state.fixture_calls += 1
+        return await super().interpret(request)
+
+
+@app.get("/_synthetic/calls")
+def fixture_calls():
+    return {"calls": app.state.fixture_calls}
 
 
 class FixtureSelection(BaseModel):
@@ -50,7 +63,7 @@ async def configure_fixture(body: FixtureSelection):
     elif body.mode in ("invalid", "unavailable"):
         provider = FailureFixture(body.mode)
     else:
-        provider = FakeProvider(
+        provider = CountingFakeProvider(
             {
                 "interpretations": [
                     {
@@ -73,7 +86,11 @@ async def configure_fixture(body: FixtureSelection):
                 ]
             }
         )
-    app.state.ai_provider = ProviderManager(provider)
+    app.state.fixture_calls = 0
+    app.state.ai_provider = ProviderManager(
+        provider,
+        cache_revision=sha256((body.mode + request.model_dump_json()).encode()).hexdigest(),
+    )
     await previous.aclose()
     return {
         "provider": provider.provider_id,

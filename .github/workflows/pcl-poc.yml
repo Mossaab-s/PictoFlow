@@ -7,6 +7,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     services:
+      redis:
+        image: redis:8
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 10
       postgres:
         image: postgres:18
         env:
@@ -89,7 +95,7 @@ jobs:
         id: fake-api
         working-directory: backend
         run: |
-          PICTOFLOW_UX_TESTING=1 python -m uvicorn tests.ux_fake_application:app --host 127.0.0.1 --port 8001 --no-access-log > /tmp/pictoflow-ux-fake-api.log 2>&1 &
+          PICTOFLOW_UX_TESTING=1 PICTOFLOW_REDIS_URL=redis://127.0.0.1:6379/0 python -m uvicorn tests.ux_fake_application:app --host 127.0.0.1 --port 8001 --no-access-log > /tmp/pictoflow-ux-fake-api.log 2>&1 &
       - name: Verify optional formulation with the real FakeProvider
         if: ${{ !cancelled() && steps.fake-api.outcome == 'success' }}
         working-directory: admin
@@ -101,6 +107,10 @@ jobs:
         if: ${{ !cancelled() && steps.fake-api.outcome == 'success' }}
         working-directory: admin
         run: node tests/e2e/literal-explanations.mjs
+      - name: Reuse pending hypotheses before explicitly requesting new ones
+        if: ${{ !cancelled() && steps.fake-api.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/interpretation-reuse.mjs
       - name: Prepare isolated authenticated capability API
         id: capability-api
         if: ${{ !cancelled() && steps.communication-build.outcome == 'success' }}
@@ -198,6 +208,8 @@ jobs:
           name: synthetic-pcl-learning
           path: |
             admin/.local/pcl-learning/*.png
+            admin/.local/interpretation-reuse/*.png
+            admin/.local/interpretation-reuse/report.json
             admin/.local/memory-suggestions/*.png
             admin/.local/keyboard-usage/*.png
             admin/.local/offline-reopen/*.png

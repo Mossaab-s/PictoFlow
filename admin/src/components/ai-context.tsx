@@ -4,6 +4,7 @@ import { api } from "@/lib/api";
 
 type Context = {
   personal_hypothesis: boolean;
+  reuse?: "memory" | "cache" | null;
   references: {
     interpretation_id: string;
     available: boolean;
@@ -72,6 +73,12 @@ export default function AIContext({
       )}
       {value && (
         <>
+          {value.reuse === "cache" && (
+            <p>
+              Cette proposition en attente est réutilisée depuis le cache de 24
+              heures. Elle n’est pas une phrase apprise et reste à vérifier.
+            </p>
+          )}
           <p>
             {value.personal_hypothesis
               ? "Cette formulation plus souple est soutenue par une association acceptée de votre profil. Elle reste à vérifier pour ce message."

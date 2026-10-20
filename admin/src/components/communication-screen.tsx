@@ -484,7 +484,7 @@ export default function CommunicationScreen({
       );
     }
   }
-  async function propose() {
+  async function propose(refresh = false) {
     if (!current.current || current.current.status !== "completed") return;
     const result = await api<Decision>(
       `${base}/sequences/${current.current.id}/interpret`,
@@ -492,6 +492,7 @@ export default function CommunicationScreen({
         method: "POST",
         body: JSON.stringify({
           declared_context: context.trim() ? [context.trim()] : [],
+          refresh,
         }),
       },
     );
@@ -1231,7 +1232,10 @@ export default function CommunicationScreen({
               Formulation facultative avec l’IA, si disponible, guidée par votre
               mémoire personnelle.
             </p>
-            <button onClick={() => void perform(propose)} disabled={pending}>
+            <button
+              onClick={() => void perform(() => propose())}
+              disabled={pending}
+            >
               Proposer une phrase
             </button>
             <details className="formulation-context">
@@ -1308,6 +1312,15 @@ export default function CommunicationScreen({
                       }
                     />
                   ))}
+                  {!accepted && suggestions.mode === "off" && (
+                    <button
+                      className="secondary"
+                      onClick={() => void perform(() => propose(true))}
+                      disabled={pending || !online || restoreFailed}
+                    >
+                      Proposer d’autres phrases
+                    </button>
+                  )}
                 </>
               )}
               <Link

@@ -27,6 +27,7 @@ from app.application.communication import (
 )
 from app.application.feedback_history import EvidenceTarget, FeedbackHistory
 from app.application.interpretation import InterpretationService
+from app.application.interpretation_reuse import InterpretationReuse
 from app.application.keyboard_groups import KeyboardGroupService
 from app.application.keyboard_organization import KeyboardChangePreview, KeyboardOrganization
 from app.application.memory_suggestions import MemorySuggestions, SuggestionPage
@@ -220,6 +221,7 @@ class MessageCopyLookup(BaseModel):
 
 class InterpretationBody(Body):
     declared_context: tuple[str, ...] = Field(default=(), max_length=8)
+    refresh: bool = Field(default=False, strict=True)
 
 
 class MemoryReferenceBody(Body):
@@ -695,7 +697,7 @@ def selection_rhythm(request: Request, profile_id: UUID, sequence_id: UUID):
 async def interpret(
     request: Request, profile_id: UUID, sequence_id: UUID, body: InterpretationBody
 ):
-    async with active_provider(request) as provider:
+    async with active_provider(request, include_configuration=True) as (provider, configuration):
         service = InterpretationService(
             units(request),
             communication(request),
@@ -704,8 +706,13 @@ async def interpret(
             memory_limit=request.app.state.settings.ai_memory_examples,
         )
         try:
-            result = await service.interpret(
-                profile_id, sequence_id, declared_context=body.declared_context
+            result = await InterpretationReuse(
+                service, request.app.state.transient_store, configuration
+            ).interpret(
+                profile_id,
+                sequence_id,
+                declared_context=body.declared_context,
+                refresh=body.refresh,
             )
         except MemorySuggestionConflict as error:
             raise HTTPException(409, str(error)) from None

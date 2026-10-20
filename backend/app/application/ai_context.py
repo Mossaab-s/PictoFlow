@@ -22,6 +22,7 @@ class AIContext:
     personal_hypothesis: bool
     references: tuple[ContextReference, ...]
     fallback_reason: FallbackReason | None = None
+    reuse: str | None = None
 
 
 def context_for(units, profile_id, interpretation_id):
@@ -54,4 +55,5 @@ def context_for(units, profile_id, interpretation_id):
             bool(data.get("personal_hypothesis")),
             tuple(refs),
             reason if interpretation.source == "pcl" and reason in FALLBACK_REASONS else None,
+            data.get("reuse") if data.get("reuse") in ("memory", "cache") else None,
         )

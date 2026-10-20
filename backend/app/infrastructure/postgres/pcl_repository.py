@@ -301,7 +301,16 @@ class PostgresPCLRepository:
         )
         return tuple(self.session.scalars(query))
 
-    def accepted_traces(self, profile_id, *, block_ids, exclude_sequence_id, reference_id=None):
+    def accepted_traces(
+        self,
+        profile_id,
+        *,
+        block_ids,
+        exclude_sequence_id,
+        reference_id=None,
+        exact=False,
+        context_id=None,
+    ):
         """Current human acceptance only; shortlist by shared touches before recency.
 
         The bounded shortlist is 1,000 traces, not the last 1,000 profile messages.
@@ -390,6 +399,11 @@ class PostgresPCLRepository:
             )
             .limit(1000)
         )
+        if exact:
+            query = query.where(
+                selections.c.block_ids == array(list(block_ids)),
+                SequenceRow.context_id.is_not_distinct_from(context_id),
+            )
         return tuple(
             AcceptedTrace(i, s, tuple(b), t, at)
             for i, s, b, t, at in self.session.execute(
@@ -398,6 +412,27 @@ class PostgresPCLRepository:
                 else query
             )
         )
+
+    def rejected_cache_roots(self, profile_id, root_ids):
+        self._scope(profile_id)
+        root = AuditRow.new_state["presentation"]["cache_root_id"].astext
+        rows = self.session.scalars(
+            select(root)
+            .join(
+                ValidationRow,
+                (ValidationRow.profile_id == profile_id)
+                & (ValidationRow.target_type == "interpretation")
+                & (ValidationRow.target_id == AuditRow.target_id)
+                & (ValidationRow.action == "reject"),
+            )
+            .where(
+                AuditRow.profile_id == profile_id,
+                AuditRow.target_type == "interpretation",
+                AuditRow.event_type == "interpretation_reuse",
+                root.in_([str(i) for i in root_ids]),
+            )
+        )
+        return {UUID(value) for value in rows}
 
     def audit(
         self,

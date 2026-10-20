@@ -96,5 +96,8 @@ def check_memory_provenance(store, profile_id, item):
             MemoryReference(
                 UUID(source["interpretation_id"]), source["revision"], source.get("index")
             ),
-            require_association=item.source != "pcl-memory",
+            require_association=item.source != "pcl-memory"
+            or bool(
+                json.loads(origin.new_state or "{}").get("presentation", {}).get("alignment_memory")
+            ),
         )
