@@ -300,12 +300,10 @@ try {
     exact: true,
   });
   await input.fill("Livre");
-  const result = picker
-    .locator(".touch-search-results")
-    .getByRole("button", {
-      name: "Choisir « Livre » pour le remplacement",
-      exact: true,
-    });
+  const result = picker.locator(".touch-search-results").getByRole("button", {
+    name: "Choisir « Livre » pour le remplacement",
+    exact: true,
+  });
   await result.press("Enter");
   await expect(heading).toBeFocused();
   await expect(
