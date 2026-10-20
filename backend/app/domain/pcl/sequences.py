@@ -7,6 +7,20 @@ from app.domain.pcl.entities import CommunicationSequence, SequenceStatus, utc_n
 from app.domain.pcl.invariants import DomainInvariantError, identifier
 
 
+def editable_copy(sequence: CommunicationSequence, request_id: UUID) -> CommunicationSequence:
+    identifier(request_id, "request_id")
+    if sequence.status != SequenceStatus.COMPLETED or not 1 <= len(sequence.block_ids) <= 32:
+        raise DomainInvariantError("Only a finished message of 1 to 32 selections can be copied")
+    if request_id == sequence.id:
+        raise DomainInvariantError("A copy requires a separate identity")
+    return CommunicationSequence(
+        id=request_id,
+        profile_id=sequence.profile_id,
+        session_id=request_id,
+        block_ids=sequence.block_ids,
+    )
+
+
 def edit_sequence(
     sequence: CommunicationSequence,
     action: str,

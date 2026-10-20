@@ -1,5 +1,8 @@
 # Correct one touch in a draft message
 
+For a finished message, [prepare an independent editable copy](MESSAGE_EDITABLE_COPY.md)
+before using these draft correction operations. The original remains immutable.
+
 Correction also supports [moving](MESSAGE_TOUCH_ORDER.md) and
 [replacing a chosen touch](MESSAGE_TOUCH_REPLACEMENT.md) after explicit review.
 An [insertion operation](MESSAGE_TOUCH_INSERTION.md) adds a forgotten touch before

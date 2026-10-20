@@ -102,6 +102,7 @@ COMMUNICATION_READS = frozenset(
         "/profiles/{profile_id}/communication-snapshot",
         "/profiles/{profile_id}/sequences",
         "/profiles/{profile_id}/sequences/{sequence_id}",
+        "/profiles/{profile_id}/sequences/{sequence_id}/copies/{request_id}",
         "/profiles/{profile_id}/sequences/{sequence_id}/rhythm",
         "/profiles/{profile_id}/interpretations",
         "/profiles/{profile_id}/interpretations/{interpretation_id}",
@@ -117,6 +118,7 @@ COMMUNICATION_WRITES = frozenset(
     {
         ("POST", "/profiles/{profile_id}/sequences"),
         ("POST", "/profiles/{profile_id}/sequences/{sequence_id}/selection"),
+        ("POST", "/profiles/{profile_id}/sequences/{sequence_id}/copy"),
         ("POST", "/profiles/{profile_id}/sequences/{sequence_id}/interpret"),
         ("POST", "/profiles/{profile_id}/sequences/{sequence_id}/memory-proposals"),
         ("POST", "/profiles/{profile_id}/interpretations/{interpretation_id}/feedback"),
