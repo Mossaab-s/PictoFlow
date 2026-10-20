@@ -12,6 +12,9 @@ import MessageMoveDialog, { type TouchMove } from "./message-move-dialog";
 import MessageReplaceDialog, {
   type TouchReplacement,
 } from "./message-replace-dialog";
+import MessageInsertDialog, {
+  type TouchInsertion,
+} from "./message-insert-dialog";
 
 export type Word = { label: string; representation?: Representation };
 export type TouchRemoval = {
@@ -28,6 +31,7 @@ export default function MessageTouchEditor({
   remove,
   move,
   replace,
+  insert,
   profileId,
   tiles,
   groups,
@@ -40,16 +44,18 @@ export default function MessageTouchEditor({
   remove: (choice: TouchRemoval) => Promise<void>;
   move: (choice: TouchRemoval & { targetIndex: number }) => Promise<void>;
   replace: (choice: TouchRemoval & { blockId: string }) => Promise<void>;
+  insert: (choice: TouchRemoval & { blockId: string }) => Promise<void>;
   profileId: string;
   tiles: Tile[];
   groups: KeyboardGroup[];
   displaySize: DisplaySize;
 }) {
   const [editing, setEditing] = useState(false);
-  const [operation, setOperation] = useState<"remove" | "move" | "replace">(
-    "remove",
-  );
+  const [operation, setOperation] = useState<
+    "remove" | "move" | "replace" | "insert"
+  >("remove");
   const [replacement, setReplacement] = useState<TouchReplacement | null>(null);
+  const [insertion, setInsertion] = useState<TouchInsertion | null>(null);
   const [moveChoice, setMoveChoice] = useState<TouchMove | null>(null);
   const [choice, setChoice] = useState<(TouchRemoval & { word: Word }) | null>(
     null,
@@ -60,6 +66,7 @@ export default function MessageTouchEditor({
   const dialog = useRef<HTMLDialogElement>(null);
   const moveDialog = useRef<HTMLDialogElement>(null);
   const replaceDialog = useRef<HTMLDialogElement>(null);
+  const insertDialog = useRef<HTMLDialogElement>(null);
   const sending = useRef(false);
   const returnFocus = useRef<{ index: number; origin: Element | null } | null>(
     null,
@@ -68,25 +75,40 @@ export default function MessageTouchEditor({
   const active = editing && canEdit;
   const moving = active && operation === "move" && words.length > 1;
   const replacing = active && operation === "replace";
-  const verb = replacing ? "Remplacer" : moving ? "Déplacer" : "Retirer";
+  const inserting = active && operation === "insert" && words.length < 32;
+  const verb = inserting
+    ? "Insérer près de"
+    : replacing
+      ? "Remplacer"
+      : moving
+        ? "Déplacer"
+        : "Retirer";
 
   useEffect(() => {
     if (!canEdit) setEditing(false);
   }, [canEdit]);
   useEffect(() => {
     if (words.length < 2 && operation === "move") setOperation("remove");
+    if (words.length >= 32 && operation === "insert") setOperation("remove");
   }, [words.length, operation]);
   useEffect(() => {
     if (choice && !dialog.current?.open) dialog.current?.showModal();
     if (!choice && dialog.current?.open) dialog.current.close();
   }, [choice]);
   useEffect(() => {
-    if (busy || choice || moveChoice || replacement || !returnFocus.current)
+    if (
+      busy ||
+      choice ||
+      moveChoice ||
+      replacement ||
+      insertion ||
+      !returnFocus.current
+    )
       return;
     const requested = returnFocus.current;
     returnFocus.current = null;
     focusOccurrence(requested.index, requested.origin);
-  }, [busy, choice, moveChoice, replacement]);
+  }, [busy, choice, moveChoice, replacement, insertion]);
 
   function closeAndReturn(modal: HTMLDialogElement | null, index: number) {
     modal?.close();
@@ -178,6 +200,22 @@ export default function MessageTouchEditor({
       setReplacement(null);
     }
   }
+  function cancelInsertion() {
+    if (sending.current) return;
+    closeAndReturn(insertDialog.current, insertion?.index ?? 0);
+    setInsertion(null);
+  }
+  async function confirmInsertion(tile: Tile, index: number) {
+    if (!insertion || disabled || sending.current) return;
+    sending.current = true;
+    try {
+      await insert({ ...insertion, index, blockId: tile.block_id });
+    } finally {
+      sending.current = false;
+      closeAndReturn(insertDialog.current, index);
+      setInsertion(null);
+    }
+  }
   return (
     <div
       ref={root}
@@ -191,6 +229,7 @@ export default function MessageTouchEditor({
           !choice &&
           !moveChoice &&
           !replacement &&
+          !insertion &&
           !busy
         ) {
           event.preventDefault();
@@ -208,7 +247,7 @@ export default function MessageTouchEditor({
           <button
             type="button"
             className="secondary"
-            aria-pressed={!moving && !replacing}
+            aria-pressed={!moving && !replacing && !inserting}
             disabled={disabled}
             onClick={() => {
               setOperation("remove");
@@ -241,12 +280,32 @@ export default function MessageTouchEditor({
           >
             Remplacer une touche
           </button>
+          <button
+            type="button"
+            className="secondary"
+            aria-pressed={inserting}
+            disabled={disabled || words.length >= 32}
+            onClick={() => {
+              setOperation("insert");
+              focusOccurrence(0);
+            }}
+          >
+            Insérer une touche
+          </button>
         </div>
       )}
       {active && (
         <p className="helper" id="message-edit-help">
-          Choisissez la touche à {verb.toLowerCase()}, puis vérifiez votre
-          choix.
+          {inserting ? (
+            "Choisissez la touche près de laquelle ajouter un picto, puis vérifiez sa place."
+          ) : (
+            <>
+              Choisissez la touche à {verb.toLowerCase()}, puis vérifiez votre
+              choix.
+            </>
+          )}
+          {words.length >= 32 &&
+            " Le message contient déjà 32 touches. Retirez une touche pour en ajouter une."}
         </p>
       )}
       <div
@@ -276,7 +335,9 @@ export default function MessageTouchEditor({
                     index,
                     word,
                   };
-                  if (replacing) setReplacement(selected);
+                  if (inserting)
+                    setInsertion({ ...selected, words: [...words] });
+                  else if (replacing) setReplacement(selected);
                   else if (moving)
                     setMoveChoice({ ...selected, words: [...words] });
                   else setChoice(selected);
@@ -385,6 +446,20 @@ export default function MessageTouchEditor({
           busy={busy}
           cancel={cancelReplacement}
           confirm={(tile) => void confirmReplacement(tile)}
+        />
+      )}
+      {insertion && (
+        <MessageInsertDialog
+          choice={insertion}
+          dialogRef={insertDialog}
+          profileId={profileId}
+          tiles={tiles}
+          groups={groups}
+          displaySize={displaySize}
+          disabled={disabled}
+          busy={busy}
+          cancel={cancelInsertion}
+          confirm={(tile, index) => void confirmInsertion(tile, index)}
         />
       )}
     </div>

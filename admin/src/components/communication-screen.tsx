@@ -337,6 +337,7 @@ export default function CommunicationScreen({
   }
   async function editTouch(
     choice: TouchRemoval & { targetIndex?: number; blockId?: string },
+    action: "remove" | "move" | "replace" | "insert",
   ) {
     const active = current.current;
     if (!active || active.id !== choice.sequenceId) return;
@@ -346,12 +347,7 @@ export default function CommunicationScreen({
       result = await api<Sequence>(`${base}/sequences/${active.id}/selection`, {
         method: "POST",
         body: JSON.stringify({
-          action:
-            choice.blockId !== undefined
-              ? "replace"
-              : choice.targetIndex === undefined
-                ? "remove"
-                : "move",
+          action,
           index: choice.index,
           expected_block_ids: choice.blockIds,
           ...(choice.blockId === undefined ? {} : { block_id: choice.blockId }),
@@ -361,24 +357,31 @@ export default function CommunicationScreen({
         }),
       });
     } catch (error) {
-      if (error instanceof APIError && error.status === 409)
+      if (error instanceof APIError && error.status === 409) {
+        const operation = {
+          remove: "retrait",
+          move: "déplacement",
+          replace: "remplacement",
+          insert: "ajout",
+        }[action];
         throw new Error(
-          choice.blockId !== undefined
-            ? "Le message a changé ailleurs. Votre remplacement n’a pas été appliqué. Vérifiez le message rechargé avant de choisir à nouveau."
-            : choice.targetIndex === undefined
-              ? "Le message a changé ailleurs. Votre retrait n’a pas été appliqué. Vérifiez le message rechargé avant de choisir à nouveau."
-              : "Le message a changé ailleurs. Votre déplacement n’a pas été appliqué. Vérifiez le message rechargé avant de choisir à nouveau.",
+          `Le message a changé ailleurs. Votre ${operation} n’a pas été appliqué. Vérifiez le message rechargé avant de choisir à nouveau.`,
         );
+      }
       throw error;
     }
     if (alive.current) {
       remember(result, null);
       setNotice(
-        choice.blockId !== undefined
-          ? "La touche choisie a été remplacée. Les autres gardent leur place."
-          : choice.targetIndex === undefined
-            ? "La touche choisie a été retirée. Les autres gardent leur ordre."
-            : "La touche choisie a été déplacée. Votre nouvel ordre est enregistré.",
+        {
+          remove:
+            "La touche choisie a été retirée. Les autres gardent leur ordre.",
+          move: "La touche choisie a été déplacée. Votre nouvel ordre est enregistré.",
+          replace:
+            "La touche choisie a été remplacée. Les autres gardent leur place.",
+          insert:
+            "La nouvelle touche a été ajoutée. Les autres gardent leur ordre.",
+        }[action],
       );
     }
   }
@@ -684,9 +687,16 @@ export default function CommunicationScreen({
             words={chosen}
             disabled={pending}
             busy={busy}
-            remove={(choice) => perform(() => editTouch(choice), false)}
-            move={(choice) => perform(() => editTouch(choice), false)}
-            replace={(choice) => perform(() => editTouch(choice), false)}
+            remove={(choice) =>
+              perform(() => editTouch(choice, "remove"), false)
+            }
+            move={(choice) => perform(() => editTouch(choice, "move"), false)}
+            replace={(choice) =>
+              perform(() => editTouch(choice, "replace"), false)
+            }
+            insert={(choice) =>
+              perform(() => editTouch(choice, "insert"), false)
+            }
           />
           <div className="actions">
             <button

@@ -153,7 +153,7 @@ class InterpretationFeedbackBody(FeedbackBody):
 
 
 class SelectionBody(Body):
-    action: str = Field(pattern="^(append|undo|clear|complete|cancel|remove|move|replace)$")
+    action: str = Field(pattern="^(append|undo|clear|complete|cancel|remove|move|replace|insert)$")
     block_id: UUID | None = None
     observation: SelectionObservation | None = None
     index: int | None = Field(default=None, ge=0, le=31, strict=True)
@@ -164,12 +164,12 @@ class SelectionBody(Body):
 
     @model_validator(mode="after")
     def explicit_edit(self):
-        if self.action in {"remove", "move", "replace"}:
+        if self.action in {"remove", "move", "replace", "insert"}:
             if (
                 self.index is None
                 or self.expected_block_ids is None
-                or self.index >= len(self.expected_block_ids)
-                or (self.action != "replace" and self.block_id is not None)
+                or self.index > len(self.expected_block_ids) - (0 if self.action == "insert" else 1)
+                or (self.action not in {"replace", "insert"} and self.block_id is not None)
                 or self.observation is not None
             ):
                 raise ValueError("Editing requires an ordered draft and an existing index only")
@@ -178,6 +178,9 @@ class SelectionBody(Body):
         if self.action == "replace":
             if self.block_id is None or self.block_id == self.expected_block_ids[self.index]:
                 raise ValueError("Replacement requires a different block identity")
+        if self.action == "insert":
+            if self.block_id is None or len(self.expected_block_ids) >= 32:
+                raise ValueError("Insertion requires a block and a draft of 1 to 31 selections")
         if self.action == "move":
             if self.target_index is None or self.target_index >= len(self.expected_block_ids):
                 raise ValueError("Moving requires an existing destination index")

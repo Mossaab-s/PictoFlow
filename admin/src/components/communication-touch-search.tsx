@@ -12,7 +12,7 @@ type SearchProps = {
   groups: KeyboardGroup[];
   displaySize: DisplaySize;
   disabled: boolean;
-  purpose?: "replace";
+  purpose?: "replace" | "insert";
   onSelect: (tile: Tile) => void | Promise<void>;
 };
 
@@ -98,7 +98,9 @@ export default function CommunicationTouchSearch(props: SearchProps) {
             Cherchez parmi vos touches validées, sur toutes vos pages.
             {props.purpose === "replace"
               ? "Choisissez une touche pour vérifier le remplacement."
-              : "Choisissez une touche pour l’ajouter à votre message."}
+              : props.purpose === "insert"
+                ? "Choisissez une touche pour vérifier son ajout à cet endroit."
+                : "Choisissez une touche pour l’ajouter à votre message."}
           </p>
           {!query.trim() ? (
             <p>Écrivez le mot affiché sur votre touche.</p>
@@ -169,9 +171,11 @@ function SearchResults({
                 type="button"
                 className="communication-tile"
                 aria-label={
-                  purpose === "replace"
-                    ? `Choisir « ${tile.block.label} » pour le remplacement`
-                    : `Ajouter « ${tile.block.label} » au message`
+                  purpose === "insert"
+                    ? `Choisir « ${tile.block.label} » pour l’insertion`
+                    : purpose === "replace"
+                      ? `Choisir « ${tile.block.label} » pour le remplacement`
+                      : `Ajouter « ${tile.block.label} » au message`
                 }
                 aria-describedby={`${locationId}-${tile.block_id}`}
                 disabled={disabled}

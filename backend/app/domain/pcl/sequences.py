@@ -24,6 +24,18 @@ def edit_sequence(
         return replace(sequence, block_ids=(*sequence.block_ids, block_id))
     if action == "undo":
         return replace(sequence, block_ids=sequence.block_ids[:-1])
+    if action == "insert":
+        identifier(block_id, "block_id")
+        if (
+            not 1 <= len(sequence.block_ids) < 32
+            or type(index) is not int
+            or not 0 <= index <= len(sequence.block_ids)
+        ):
+            raise DomainInvariantError("Insertion requires a gap in a draft of 1 to 31 selections")
+        return replace(
+            sequence,
+            block_ids=sequence.block_ids[:index] + (block_id,) + sequence.block_ids[index:],
+        )
     if action == "replace":
         identifier(block_id, "block_id")
         if type(index) is not int or not 0 <= index < len(sequence.block_ids):

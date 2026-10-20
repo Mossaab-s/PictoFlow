@@ -1958,6 +1958,24 @@ pre {
 .replacement-another {
   margin-top: 12px;
 }
+.insertion-choice {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-block: 12px;
+}
+.insertion-choice .pictogram,
+.insertion-choice .touch-photo {
+  width: 56px;
+  height: 56px;
+}
+.insertion-choice .touch-word {
+  font-size: 20px;
+}
+.insertion-choice small {
+  overflow-wrap: anywhere;
+}
 .communication-page .message-touch .pictogram,
 .communication-page .message-touch .touch-photo {
   width: 56px;
