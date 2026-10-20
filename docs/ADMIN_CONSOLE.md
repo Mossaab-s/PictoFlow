@@ -1,8 +1,8 @@
 # Administrator console
 
-The console groups existing account, profile, provider and profile-audit tools.
-It adds navigation and read-only views; it does not change PCL decisions, grants,
-database schemas, provider configuration or server deployment.
+The console groups account, profile, provider and profile-audit tools. Its overview
+and audit views are read-only. Administrators can explicitly configure and test
+the AI provider through the [provider settings](ADMIN_PROVIDER_CONFIGURATION.md).
 
 ```text
 Administration
@@ -10,7 +10,7 @@ Administration
   +-- Overview -------- API response / declared database / Redis status
   +-- Profiles -------- existing profile tools and exports
   +-- Accounts -------- existing account and profile-grant controls
-  +-- AI provider ----- existing metadata check, no phrase generation
+  +-- AI provider ----- metadata / settings / explicit synthetic generation test
   +-- Audit ----------- select ONE profile
   |                       +-- existing PCL audit
   |                       +-- existing AI-quality diagnostics
@@ -45,6 +45,9 @@ The existing `/admin/providers` view now discards prior health information durin
 refresh and after failure, and cancels abandoned reads. Provider health consults
 metadata; a compatible provider can contact its configured models endpoint. It is
 not a phrase-generation or quality test. API keys remain server-side.
+The separate configuration form can probe an unsaved draft with a fictitious
+message and explicitly activate persistent settings. It never learns from that
+test or changes existing personal memory; see the provider-settings guide above.
 
 `/admin/maintenance` distinguishes real browser actions from documented server
 operations. Links open existing profile export/restoration tools or public server
