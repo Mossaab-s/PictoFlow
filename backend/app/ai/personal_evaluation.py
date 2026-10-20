@@ -1,4 +1,4 @@
-"""Synthetic 5–10-touch probes of personal memory and the real interpretation pipeline.
+"""Synthetic intent and 5–10-touch probes of the real interpretation pipeline.
 
 Offline fixtures never load configuration or call a provider. --live is explicit,
 uses only generated profiles, and never opens PostgreSQL or Redis. A retained
@@ -70,6 +70,8 @@ class Probe:
     review_focus: str = (
         "Vérifier les actions, les personnes et le sens voulu, pas seulement les mots."
     )
+    intents: tuple[str, ...] = ()
+    expected_candidates: int | None = None
 
 
 PROBES = (
@@ -188,6 +190,56 @@ PROBES = (
         ),
         live_probe=False,
         review_focus="Mesurer les limites de 50 références et 32 000 caractères, sans appel IA.",
+    ),
+    Probe(
+        "intent_request_and_statement",
+        ("Moi", "Boire", "Eau"),
+        ("Je voudrais boire de l’eau.", "Je bois de l’eau."),
+        intents=("request", "statement"),
+        expected_candidates=2,
+        review_focus="La demande et le constat restent deux hypothèses à choisir.",
+    ),
+    Probe(
+        "intent_personal_preference_and_request",
+        MEAL,
+        ("J’aime manger à la maison.", "Je voudrais manger à la maison."),
+        (Reference(MEAL, "J’aime manger à la maison.", occurrences=3),),
+        intents=("preference", "request"),
+        expected_candidates=2,
+        review_focus="La préférence repose sur ce profil ; une demande reste aussi possible.",
+    ),
+    Probe(
+        "intent_question_and_statement",
+        ("Maman", "Maison"),
+        ("Maman est à la maison ?", "Maman est à la maison."),
+        intents=("question", "statement"),
+        expected_candidates=2,
+        review_focus="La ponctuation interrogative ne doit pas disparaître comme un doublon.",
+    ),
+    Probe(
+        "intent_explicit_refusal",
+        ("Moi", "Non", "Manger"),
+        ("Je ne veux pas manger.",),
+        intents=("refusal",),
+        expected_candidates=1,
+        review_focus="Un refus explicite n’exige pas d’inventer une lecture affirmative.",
+    ),
+    Probe(
+        "intent_modal_request_variants",
+        ("Moi", "Boire", "Eau"),
+        ("Je veux boire de l’eau.", "Je voudrais boire de l’eau.", "Je bois de l’eau."),
+        intents=("request", "request", "statement"),
+        expected_candidates=2,
+        review_focus="Deux variantes de politesse ne doivent pas occuper deux choix.",
+    ),
+    Probe(
+        "intent_label_cannot_justify_preference",
+        ("Moi", "Boire", "Eau"),
+        ("J’aime boire de l’eau.",),
+        intents=("preference",),
+        expected_candidates=0,
+        expected_reason="unfaithful_words",
+        review_focus="Une étiquette du modèle ne remplace pas une référence personnelle absente.",
     ),
 )
 
@@ -388,8 +440,12 @@ async def evaluate(
             response = InterpretationProposal.model_validate(
                 {
                     "candidates": [
-                        {"intent": "synthetic", "text": text, "confidence": 0.85}
-                        for text in probe.texts
+                        {
+                            "intent": probe.intents[index] if probe.intents else "synthetic",
+                            "text": text,
+                            "confidence": 0.85,
+                        }
+                        for index, text in enumerate(probe.texts)
                     ]
                 }
             )
@@ -415,6 +471,14 @@ async def evaluate(
             "request_characters": len(request.model_dump_json()),
             "provider_texts": recorder.texts,
             "provider_status": recorder.result.status if recorder.result else None,
+            "provider_intent_labels": [c.intent for c in recorder.result.candidates]
+            if recorder.result
+            else [],
+            "retained_intent_labels": [
+                units.details[c.id]["provider_intent"]
+                for c in decision.candidates
+                if c.source != "pcl"
+            ],
             "token_usage": {
                 "input": recorder.result.metadata.input_tokens,
                 "output": recorder.result.metadata.output_tokens,
@@ -424,6 +488,7 @@ async def evaluate(
             "candidate_checks": [
                 {
                     "text": text,
+                    "provider_intent_label": recorder.result.candidates[index].intent,
                     "confidence": recorder.result.candidates[index].confidence,
                     "retained": any(
                         c.source != "pcl" and c.text == text for c in decision.candidates
@@ -461,7 +526,13 @@ async def evaluate(
             and tuple(units.feedbacks) == feedbacks,
             "elapsed_ms": round((time.monotonic() - start) * 1000),
             "http": diagnostics.events[before_http:] if diagnostics else [],
-            "fixture_passed": receipt["fallback_reason"] == probe.expected_reason
+            "fixture_passed": (
+                receipt["fallback_reason"] == probe.expected_reason
+                and (
+                    probe.expected_candidates is None
+                    or receipt["retained_candidates"] == probe.expected_candidates
+                )
+            )
             if provider is None
             else None,
         }
@@ -482,6 +553,9 @@ async def evaluate(
         "generated_at": utc_now().isoformat(),
         "prompt_sha256": hashlib.sha256(system_instruction("interpret").encode()).hexdigest(),
         "requires_human_semantic_review": True,
+        "intent_label_limit": (
+            "Provider intent labels are unverified hints, not semantic accuracy or PCL facts."
+        ),
         "aborted_reason": aborted,
         "summary": dict(Counter(r["fallback_reason"] or "provider_proposal" for r in results)),
         "scenarios": results,

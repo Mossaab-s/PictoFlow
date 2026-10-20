@@ -128,18 +128,23 @@ From `backend/`, use the installed Python environment:
 python -m app.ai.personal_evaluation --output personal-evaluation.json
 ```
 
-The sixteen offline scenarios exercise the actual request builder, ranked personal
-examples, grounding, confidence handling and proposal persistence against a
-generated in-memory repository. They include fourteen live-eligible compositions
-and two fixture-only guards: a deliberately dropped repetition and a 70-reference
-budget stress case. Existing PostgreSQL tests separately verify the real
-repository's acceptance, profile isolation and changed-meaning rules.
+The current evaluator has 22 offline scenarios: the original sixteen probes and
+six [intent-hypothesis probes](INTENT_HYPOTHESES.md). They exercise the actual
+request builder, ranked personal examples, grounding, confidence handling and
+proposal persistence against a generated in-memory repository. Twenty are
+live-eligible; two remain fixture-only guards: a deliberately dropped repetition
+and a 70-reference budget stress case. Existing PostgreSQL tests separately verify
+the real repository's acceptance, profile isolation and changed-meaning rules.
+The recorded live experiments above still describe the original probe set and
+its captured prompts, not new observations of the updated instruction.
 
 The budget fixture selected 47 whole references within 32,000 serialized characters.
 The default limit of 50 is a maximum, not a promise to send fifty long phrases.
 This stress case does not call the external model and does not measure its quota.
 
-Explicit live calls use the backend's private provider configuration:
+Explicit live CLI calls use the backend's private environment configuration.
+They do not load administrator overrides saved in PostgreSQL; use the normal
+profile API when testing the application's currently active provider.
 
 ```sh
 python -m app.ai.personal_evaluation --live --response-format json_object \

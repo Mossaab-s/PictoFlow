@@ -25,11 +25,11 @@ from app.domain.pcl.entities import CommunicationBlock, Interpretation
 
 def test_long_compositions_exercise_real_memory_selection_grounding_and_proposal_persistence():
     report = asyncio.run(evaluate())
-    assert len(report["scenarios"]) == len(PROBES) == 16
-    assert report["summary"] == {"provider_proposal": 13, "unfaithful_words": 3}
+    assert len(report["scenarios"]) == len(PROBES) == 22
+    assert report["summary"] == {"provider_proposal": 18, "unfaithful_words": 4}
     assert report["requires_human_semantic_review"] and report["synthetic_only"]
     assert report["aborted_reason"] is None
-    assert {row["touch_count"] for row in report["scenarios"]} == {5, 6, 8, 10}
+    assert {row["touch_count"] for row in report["scenarios"]} == {2, 3, 5, 6, 8, 10}
     assert all(
         row["fixture_passed"] and row["all_unvalidated"] and row["source_memory_unchanged"]
         for row in report["scenarios"]
@@ -86,6 +86,35 @@ def test_synthetic_adapter_never_returns_foreign_or_unaccepted_history():
         )
         == ()
     )
+
+
+def test_intent_probes_preserve_supported_choices_and_expose_labels_without_semantic_claims():
+    names = tuple(p.name for p in PROBES if p.name.startswith("intent_"))
+    report = asyncio.run(evaluate(scenario_names=names))
+    assert report["requires_human_semantic_review"]
+    assert "not semantic accuracy" in report["intent_label_limit"]
+    rows = {row["scenario"]: row for row in report["scenarios"]}
+    pair = rows["intent_request_and_statement"]
+    assert pair["provider_intent_labels"] == ["request", "statement"]
+    assert set(pair["retained_intent_labels"]) == {"request", "statement"}
+    assert pair["retained_candidates"] == 2
+    personal = rows["intent_personal_preference_and_request"]
+    assert set(personal["retained_intent_labels"]) == {"preference", "request"}
+    assert personal["personal_hypotheses"] == 1
+    assert personal["proposed_texts"][0] == "J’aime manger à la maison."
+    assert set(rows["intent_question_and_statement"]["retained_intent_labels"]) == {
+        "question",
+        "statement",
+    }
+    assert rows["intent_explicit_refusal"]["retained_intent_labels"] == ["refusal"]
+    variants = rows["intent_modal_request_variants"]
+    assert variants["received_candidates"] == 3 and variants["retained_candidates"] == 2
+    assert set(variants["retained_intent_labels"]) == {"request", "statement"}
+    unsupported = rows["intent_label_cannot_justify_preference"]
+    assert unsupported["provider_intent_labels"] == ["preference"]
+    assert unsupported["retained_intent_labels"] == []
+    assert unsupported["fallback_reason"] == "unfaithful_words"
+    assert all(row["fixture_passed"] and row["source_memory_unchanged"] for row in rows.values())
 
 
 def test_offline_mode_does_not_read_provider_or_storage_configuration(monkeypatch):
@@ -272,4 +301,4 @@ def test_cli_writes_a_synthetic_report_and_never_selects_offline_stress_probes_f
     monkeypatch.setattr("sys.argv", ["personal-evaluation", "--output", str(target)])
     assert main() == 0
     assert json.loads(target.read_text(encoding="utf-8"))["mode"] == "fixtures"
-    assert len(selected_probes(live=True)) == 14
+    assert len(selected_probes(live=True)) == 20

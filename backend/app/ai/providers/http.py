@@ -54,9 +54,10 @@ PROPOSAL_INSTRUCTIONS = (
 OPERATION_INSTRUCTIONS = {
     "interpret": (
         "Aide la personne à exprimer son intention en français naturel (request.language). "
-        "Les touches sont une expression à comprendre, pas une liste à recopier. "
-        "Tu peux réordonner, conjuguer, relier et répartir les idées en plusieurs phrases courtes. "
-        "labels nomme les touches ; meaning donne leur sens personnel. "
+        "Une sélection peut exprimer demande, préférence, constat, question ou refus. "
+        "Ne commence pas systématiquement par Je veux ou Je voudrais. "
+        "Tu peux réordonner, conjuguer et relier les idées en phrases courtes. "
+        "label nomme la touche ; meaning donne son sens personnel. "
         "memory_examples associe les touches d'origine à une phrase acceptée de ce seul profil. "
         "Pars des références les plus proches. Dans au moins une hypothèse, "
         "reprends leur expression "
@@ -69,19 +70,22 @@ OPERATION_INSTRUCTIONS = {
         "devenir je ou j', Toi peut devenir tu ; ne change pas la personne. "
         "Les personnes nommées peuvent être interpellées. En cas de rôles ambigus, "
         "ne choisis pas qui agit comme une certitude ; propose plusieurs lectures si possible. "
-        "Distingue demande, préférence et émotion. Une émotion ne se déduit pas de la vitesse. "
+        "Une préférence ou émotion ajoutée demande un sens choisi ou une référence proche. "
+        "Une émotion ne se déduit pas de la vitesse. "
         "Ne remplace pas une sélection par une vieille phrase sans rapport. "
-        "Si plusieurs intentions sont plausibles, propose deux ou trois formulations différentes "
-        "que la personne choisira ou corrigera. Toute sortie est une hypothèse non validée. "
-        "status=proposal, un à trois candidats ; confidence indique une plausibilité, pas une "
-        "certitude sur l'intention. intent est un code court ; text est uniquement le message. "
-        "Si inexploitable : status=not_understood, candidates=[]. Exemples distincts du cas : "
-        'Moi, Boire, Eau -> "Je voudrais boire de l’eau." ; '
-        "Maman, Papa, Manger, Maison, Moi, Content -> "
-        '"Maman, Papa, je voudrais manger à la maison. Je suis content." ; '
-        'Non, Manger -> "Je ne veux pas manger." ; '
-        'Boire, Boire -> "Boire, boire !" ; '
-        'Content -> "Je suis content."'
+        "Si ambigu, propose deux ou trois sens plausibles, pas trois variantes polies "
+        "d'une demande. Une seule hypothèse suffit si les autres seraient inventées. "
+        "N'ajoute pas de question ou d'émotion pour remplir des places. "
+        "La personne choisira, corrigera ou refusera ; toute sortie reste non validée. "
+        "status=proposal, un à trois candidats ; confidence exprime une plausibilité, "
+        "pas une certitude. intent est un indice court (request, preference, statement, "
+        "question, refusal ou other), jamais une preuve ; text contient le message seul. "
+        "Si inexploitable : status=not_understood, candidates=[]. Exemples hypothétiques : "
+        'Moi, Boire, Eau -> demande "Je voudrais boire de l’eau." ou constat "Je bois de l’eau." ; '
+        'Moi, Manger, Maison + référence acceptée "J’aime manger à la maison." '
+        '-> préférence "J’aime manger à la maison." ; '
+        'Maman, Maison -> question "Maman est à la maison ?" ou constat "Maman est à la maison." ; '
+        'Non, Manger -> refus "Je ne veux pas manger."'
     ),
     "simplify": (
         "Simplifie request.text dans request.language en conservant son sens et sa négation. "
