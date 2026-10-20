@@ -90,6 +90,11 @@ def test_only_a_real_administrator_can_read_write_or_test_with_origin_and_csrf(
         ).status_code
         == 403
     )
+    accompanied = client.post("/api/v1/auth/accompanied", json={"profile_id": profile})
+    accompanied.raise_for_status()
+    client.headers["X-CSRF-Token"] = accompanied.json()["csrf_token"]
+    assert client.get(root + "configuration").status_code == 403
+    assert client.post(root + "test", json=settings()).status_code == 403
     with factory() as session:
         assert session.get(ProviderConfigurationRow, 1) is None
 
@@ -128,6 +133,29 @@ def test_persistence_secret_actions_conflicts_and_no_profile_export_leak(secured
     assert client.put(root, json=cleared).json()["api_key_configured"] is False
     assert client.get("/api/v1/providers").json()["status"] == "disabled"
     assert client.get(root).json()["version"] == 3
+
+
+def test_initial_environment_key_can_be_kept_for_same_endpoint_without_readback(secured):
+    client, accounts, admin, factory = secured
+    login(client)
+    original = client.app.state.settings
+    client.app.state.settings = Settings.model_validate(
+        {
+            **original.model_dump(),
+            "ai_provider": "openai-compatible",
+            "provider_base_url": "https://synthetic.test/v1/",
+            "provider_model": "before",
+            "provider_api_key": "synthetic-environment-secret",
+        }
+    )
+    root = "/api/v1/providers/configuration"
+    assert client.get(root).json()["api_key_configured"]
+    assert "synthetic-environment-secret" not in client.get(root).text
+    values = settings(key_action="keep", model="after")
+    values.pop("api_key")
+    assert client.put(root, json=values).status_code == 200
+    with factory() as session:
+        assert session.get(ProviderConfigurationRow, 1).api_key == "synthetic-environment-secret"
 
 
 def test_probe_uses_unsaved_draft_and_does_not_persist_configuration_or_personal_data(
@@ -191,19 +219,51 @@ def test_saved_provider_reaches_new_interpretations_and_keeps_pending_proposals(
     endpoint = base + f"/sequences/{sequence['id']}/interpret"
     original = client.post(endpoint, json={}).json()["candidates"][0]
     active = []
-    from app.ai.manager import create_provider
+    from app.ai.manager import ProviderManager
+    from app.ai.providers.fake import FakeProvider
     from app.api import provider_configuration as route
+    from app.application.communication import CommunicationService
+    from app.application.interpretation import InterpretationService
+
+    fixture_request = InterpretationService(
+        client.app.state.pcl_units,
+        CommunicationService(client.app.state.pcl_units),
+        client.app.state.ai_provider,
+    ).request(UUID(profile), UUID(sequence["id"]))
 
     def factory_provider(config, telemetry):
         active.append(config.ai_provider)
-        return create_provider(config, telemetry)
+        assert config.ai_provider == "fake"
+        return ProviderManager(
+            FakeProvider(
+                {
+                    "interpretations": [
+                        {
+                            "request": fixture_request.model_dump(mode="json"),
+                            "response": {
+                                "candidates": [
+                                    {
+                                        "intent": "DRINK_WATER",
+                                        "text": "Je veux de l’eau.",
+                                        "confidence": 0.7,
+                                    }
+                                ]
+                            },
+                        }
+                    ]
+                }
+            ),
+            telemetry,
+        )
 
     monkeypatch.setattr(route, "create_provider", factory_provider)
     client.put(
         "/api/v1/providers/configuration",
         json=settings(provider="fake", key_action="clear", api_key=None),
     ).raise_for_status()
-    client.post(endpoint, json={}).raise_for_status()
+    result = client.post(endpoint, json={})
+    result.raise_for_status()
+    assert result.json()["candidates"][0]["source"] == "fake"
     assert active == ["fake"]
     assert client.get(base + f"/interpretations/{original['id']}").json() == original
     assert client.get(base + "/memory").json()["interpretations"] == []

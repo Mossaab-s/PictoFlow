@@ -54,6 +54,9 @@ export default function ProviderSettings({ onSaved }: { onSaved: () => void }) {
     setError("");
     setNotice("");
     setKey("");
+    setProbe(null);
+    setConfig(null);
+    setDraft(null);
     try {
       const value = await api<ProviderConfiguration>(
         "providers/configuration",
@@ -152,7 +155,10 @@ export default function ProviderSettings({ onSaved }: { onSaved: () => void }) {
     }
   }
   return (
-    <section aria-label="Configuration du fournisseur IA">
+    <section
+      className="provider-settings"
+      aria-label="Configuration du fournisseur IA"
+    >
       {error && (
         <div className="error" role="alert">
           {error}

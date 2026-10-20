@@ -106,7 +106,8 @@ def configured(transport):
 
 
 @pytest.mark.parametrize(
-    "response_kind", ["proposal", "invalid", "refusal", "quota", "auth", "transport"]
+    "response_kind",
+    ["proposal", "invalid", "refusal", "quota", "auth", "transport", "metadata_unavailable"],
 )
 def test_probe_sends_only_three_fictitious_touches_and_redacts_failures(response_kind):
     requests = []
@@ -116,7 +117,9 @@ def test_probe_sends_only_three_fictitious_touches_and_redacts_failures(response
         requests.append(request)
         assert request.headers["authorization"] == "Bearer " + secret
         if request.method == "GET":
-            return httpx.Response(200, json={"data": []})
+            return httpx.Response(
+                404 if response_kind == "metadata_unavailable" else 200, json={"data": []}
+            )
         payload = json.loads(request.content)
         content = payload["messages"][1]["content"]
         assert all(word in content for word in ("Moi", "Boire", "Eau"))
@@ -164,13 +167,26 @@ def test_probe_sends_only_three_fictitious_touches_and_redacts_failures(response
     assert secret not in result.model_dump_json()
     expected = {
         "proposal": "proposal",
+        "metadata_unavailable": "proposal",
         "invalid": "invalid_payload",
         "refusal": "model_refusal",
     }.get(response_kind, "unavailable")
     assert result.generation == expected
     assert result.candidates == (
-        ("Je veux boire de l’eau.",) if response_kind == "proposal" else ()
+        ("Je veux boire de l’eau.",)
+        if response_kind in ("proposal", "metadata_unavailable")
+        else ()
     )
+    assert result.connection == (
+        "unavailable" if response_kind == "metadata_unavailable" else "available"
+    )
+
+
+def test_local_simulation_reports_missing_fixture_without_network():
+    result = asyncio.run(probe_provider(Settings(_env_file=None, ai_provider="fake")))
+    assert result.generation == "no_fixture" and result.connection == "available"
+    disabled = asyncio.run(probe_provider(Settings(_env_file=None, ai_provider="disabled")))
+    assert disabled.generation == "disabled" and disabled.connection == "disabled"
 
 
 def test_request_snapshots_survive_activation_and_close_independently(monkeypatch):

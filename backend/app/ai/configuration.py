@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, m
 from app.ai.contracts import InterpretationRequest, SelectedBlock
 from app.ai.errors import (
     ProviderDisabledError,
+    ProviderFixtureNotFound,
     ProviderPayloadError,
     ProviderUnavailableError,
     ProviderUnsupportedCapability,
@@ -127,7 +128,13 @@ class ConfigurationChange(ProviderOptions):
 class ProbeResult(BaseModel):
     connection: str
     generation: Literal[
-        "proposal", "model_refusal", "invalid_payload", "unavailable", "disabled", "unsupported"
+        "proposal",
+        "model_refusal",
+        "invalid_payload",
+        "unavailable",
+        "disabled",
+        "unsupported",
+        "no_fixture",
     ]
     candidates: tuple[str, ...] = ()
 
@@ -176,6 +183,8 @@ async def probe_provider(settings: Settings, *, factory=create_provider):
             )
         except ProviderDisabledError:
             generation = "disabled"
+        except ProviderFixtureNotFound:
+            generation = "no_fixture"
         except ProviderPayloadError:
             generation = "invalid_payload"
         except ProviderUnavailableError:

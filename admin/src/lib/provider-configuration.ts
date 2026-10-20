@@ -19,7 +19,8 @@ export type ProviderProbe = {
     | "invalid_payload"
     | "unavailable"
     | "disabled"
-    | "unsupported";
+    | "unsupported"
+    | "no_fixture";
   candidates: string[];
 };
 export function sameProviderEndpoint(
@@ -48,4 +49,6 @@ export const probeLabels: Record<ProviderProbe["generation"], string> = {
     "La génération a échoué : vérifiez l’adresse, le modèle, la clé et les limites du fournisseur.",
   disabled: "L’assistance IA est désactivée.",
   unsupported: "Ce fournisseur ne prend pas en charge la formulation.",
+  no_fixture:
+    "La simulation locale ne contient pas cet exemple fictif. Aucun appel externe n’a été effectué.",
 };

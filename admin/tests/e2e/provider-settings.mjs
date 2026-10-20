@@ -93,7 +93,10 @@ const form = page.getByRole("region", {
   exact: true,
 });
 const button = (name) => form.getByRole("button", { name, exact: true });
-const get = (name) => form.getByLabel(name, { exact: true });
+const get = (name) =>
+  ["Fournisseur", "Action sur la clé", "Format de réponse"].includes(name)
+    ? form.getByRole("combobox", { name, exact: true })
+    : form.getByLabel(name, { exact: true });
 try {
   await page.goto(origin + "/");
   await page
@@ -112,7 +115,7 @@ try {
   await get("Température (vide : choix du fournisseur)").fill("");
   await button("Tester sans enregistrer").click();
   await expect(
-    form.getByRole("region", { name: "Résultat du test" }),
+    form.getByRole("status", { name: "Résultat du test" }),
   ).toContainText("Je veux boire de l’eau.");
   assert.equal((await call(configuration)).version, initial.version);
   const completion = received.find((item) => item.method === "POST");
@@ -148,7 +151,7 @@ try {
   await get("Action sur la clé").selectOption("clear");
   await button("Tester sans enregistrer").click();
   await expect(
-    form.getByRole("region", { name: "Résultat du test" }),
+    form.getByRole("status", { name: "Résultat du test" }),
   ).toContainText("Une proposition structurée");
   assert.equal(
     received.filter((item) => item.method === "POST").at(-1).key,
@@ -159,14 +162,14 @@ try {
   outcome = "auth";
   await button("Tester sans enregistrer").click();
   await expect(
-    form.getByRole("region", { name: "Résultat du test" }),
+    form.getByRole("status", { name: "Résultat du test" }),
   ).toContainText("La génération a échoué");
   assert(!(await form.innerText()).includes(secret));
   assert.equal((await call(configuration)).version, saved.version);
   outcome = "invalid";
   await button("Tester sans enregistrer").click();
   await expect(
-    form.getByRole("region", { name: "Résultat du test" }),
+    form.getByRole("status", { name: "Résultat du test" }),
   ).toContainText("La réponse ne respecte pas le format");
   assert(!(await form.innerText()).includes(secret));
   mark(
