@@ -25,7 +25,14 @@ def secured(postgres_connection):
     accounts = Accounts(factory)
     admin = accounts.create("provider-admin", "Provider admin", PASSWORD, admin=True)
     app = create_app(
-        Settings(_env_file=None, environment="test", auth_enabled=True, auth_origin=ORIGIN)
+        Settings(
+            _env_file=None,
+            environment="test",
+            ai_provider="disabled",
+            database_url=None,
+            auth_enabled=True,
+            auth_origin=ORIGIN,
+        )
     )
     with TestClient(app, base_url=ORIGIN, headers={"Origin": ORIGIN}) as client:
         app.state.pcl_units = PostgresPCLUnits(factory)
