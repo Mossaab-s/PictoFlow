@@ -12,6 +12,7 @@ async function call(path, method = "get", data) {
   return response.json();
 }
 const browser = await chromium.launch({ headless: true });
+let page;
 try {
   const profile = await call("profiles", "post", {
     display_name: "Comparer des sens fictifs",
@@ -34,7 +35,7 @@ try {
     });
   }
   const positions = await call(base + "/keyboard");
-  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const errors = [],
     interpretationRequests = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -130,9 +131,7 @@ try {
   );
   await card.getByText("Modifier la phrase", { exact: true }).click();
   const correction = "J’aime boire de l’eau.";
-  await card
-    .getByLabel("Je corrige la phrase", { exact: true })
-    .fill(correction);
+  await card.getByLabel("Je corrige la phrase").fill(correction);
   await radios.nth(1).focus();
   await page.keyboard.press("ArrowDown");
   await expect(radios.nth(2)).toBeChecked();
@@ -156,9 +155,7 @@ try {
     card.getByText("Proposition écartée", { exact: true }),
   ).toBeVisible();
   await radios.nth(1).check();
-  await expect(
-    card.getByLabel("Je corrige la phrase", { exact: true }),
-  ).toHaveValue(correction);
+  await expect(card.getByLabel("Je corrige la phrase")).toHaveValue(correction);
   await fs.mkdir(".local/phrase-hypotheses", { recursive: true });
   for (const width of [320, 390, 1280]) {
     await page.setViewportSize({ width, height: 900 });
@@ -236,6 +233,14 @@ try {
   console.log(
     "PASS compare three meanings, keyboard/mouse inspection, explicit speech, individual refusal, correction, accepted recovery and single memory choice",
   );
+} catch (error) {
+  await fs.mkdir(".local/phrase-hypotheses", { recursive: true });
+  if (page)
+    await page.screenshot({
+      path: ".local/phrase-hypotheses/failure.png",
+      fullPage: true,
+    });
+  throw error;
 } finally {
   await browser.close();
   await api.dispose();
