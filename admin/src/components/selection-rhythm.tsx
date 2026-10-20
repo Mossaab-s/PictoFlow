@@ -129,7 +129,8 @@ export default function SelectionRhythm({
               )}
               <p>
                 Les gestes observés restent visibles même si une touche a
-                ensuite été annulée. Ils ne constituent pas un sens validé.
+                ensuite été annulée ou retirée. Ils ne constituent pas un sens
+                validé.
               </p>
               {report.partial && (
                 <p>Historique partiel : la limite de lecture a été atteinte.</p>

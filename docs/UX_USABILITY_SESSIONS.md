@@ -54,6 +54,8 @@ Use fictitious content for public screenshots and issue attachments.
    would start communicating; observe whether settings distract them.
 2. **Compose and speak.** Let the person choose a message with 3-6 pictograms.
    Ask them to make it heard, stop, repeat a word and undo one selection.
+   Try [correcting a chosen occurrence](MESSAGE_TOUCH_CORRECTION.md) in the middle
+   of the message, cancel once, then confirm only if they want to remove it.
 3. **Move between pages.** Find a familiar touch on another page, keeping the
    message. Check whether saved positions and empty anchor spaces remain useful.
    If appropriate for the person, try the optional [personal touch lookup](COMMUNICATION_TOUCH_LOOKUP.md),

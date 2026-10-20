@@ -37,6 +37,10 @@ class InterpretationReviewConflict(RuntimeError):
     """A pending review cannot replace a decision made since the page was read."""
 
 
+class SequenceEditConflict(RuntimeError):
+    """The selected occurrence no longer belongs to the draft shown to the person."""
+
+
 class CommunicationService:
     def __init__(self, units: PCLUnits, policy: ConfidencePolicy | None = None):
         self.units = units
@@ -58,18 +62,39 @@ class CommunicationService:
         action: str,
         block_id: UUID | None = None,
         observation: SelectionObservation | None = None,
+        *,
+        index: int | None = None,
+        expected_block_ids: tuple[UUID, ...] | None = None,
     ):
+        if action == "remove":
+            if (
+                type(index) is not int
+                or not isinstance(expected_block_ids, tuple)
+                or not 1 <= len(expected_block_ids) <= 32
+                or not 0 <= index < len(expected_block_ids)
+                or block_id is not None
+            ):
+                raise DomainInvariantError("Removal requires an exact ordered draft and index")
+            for expected in expected_block_ids:
+                identifier(expected, "expected_block_id")
+        elif index is not None or expected_block_ids is not None:
+            raise DomainInvariantError("Only removal accepts an expected draft and index")
         if observation is not None:
             observation = SelectionObservation.model_validate(observation)
             if action != "append":
                 raise DomainInvariantError("Only an explicit selection can carry an observation")
         with self.units() as store:
             previous = store.get(profile_id, CommunicationSequence, sequence_id)
+            if action == "remove" and (
+                previous.status != SequenceStatus.IN_PROGRESS
+                or previous.block_ids != expected_block_ids
+            ):
+                raise SequenceEditConflict("Message changed; review the current draft")
             if action == "append":
                 block = store.get(profile_id, CommunicationBlock, block_id)
                 if block.status != ProposalStatus.VALIDATED:
                     raise DomainInvariantError("Only validated blocks can be selected")
-            current = edit_sequence(previous, action, block_id)
+            current = edit_sequence(previous, action, block_id, index=index)
             store.save(profile_id, current)
             store.audit(
                 profile_id,
@@ -79,6 +104,8 @@ class CommunicationService:
                 "human",
                 new_details={"selection_observation": observation.model_dump()}
                 if observation
+                else {"removed_index": index}
+                if action == "remove"
                 else None,
             )
         return current

@@ -34,6 +34,7 @@ import MemorySuggestions from "./memory-suggestions";
 import AIContext from "./ai-context";
 import LiteralExplanation from "./literal-explanation";
 import MessageResetDialog from "./message-reset-dialog";
+import MessageTouchEditor, { type TouchRemoval } from "./message-touch-editor";
 import { useOnlineStatus } from "./use-online-status";
 import SelectionRhythm from "./selection-rhythm";
 import {
@@ -334,6 +335,34 @@ export default function CommunicationScreen({
         );
     }
   }
+  async function removeTouch(choice: TouchRemoval) {
+    const active = current.current;
+    if (!active || active.id !== choice.sequenceId) return;
+    lastSelection.current = null;
+    let result: Sequence;
+    try {
+      result = await api<Sequence>(`${base}/sequences/${active.id}/selection`, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "remove",
+          index: choice.index,
+          expected_block_ids: choice.blockIds,
+        }),
+      });
+    } catch (error) {
+      if (error instanceof APIError && error.status === 409)
+        throw new Error(
+          "Le message a changé ailleurs. Votre retrait n’a pas été appliqué. Vérifiez le message rechargé avant de choisir à nouveau.",
+        );
+      throw error;
+    }
+    if (alive.current) {
+      remember(result, null);
+      setNotice(
+        "La touche choisie a été retirée. Les autres gardent leur ordre.",
+      );
+    }
+  }
   async function propose() {
     if (!current.current || current.current.status !== "completed") return;
     const result = await api<Decision>(
@@ -626,25 +655,14 @@ export default function CommunicationScreen({
             </h2>
             <span>{chosen.length} / 32 touches</span>
           </div>
-          <div
-            className="message-tokens"
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-          >
-            {chosen.length ? (
-              chosen.map((item, index) => (
-                <span className="message-touch" key={index}>
-                  <TouchContent
-                    label={item.label}
-                    representation={item.representation}
-                  />
-                </span>
-              ))
-            ) : (
-              <p>Votre message apparaîtra ici.</p>
-            )}
-          </div>
+          <MessageTouchEditor
+            key={sequence?.id ?? "empty"}
+            sequence={sequence}
+            words={chosen}
+            disabled={pending}
+            busy={busy}
+            remove={(choice) => perform(() => removeTouch(choice))}
+          />
           <div className="actions">
             <button
               className="speak-message"
