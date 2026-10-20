@@ -1,0 +1,228 @@
+{
+  "version": 1,
+  "mode": "live",
+  "synthetic_only": true,
+  "provider": "openai-compatible",
+  "requires_human_semantic_review": true,
+  "aborted_reason": null,
+  "summary": {
+    "invalid_payload": 1,
+    "provider_proposal": 1
+  },
+  "scenarios": [
+    {
+      "scenario": "six_no_memory",
+      "comparison": "meal_memory",
+      "selected_words": [
+        "Maman",
+        "Papa",
+        "Manger",
+        "Maison",
+        "Moi",
+        "Content"
+      ],
+      "touch_count": 6,
+      "review_focus": "Vérifier les actions, les personnes et le sens voulu, pas seulement les mots.",
+      "memory_examples": [],
+      "memory_example_characters": 0,
+      "request_characters": 634,
+      "provider_texts": [],
+      "candidate_checks": [],
+      "proposed_texts": [
+        "Maman → Papa → Manger → Maison → Moi → Content"
+      ],
+      "candidate_sources": [
+        "pcl"
+      ],
+      "decision_state": "multiple_hypotheses",
+      "fallback_reason": "invalid_payload",
+      "received_candidates": 0,
+      "retained_candidates": 0,
+      "personal_hypotheses": 0,
+      "all_unvalidated": true,
+      "source_memory_unchanged": true,
+      "elapsed_ms": 419,
+      "http": [
+        {
+          "status": 400,
+          "elapsed_ms": 416
+        }
+      ],
+      "fixture_passed": null,
+      "selected_blocks": [
+        {
+          "block_id": "ad47013e-7c8f-5cb7-b64a-46f81a59bc25",
+          "label": "Maman",
+          "meaning": "Maman"
+        },
+        {
+          "block_id": "c95a66fd-98aa-5dbe-afa2-82513d40a23e",
+          "label": "Papa",
+          "meaning": "Papa"
+        },
+        {
+          "block_id": "e9ee833a-c1e6-5654-b9e8-a4042a18ab83",
+          "label": "Manger",
+          "meaning": "Manger"
+        },
+        {
+          "block_id": "c8ef8899-321b-5bb0-ab1a-650c4cefa148",
+          "label": "Maison",
+          "meaning": "Maison"
+        },
+        {
+          "block_id": "6ee0a4dc-3ad8-5022-8263-aabed2ed96ee",
+          "label": "Moi",
+          "meaning": "Moi"
+        },
+        {
+          "block_id": "c3e48c55-db7f-5bae-b8b2-50d2d681a9ee",
+          "label": "Content",
+          "meaning": "Content"
+        }
+      ]
+    },
+    {
+      "scenario": "ten_no_memory",
+      "comparison": null,
+      "selected_words": [
+        "Maman",
+        "Papa",
+        "Manger",
+        "Maison",
+        "Moi",
+        "Boire",
+        "Eau",
+        "Lire",
+        "Livre",
+        "Content"
+      ],
+      "touch_count": 10,
+      "review_focus": "Vérifier les actions, les personnes et le sens voulu, pas seulement les mots.",
+      "memory_examples": [],
+      "memory_example_characters": 0,
+      "request_characters": 972,
+      "provider_texts": [
+        "Maman, Papa, je voudrais manger et boire de l’eau à la maison. Je voudrais lire un livre. Je suis content.",
+        "Maman, Papa, je veux manger et boire de l’eau. Je veux lire un livre à la maison. Je suis content.",
+        "Maman, Papa, je voudrais lire un livre et manger à la maison. Je voudrais boire de l’eau. Je suis content."
+      ],
+      "candidate_checks": [
+        {
+          "text": "Maman, Papa, je voudrais manger et boire de l’eau à la maison. Je voudrais lire un livre. Je suis content.",
+          "strict_word_coverage": true,
+          "grounding": "strict_words",
+          "surface_differences": {
+            "missing_selected_content": {},
+            "content_outside_selected_meanings_and_references": {}
+          }
+        },
+        {
+          "text": "Maman, Papa, je veux manger et boire de l’eau. Je veux lire un livre à la maison. Je suis content.",
+          "strict_word_coverage": true,
+          "grounding": "strict_words",
+          "surface_differences": {
+            "missing_selected_content": {},
+            "content_outside_selected_meanings_and_references": {}
+          }
+        },
+        {
+          "text": "Maman, Papa, je voudrais lire un livre et manger à la maison. Je voudrais boire de l’eau. Je suis content.",
+          "strict_word_coverage": true,
+          "grounding": "strict_words",
+          "surface_differences": {
+            "missing_selected_content": {},
+            "content_outside_selected_meanings_and_references": {}
+          }
+        }
+      ],
+      "proposed_texts": [
+        "Maman, Papa, je voudrais manger et boire de l’eau à la maison. Je voudrais lire un livre. Je suis content.",
+        "Maman, Papa, je veux manger et boire de l’eau. Je veux lire un livre à la maison. Je suis content.",
+        "Maman, Papa, je voudrais lire un livre et manger à la maison. Je voudrais boire de l’eau. Je suis content."
+      ],
+      "candidate_sources": [
+        "openai-compatible",
+        "openai-compatible",
+        "openai-compatible"
+      ],
+      "decision_state": "proposal",
+      "fallback_reason": null,
+      "received_candidates": 3,
+      "retained_candidates": 3,
+      "personal_hypotheses": 0,
+      "all_unvalidated": true,
+      "source_memory_unchanged": true,
+      "elapsed_ms": 574,
+      "http": [
+        {
+          "status": 200,
+          "elapsed_ms": 528
+        }
+      ],
+      "fixture_passed": null,
+      "selected_blocks": [
+        {
+          "block_id": "69f5cc57-ddd6-51ef-8d5e-6979124a67a7",
+          "label": "Maman",
+          "meaning": "Maman"
+        },
+        {
+          "block_id": "d29930ce-0dc9-55d4-b56f-119e66185358",
+          "label": "Papa",
+          "meaning": "Papa"
+        },
+        {
+          "block_id": "d1281d8a-c6b2-5c2c-91bd-511de1dfbff0",
+          "label": "Manger",
+          "meaning": "Manger"
+        },
+        {
+          "block_id": "aa8b77aa-676a-5598-9563-e96e7be32d5b",
+          "label": "Maison",
+          "meaning": "Maison"
+        },
+        {
+          "block_id": "64c1d549-6e4a-5ee9-a883-076aba572f1e",
+          "label": "Moi",
+          "meaning": "Moi"
+        },
+        {
+          "block_id": "3a0c4fab-682e-5735-a257-2e978152d0f1",
+          "label": "Boire",
+          "meaning": "Boire"
+        },
+        {
+          "block_id": "631961b8-07a0-5483-b5b7-0ec16d7ab796",
+          "label": "Eau",
+          "meaning": "Eau"
+        },
+        {
+          "block_id": "24a03360-5638-5983-800c-9161f7468940",
+          "label": "Lire",
+          "meaning": "Lire"
+        },
+        {
+          "block_id": "8864b256-4cc0-5ca7-ace7-eae567907058",
+          "label": "Livre",
+          "meaning": "Livre"
+        },
+        {
+          "block_id": "0f5c7ce6-a12b-5d1e-b47d-0ed7e1d09741",
+          "label": "Content",
+          "meaning": "Content"
+        }
+      ]
+    }
+  ],
+  "configuration": {
+    "model": "qwen/qwen3.8-27b",
+    "response_format": "json_schema",
+    "temperature": 0.2
+  },
+  "prompt_sha256": "78017f688574bdab746ff5f021b6fd3928c2806c8091ba3f97b458ea8fd9bd79",
+  "experiment": "baseline-schema",
+  "pipeline_base_commit": "9f871b20cac4e9a15e3ab460e5818fd1d7404d24",
+  "generated_at": "2026-10-20T11:46:27.209140+00:00",
+  "review_diagnostics_added_after_capture": true
+}

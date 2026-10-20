@@ -1,0 +1,1670 @@
+{
+  "version": 1,
+  "mode": "live",
+  "synthetic_only": true,
+  "provider": "openai-compatible",
+  "generated_at": "2026-10-20T11:59:55.435537+00:00",
+  "prompt_sha256": "9872054effbcd5a0fed7b51de5ac3cac412120a78caea6668851750dea5f7626",
+  "requires_human_semantic_review": true,
+  "aborted_reason": null,
+  "summary": {
+    "provider_proposal": 11,
+    "unfaithful_words": 3
+  },
+  "scenarios": [
+    {
+      "scenario": "five_no_memory",
+      "comparison": null,
+      "selected_words": [
+        "Moi",
+        "Boire",
+        "Eau",
+        "Maman",
+        "Maison"
+      ],
+      "touch_count": 5,
+      "review_focus": "Vérifier les actions, les personnes et le sens voulu, pas seulement les mots.",
+      "memory_examples": [],
+      "memory_example_characters": 0,
+      "request_characters": 540,
+      "provider_texts": [
+        "Maman, je voudrais boire de l'eau à la maison.",
+        "Maman, je veux de l'eau à la maison."
+      ],
+      "provider_status": "proposal",
+      "token_usage": {
+        "input": 1194,
+        "output": 116
+      },
+      "candidate_checks": [
+        {
+          "text": "Maman, je voudrais boire de l'eau à la maison.",
+          "confidence": 0.9,
+          "retained": true,
+          "strict_word_coverage": true,
+          "grounding": "strict_words",
+          "surface_differences": {
+            "missing_selected_content": {},
+            "content_outside_selected_meanings_and_references": {}
+          },
+          "retained_confidence": 0.9
+        },
+        {
+          "text": "Maman, je veux de l'eau à la maison.",
+          "confidence": 0.8,
+          "retained": false,
+          "strict_word_coverage": false,
+          "grounding": "unsupported",
+          "surface_differences": {
+            "missing_selected_content": {
+              "boire": 1
+            },
+            "content_outside_selected_meanings_and_references": {}
+          },
+          "retained_confidence": null
+        }
+      ],
+      "proposed_texts": [
+        "Maman, je voudrais boire de l'eau à la maison."
+      ],
+      "candidate_sources": [
+        "openai-compatible"
+      ],
+      "decision_state": "proposal",
+      "fallback_reason": null,
+      "received_candidates": 2,
+      "retained_candidates": 1,
+      "personal_hypotheses": 0,
+      "all_unvalidated": true,
+      "source_memory_unchanged": true,
+      "elapsed_ms": 564,
+      "http": [
+        {
+          "status": 200,
+          "token_limit_per_minute": 8000.0,
+          "tokens_remaining": 6646.0,
+          "elapsed_ms": 556
+        }
+      ],
+      "fixture_passed": null,
+      "selected_blocks": [
+        {
+          "block_id": "25bec154-12fb-57b0-bcb7-2f46b7d3b284",
+          "label": "Moi",
+          "meaning": "Moi"
+        },
+        {
+          "block_id": "bc8604cd-cc29-52ef-b89d-874644f25231",
+          "label": "Boire",
+          "meaning": "Boire"
+        },
+        {
+          "block_id": "eb58a064-0ca0-567e-9bcb-f9ac0802c0ee",
+          "label": "Eau",
+          "meaning": "Eau"
+        },
+        {
+          "block_id": "184b8b70-0f9b-52ae-8713-7eb582ab2eb4",
+          "label": "Maman",
+          "meaning": "Maman"
+        },
+        {
+          "block_id": "52d7c959-3084-5120-ae27-540cf375f461",
+          "label": "Maison",
+          "meaning": "Maison"
+        }
+      ]
+    },
+    {
+      "scenario": "six_no_memory",
+      "comparison": "meal_memory",
+      "selected_words": [
+        "Maman",
+        "Papa",
+        "Manger",
+        "Maison",
+        "Moi",
+        "Content"
+      ],
+      "touch_count": 6,
+      "review_focus": "Vérifier les actions, les personnes et le sens voulu, pas seulement les mots.",
+      "memory_examples": [],
+      "memory_example_characters": 0,
+      "request_characters": 634,
+      "provider_texts": [
+        "Maman, Papa, je voudrais manger à la maison. Je suis content."
+      ],
+      "provider_status": "proposal",
+      "token_usage": {
+        "input": 1236,
+        "output": 77
+      },
+      "candidate_checks": [
+        {
+          "text": "Maman, Papa, je voudrais manger à la maison. Je suis content.",
+          "confidence": 0.9,
+          "retained": true,
+          "strict_word_coverage": true,
+          "grounding": "strict_words",
+          "surface_differences": {
+            "missing_selected_content": {},
+            "content_outside_selected_meanings_and_references": {}
+          },
+          "retained_confidence": 0.9
+        }
+      ],
+      "proposed_texts": [
+        "Maman, Papa, je voudrais manger à la maison. Je suis content."
+      ],
+      "candidate_sources": [
+        "openai-compatible"
+      ],
+      "decision_state": "proposal",
+      "fallback_reason": null,
+      "received_candidates": 1,
+      "retained_candidates": 1,
+      "personal_hypotheses": 0,
+      "all_unvalidated": true,
+      "source_memory_unchanged": true,
+      "elapsed_ms": 388,
+      "http": [
+        {
+          "status": 200,
+          "token_limit_per_minute": 8000.0,
+          "tokens_remaining": 6648.0,
+          "elapsed_ms": 377
+        }
+      ],
+      "fixture_passed": null,
+      "selected_blocks": [
+        {
+          "block_id": "ad47013e-7c8f-5cb7-b64a-46f81a59bc25",
+          "label": "Maman",
+          "meaning": "Maman"
+        },
+        {
+          "block_id": "c95a66fd-98aa-5dbe-afa2-82513d40a23e",
+          "label": "Papa",
+          "meaning": "Papa"
+        },
+        {
+          "block_id": "e9ee833a-c1e6-5654-b9e8-a4042a18ab83",
+          "label": "Manger",
+          "meaning": "Manger"
+        },
+        {
+          "block_id": "c8ef8899-321b-5bb0-ab1a-650c4cefa148",
+          "label": "Maison",
+          "meaning": "Maison"
+        },
+        {
+          "block_id": "6ee0a4dc-3ad8-5022-8263-aabed2ed96ee",
+          "label": "Moi",
+          "meaning": "Moi"
+        },
+        {
+          "block_id": "c3e48c55-db7f-5bae-b8b2-50d2d681a9ee",
+          "label": "Content",
+          "meaning": "Content"
+        }
+      ]
+    },
+    {
+      "scenario": "six_preference",
+      "comparison": "meal_memory",
+      "selected_words": [
+        "Maman",
+        "Papa",
+        "Manger",
+        "Maison",
+        "Moi",
+        "Content"
+      ],
+      "touch_count": 6,
+      "review_focus": "Vérifier les actions, les personnes et le sens voulu, pas seulement les mots.",
+      "memory_examples": [
+        {
+          "reference_id": "b7708682-e53b-554e-9f56-95af91d156f0",
+          "blocks": [
+            {
+              "block_id": "1ab03544-38d0-548a-9a8f-d01d2a87461e",
+              "label": "Moi",
+              "meaning": "Moi"
+            },
+            {
+              "block_id": "56505429-5945-5e60-849e-6e79d7e705ab",
+              "label": "Manger",
+              "meaning": "Manger"
+            },
+            {
+              "block_id": "49a55f9a-12e5-50cc-a961-f82d85f46c52",
+              "label": "Maison",
+              "meaning": "Maison"
+            }
+          ],
+          "text": "J’aime manger à la maison.",
+          "occurrences": 4
+        }
+      ],
+      "memory_example_characters": 376,
+      "request_characters": 1010,
+      "provider_texts": [
+        "Maman, Papa, j’aime manger à la maison. Je suis content.",
+        "Maman, Papa, je voudrais manger à la maison. Je suis content."
+      ],
+      "provider_status": "proposal",
+      "token_usage": {
+        "input": 1478,
+        "output": 113
+      },
+      "candidate_checks": [
+        {
+          "text": "Maman, Papa, j’aime manger à la maison. Je suis content.",
+          "confidence": 0.9,
+          "retained": true,
+          "strict_word_coverage": false,
+          "grounding": "personal_reference",
+          "surface_differences": {
+            "missing_selected_content": {},
+            "content_outside_selected_meanings_and_references": {}
+          },
+          "retained_confidence": 0.65
+        },
+        {
+          "text": "Maman, Papa, je voudrais manger à la maison. Je suis content.",
+          "confidence": 0.7,
+          "retained": true,
+          "strict_word_coverage": true,
+          "grounding": "strict_words",
+          "surface_differences": {
+            "missing_selected_content": {},
+            "content_outside_selected_meanings_and_references": {}
+          },
+          "retained_confidence": 0.7
+        }
+      ],
+      "proposed_texts": [
+        "Maman, Papa, je voudrais manger à la maison. Je suis content.",
+        "Maman, Papa, j’aime manger à la maison. Je suis content."
+      ],
+      "candidate_sources": [
+        "openai-compatible",
+        "openai-compatible"
+      ],
+      "decision_state": "confirmation_required",
+      "fallback_reason": null,
+      "received_candidates": 2,
+      "retained_candidates": 2,
+      "personal_hypotheses": 1,
+      "all_unvalidated": true,
+      "source_memory_unchanged": true,
+      "elapsed_ms": 480,
+      "http": [
+        {
+          "status": 200,
+          "token_limit_per_minute": 8000.0,
+          "tokens_remaining": 6362.0,
+          "elapsed_ms": 468
+        }
+      ],
+      "fixture_passed": null,
+      "selected_blocks": [
+        {
+          "block_id": "06b1a758-69b4-5a08-879a-b2e871328814",
+          "label": "Maman",
+          "meaning": "Maman"
+        },
+        {
+          "block_id": "9854847c-706c-5517-8bac-2654cfaff218",
+          "label": "Papa",
+          "meaning": "Papa"
+        },
+        {
+          "block_id": "56505429-5945-5e60-849e-6e79d7e705ab",
+          "label": "Manger",
+          "meaning": "Manger"
+        },
+        {
+          "block_id": "49a55f9a-12e5-50cc-a961-f82d85f46c52",
+          "label": "Maison",
+          "meaning": "Maison"
+        },
+        {
+          "block_id": "1ab03544-38d0-548a-9a8f-d01d2a87461e",
+          "label": "Moi",
+          "meaning": "Moi"
+        },
+        {
+          "block_id": "3d296243-3db9-519c-82ba-c567786ef7f9",
+          "label": "Content",
+          "meaning": "Content"
+        }
+      ]
+    },
+    {
+      "scenario": "six_request",
+      "comparison": "meal_memory",
+      "selected_words": [
+        "Maman",
+        "Papa",
+        "Manger",
+        "Maison",
+        "Moi",
+        "Content"
+      ],
+      "touch_count": 6,
+      "review_focus": "Vérifier les actions, les personnes et le sens voulu, pas seulement les mots.",
+      "memory_examples": [
+        {
+          "reference_id": "4d8b7b4c-fe8c-5c48-80aa-1953ac7fe420",
+          "blocks": [
+            {
+              "block_id": "3b0b5b41-2e60-5c5c-b6a4-f05cf13bc6d7",
+              "label": "Moi",
+              "meaning": "Moi"
+            },
+            {
+              "block_id": "3dbf81a6-05d9-5e4f-8233-9afe4dbc5db1",
+              "label": "Manger",
+              "meaning": "Manger"
+            },
+            {
+              "block_id": "080fd057-4717-5da9-b1e7-d5fe82de51aa",
+              "label": "Maison",
+              "meaning": "Maison"
+            }
+          ],
+          "text": "Je voudrais manger chez moi.",
+          "occurrences": 4
+        }
+      ],
+      "memory_example_characters": 378,
+      "request_characters": 1012,
+      "provider_texts": [
+        "Maman, Papa, je voudrais manger chez moi. Je suis content.",
+        "Maman, Papa, je voudrais manger à la maison. Je suis content."
+      ],
+      "provider_status": "proposal",
+      "token_usage": {
+        "input": 1449,
+        "output": 114
+      },
+      "candidate_checks": [
+        {
+          "text": "Maman, Papa, je voudrais manger chez moi. Je suis content.",
+          "confidence": 0.95,
+          "retained": true,
+          "strict_word_coverage": false,
+          "grounding": "personal_reference",
+          "surface_differences": {
+            "missing_selected_content": {
+              "maison": 1
+            },
+            "content_outside_selected_meanings_and_references": {}
+          },
+          "retained_confidence": 0.65
+        },
+        {
+          "text": "Maman, Papa, je voudrais manger à la maison. Je suis content.",
+          "confidence": 0.85,
+          "retained": true,
+          "strict_word_coverage": true,
+          "grounding": "strict_words",
+          "surface_differences": {
+            "missing_selected_content": {},
+            "content_outside_selected_meanings_and_references": {}
+          },
+          "retained_confidence": 0.85
+        }
+      ],
+      "proposed_texts": [
+        "Maman, Papa, je voudrais manger à la maison. Je suis content.",
+        "Maman, Papa, je voudrais manger chez moi. Je suis content."
+      ],
+      "candidate_sources": [
+        "openai-compatible",
+        "openai-compatible"
+      ],
+      "decision_state": "confirmation_required",
+      "fallback_reason": null,
+      "received_candidates": 2,
+      "retained_candidates": 2,
+      "personal_hypotheses": 1,
+      "all_unvalidated": true,
+      "source_memory_unchanged": true,
+      "elapsed_ms": 617,
+      "http": [
+        {
+          "status": 200,
+          "token_limit_per_minute": 8000.0,
+          "tokens_remaining": 6435.0,
+          "elapsed_ms": 601
+        }
+      ],
+      "fixture_passed": null,
+      "selected_blocks": [
+        {
+          "block_id": "5a3a6dc4-ba19-5255-9ad9-94f887f9b990",
+          "label": "Maman",
+          "meaning": "Maman"
+        },
+        {
+          "block_id": "b184aa0a-5719-591b-b0db-c19c67842e2f",
+          "label": "Papa",
+          "meaning": "Papa"
+        },
+        {
+          "block_id": "3dbf81a6-05d9-5e4f-8233-9afe4dbc5db1",
+          "label": "Manger",
+          "meaning": "Manger"
+        },
+        {
+          "block_id": "080fd057-4717-5da9-b1e7-d5fe82de51aa",
+          "label": "Maison",
+          "meaning": "Maison"
+        },
+        {
+          "block_id": "3b0b5b41-2e60-5c5c-b6a4-f05cf13bc6d7",
+          "label": "Moi",
+          "meaning": "Moi"
+        },
+        {
+          "block_id": "31111817-10dc-5ef6-bfe7-181c7420cbbe",
+          "label": "Content",
+          "meaning": "Content"
+        }
+      ]
+    },
+    {
+      "scenario": "eight_no_memory",
+      "comparison": null,
+      "selected_words": [
+        "Maman",
+        "Papa",
+        "Manger",
+        "Maison",
+        "Moi",
+        "Boire",
+        "Eau",
+        "Content"
+      ],
+      "touch_count": 8,
+      "review_focus": "Vérifier les actions, les personnes et le sens voulu, pas seulement les mots.",
+      "memory_examples": [],
+      "memory_example_characters": 0,
+      "request_characters": 802,
+      "provider_texts": [
+        "Maman, Papa, je voudrais manger et boire de l’eau à la maison. Je suis content.",
+        "Maman, Papa, je veux manger et boire de l’eau à la maison. Je suis content."
+      ],
+      "provider_status": "proposal",
+      "token_usage": {
+        "input": 1346,
+        "output": 134
+      },
+      "candidate_checks": [
+        {
+          "text": "Maman, Papa, je voudrais manger et boire de l’eau à la maison. Je suis content.",
+          "confidence": 0.9,
+          "retained": true,
+          "strict_word_coverage": true,
+          "grounding": "strict_words",
+          "surface_differences": {
+            "missing_selected_content": {},
+            "content_outside_selected_meanings_and_references": {}
+          },
+          "retained_confidence": 0.9
+        },
+        {
+          "text": "Maman, Papa, je veux manger et boire de l’eau à la maison. Je suis content.",
+          "confidence": 0.8,
+          "retained": true,
+          "strict_word_coverage": true,
+          "grounding": "strict_words",
+          "surface_differences": {
+            "missing_selected_content": {},
+            "content_outside_selected_meanings_and_references": {}
+          },
+          "retained_confidence": 0.8
+        }
+      ],
+      "proposed_texts": [
+        "Maman, Papa, je voudrais manger et boire de l’eau à la maison. Je suis content.",
+        "Maman, Papa, je veux manger et boire de l’eau à la maison. Je suis content."
+      ],
+      "candidate_sources": [
+        "openai-compatible",
+        "openai-compatible"
+      ],
+      "decision_state": "proposal",
+      "fallback_reason": null,
+      "received_candidates": 2,
+      "retained_candidates": 2,
+      "personal_hypotheses": 0,
+      "all_unvalidated": true,
+      "source_memory_unchanged": true,
+      "elapsed_ms": 891,
+      "http": [
+        {
+          "status": 200,
+          "token_limit_per_minute": 8000.0,
+          "tokens_remaining": 6538.0,
+          "elapsed_ms": 881
+        }
+      ],
+      "fixture_passed": null,
+      "selected_blocks": [
+        {
+          "block_id": "f62ec104-ce82-5c9b-8712-0784f6c57e0b",
+          "label": "Maman",
+          "meaning": "Maman"
+        },
+        {
+          "block_id": "f9a8e56a-2940-5dcb-9ae2-0d82b7c3ad66",
+          "label": "Papa",
+          "meaning": "Papa"
+        },
+        {
+          "block_id": "4919bdf3-5a5f-5b0d-be5b-1bfa8f308243",
+          "label": "Manger",
+          "meaning": "Manger"
+        },
+        {
+          "block_id": "7e7f430e-3651-59e4-9315-7cc9d23dd4f7",
+          "label": "Maison",
+          "meaning": "Maison"
+        },
+        {
+          "block_id": "13bfee06-6cbc-53d8-b6ff-37b9da21acc0",
+          "label": "Moi",
+          "meaning": "Moi"
+        },
+        {
+          "block_id": "4f778414-9537-5df7-a0b8-59b589db38d0",
+          "label": "Boire",
+          "meaning": "Boire"
+        },
+        {
+          "block_id": "0d9bb8d6-f312-5634-8fb9-ec81729eae85",
+          "label": "Eau",
+          "meaning": "Eau"
+        },
+        {
+          "block_id": "db36ec51-3d31-5e55-93dc-b56acf55fb7e",
+          "label": "Content",
+          "meaning": "Content"
+        }
+      ]
+    },
+    {
+      "scenario": "ten_no_memory",
+      "comparison": null,
+      "selected_words": [
+        "Maman",
+        "Papa",
+        "Manger",
+        "Maison",
+        "Moi",
+        "Boire",
+        "Eau",
+        "Lire",
+        "Livre",
+        "Content"
+      ],
+      "touch_count": 10,
+      "review_focus": "Vérifier les actions, les personnes et le sens voulu, pas seulement les mots.",
+      "memory_examples": [],
+      "memory_example_characters": 0,
+      "request_characters": 972,
+      "provider_texts": [
+        "Maman, Papa, je voudrais manger, boire de l'eau et lire un livre à la maison. Je suis content.",
+        "Maman, Papa, je suis content de manger, boire de l'eau et lire un livre à la maison."
+      ],
+      "provider_status": "proposal",
+      "token_usage": {
+        "input": 1455,
+        "output": 133
+      },
+      "candidate_checks": [
+        {
+          "text": "Maman, Papa, je voudrais manger, boire de l'eau et lire un livre à la maison. Je suis content.",
+          "confidence": 0.9,
+          "retained": true,
+          "strict_word_coverage": true,
+          "grounding": "strict_words",
+          "surface_differences": {
+            "missing_selected_content": {},
+            "content_outside_selected_meanings_and_references": {}
+          },
+          "retained_confidence": 0.9
+        },
+        {
+          "text": "Maman, Papa, je suis content de manger, boire de l'eau et lire un livre à la maison.",
+          "confidence": 0.7,
+          "retained": true,
+          "strict_word_coverage": true,
+          "grounding": "strict_words",
+          "surface_differences": {
+            "missing_selected_content": {},
+            "content_outside_selected_meanings_and_references": {}
+          },
+          "retained_confidence": 0.7
+        }
+      ],
+      "proposed_texts": [
+        "Maman, Papa, je voudrais manger, boire de l'eau et lire un livre à la maison. Je suis content.",
+        "Maman, Papa, je suis content de manger, boire de l'eau et lire un livre à la maison."
+      ],
+      "candidate_sources": [
+        "openai-compatible",
+        "openai-compatible"
+      ],
+      "decision_state": "proposal",
+      "fallback_reason": null,
+      "received_candidates": 2,
+      "retained_candidates": 2,
+      "personal_hypotheses": 0,
+      "all_unvalidated": true,
+      "source_memory_unchanged": true,
+      "elapsed_ms": 561,
+      "http": [
+        {
+          "status": 200,
+          "token_limit_per_minute": 8000.0,
+          "tokens_remaining": 6385.0,
+          "elapsed_ms": 553
+        }
+      ],
+      "fixture_passed": null,
+      "selected_blocks": [
+        {
+          "block_id": "69f5cc57-ddd6-51ef-8d5e-6979124a67a7",
+          "label": "Maman",
+          "meaning": "Maman"
+        },
+        {
+          "block_id": "d29930ce-0dc9-55d4-b56f-119e66185358",
+          "label": "Papa",
+          "meaning": "Papa"
+        },
+        {
+          "block_id": "d1281d8a-c6b2-5c2c-91bd-511de1dfbff0",
+          "label": "Manger",
+          "meaning": "Manger"
+        },
+        {
+          "block_id": "aa8b77aa-676a-5598-9563-e96e7be32d5b",
+          "label": "Maison",
+          "meaning": "Maison"
+        },
+        {
+          "block_id": "64c1d549-6e4a-5ee9-a883-076aba572f1e",
+          "label": "Moi",
+          "meaning": "Moi"
+        },
+        {
+          "block_id": "3a0c4fab-682e-5735-a257-2e978152d0f1",
+          "label": "Boire",
+          "meaning": "Boire"
+        },
+        {
+          "block_id": "631961b8-07a0-5483-b5b7-0ec16d7ab796",
+          "label": "Eau",
+          "meaning": "Eau"
+        },
+        {
+          "block_id": "24a03360-5638-5983-800c-9161f7468940",
+          "label": "Lire",
+          "meaning": "Lire"
+        },
+        {
+          "block_id": "8864b256-4cc0-5ca7-ace7-eae567907058",
+          "label": "Livre",
+          "meaning": "Livre"
+        },
+        {
+          "block_id": "0f5c7ce6-a12b-5d1e-b47d-0ed7e1d09741",
+          "label": "Content",
+          "meaning": "Content"
+        }
+      ]
+    },
+    {
+      "scenario": "five_alias_no_memory",
+      "comparison": "personal_alias",
+      "selected_words": [
+        "Moi",
+        "Doudou",
+        "Maison",
+        "Maman",
+        "Content"
+      ],
+      "touch_count": 5,
+      "review_focus": "Vérifier les actions, les personnes et le sens voulu, pas seulement les mots.",
+      "memory_examples": [],
+      "memory_example_characters": 0,
+      "request_characters": 550,
+      "provider_texts": [
+        "Moi, je suis content avec mon doudou à la maison. Maman.",
+        "Je suis content, j'ai mon doudou à la maison. Maman."
+      ],
+      "provider_status": "proposal",
+      "token_usage": {
+        "input": 1197,
+        "output": 114
+      },
+      "candidate_checks": [
+        {
+          "text": "Moi, je suis content avec mon doudou à la maison. Maman.",
+          "confidence": 0.8,
+          "retained": false,
+          "strict_word_coverage": false,
+          "grounding": "unsupported",
+          "surface_differences": {
+            "missing_selected_content": {},
+            "content_outside_selected_meanings_and_references": {
+              "mon": 1
+            }
+          },
+          "retained_confidence": null
+        },
+        {
+          "text": "Je suis content, j'ai mon doudou à la maison. Maman.",
+          "confidence": 0.7,
+          "retained": false,
+          "strict_word_coverage": false,
+          "grounding": "unsupported",
+          "surface_differences": {
+            "missing_selected_content": {},
+            "content_outside_selected_meanings_and_references": {
+              "mon": 1
+            }
+          },
+          "retained_confidence": null
+        }
+      ],
+      "proposed_texts": [
+        "Moi → Doudou → Maison → Maman → Content"
+      ],
+      "candidate_sources": [
+        "pcl"
+      ],
+      "decision_state": "multiple_hypotheses",
+      "fallback_reason": "unfaithful_words",
+      "received_candidates": 2,
+      "retained_candidates": 0,
+      "personal_hypotheses": 0,
+      "all_unvalidated": true,
+      "source_memory_unchanged": true,
+      "elapsed_ms": 505,
+      "http": [
+        {
+          "status": 200,
+          "token_limit_per_minute": 8000.0,
+          "tokens_remaining": 6669.0,
+          "elapsed_ms": 495
+        }
+      ],
+      "fixture_passed": null,
+      "selected_blocks": [
+        {
+          "block_id": "7eab368a-331c-5fb6-9cae-2506ddf4ecd8",
+          "label": "Moi",
+          "meaning": "Moi"
+        },
+        {
+          "block_id": "e57306a2-8d87-51f6-8348-7e69a388b746",
+          "label": "Doudou",
+          "meaning": "Doudou"
+        },
+        {
+          "block_id": "a979cb29-58a8-5f59-9a8e-36e298d4e40f",
+          "label": "Maison",
+          "meaning": "Maison"
+        },
+        {
+          "block_id": "f889ff89-a928-5ef5-9c32-0f833d8a87ef",
+          "label": "Maman",
+          "meaning": "Maman"
+        },
+        {
+          "block_id": "7c9916ed-8997-5e00-b7a4-ed1de12e9ad5",
+          "label": "Content",
+          "meaning": "Content"
+        }
+      ]
+    },
+    {
+      "scenario": "five_alias_bear",
+      "comparison": "personal_alias",
+      "selected_words": [
+        "Moi",
+        "Doudou",
+        "Maison",
+        "Maman",
+        "Content"
+      ],
+      "touch_count": 5,
+      "review_focus": "Vérifier les actions, les personnes et le sens voulu, pas seulement les mots.",
+      "memory_examples": [
+        {
+          "reference_id": "b450c73b-5bd3-588b-9381-d7e635a5b0b6",
+          "blocks": [
+            {
+              "block_id": "db24f592-8ace-5d75-835d-b40363b69a3b",
+              "label": "Moi",
+              "meaning": "Moi"
+            },
+            {
+              "block_id": "f2852523-b28d-51d5-913d-024c1498f209",
+              "label": "Doudou",
+              "meaning": "Doudou"
+            },
+            {
+              "block_id": "cc3e0fa8-50d6-5e90-acce-57eef48842d3",
+              "label": "Maison",
+              "meaning": "Maison"
+            }
+          ],
+          "text": "Je voudrais mon ours à la maison.",
+          "occurrences": 1
+        }
+      ],
+      "memory_example_characters": 383,
+      "request_characters": 933,
+      "provider_texts": [
+        "Je suis content de mon ours à la maison avec maman.",
+        "Maman, je suis content. J'ai mon ours à la maison."
+      ],
+      "provider_status": "proposal",
+      "token_usage": {
+        "input": 1421,
+        "output": 111
+      },
+      "candidate_checks": [
+        {
+          "text": "Je suis content de mon ours à la maison avec maman.",
+          "confidence": 0.8,
+          "retained": true,
+          "strict_word_coverage": false,
+          "grounding": "personal_reference",
+          "surface_differences": {
+            "missing_selected_content": {
+              "doudou": 1
+            },
+            "content_outside_selected_meanings_and_references": {}
+          },
+          "retained_confidence": 0.65
+        },
+        {
+          "text": "Maman, je suis content. J'ai mon ours à la maison.",
+          "confidence": 0.6,
+          "retained": true,
+          "strict_word_coverage": false,
+          "grounding": "personal_reference",
+          "surface_differences": {
+            "missing_selected_content": {
+              "doudou": 1
+            },
+            "content_outside_selected_meanings_and_references": {}
+          },
+          "retained_confidence": 0.6
+        }
+      ],
+      "proposed_texts": [
+        "Je suis content de mon ours à la maison avec maman.",
+        "Maman, je suis content. J'ai mon ours à la maison."
+      ],
+      "candidate_sources": [
+        "openai-compatible",
+        "openai-compatible"
+      ],
+      "decision_state": "confirmation_required",
+      "fallback_reason": null,
+      "received_candidates": 2,
+      "retained_candidates": 2,
+      "personal_hypotheses": 2,
+      "all_unvalidated": true,
+      "source_memory_unchanged": true,
+      "elapsed_ms": 555,
+      "http": [
+        {
+          "status": 200,
+          "token_limit_per_minute": 8000.0,
+          "tokens_remaining": 6419.0,
+          "elapsed_ms": 546
+        }
+      ],
+      "fixture_passed": null,
+      "selected_blocks": [
+        {
+          "block_id": "db24f592-8ace-5d75-835d-b40363b69a3b",
+          "label": "Moi",
+          "meaning": "Moi"
+        },
+        {
+          "block_id": "f2852523-b28d-51d5-913d-024c1498f209",
+          "label": "Doudou",
+          "meaning": "Doudou"
+        },
+        {
+          "block_id": "cc3e0fa8-50d6-5e90-acce-57eef48842d3",
+          "label": "Maison",
+          "meaning": "Maison"
+        },
+        {
+          "block_id": "754042f3-2969-536d-b306-152c7ab9a46b",
+          "label": "Maman",
+          "meaning": "Maman"
+        },
+        {
+          "block_id": "9f34cd81-35fb-5411-8066-820fc71c22db",
+          "label": "Content",
+          "meaning": "Content"
+        }
+      ]
+    },
+    {
+      "scenario": "five_alias_blanket",
+      "comparison": "personal_alias",
+      "selected_words": [
+        "Moi",
+        "Doudou",
+        "Maison",
+        "Maman",
+        "Content"
+      ],
+      "touch_count": 5,
+      "review_focus": "Vérifier les actions, les personnes et le sens voulu, pas seulement les mots.",
+      "memory_examples": [
+        {
+          "reference_id": "35a17121-ea40-5e5f-abb0-4db36130e6a8",
+          "blocks": [
+            {
+              "block_id": "0cb7b959-5251-5033-9854-d621642619f5",
+              "label": "Moi",
+              "meaning": "Moi"
+            },
+            {
+              "block_id": "72cd6431-5675-569f-a969-61a781fe6893",
+              "label": "Doudou",
+              "meaning": "Doudou"
+            },
+            {
+              "block_id": "128a05ef-6c49-5c79-a4e5-060fbd3379ff",
+              "label": "Maison",
+              "meaning": "Maison"
+            }
+          ],
+          "text": "Je voudrais ma couverture à la maison.",
+          "occurrences": 1
+        }
+      ],
+      "memory_example_characters": 388,
+      "request_characters": 938,
+      "provider_texts": [
+        "Je suis content d'avoir mon doudou à la maison avec maman.",
+        "Je suis content, j'ai mon doudou à la maison. Maman est là."
+      ],
+      "provider_status": "proposal",
+      "token_usage": {
+        "input": 1427,
+        "output": 122
+      },
+      "candidate_checks": [
+        {
+          "text": "Je suis content d'avoir mon doudou à la maison avec maman.",
+          "confidence": 0.85,
+          "retained": false,
+          "strict_word_coverage": false,
+          "grounding": "unsupported",
+          "surface_differences": {
+            "missing_selected_content": {},
+            "content_outside_selected_meanings_and_references": {
+              "mon": 1
+            }
+          },
+          "retained_confidence": null
+        },
+        {
+          "text": "Je suis content, j'ai mon doudou à la maison. Maman est là.",
+          "confidence": 0.75,
+          "retained": false,
+          "strict_word_coverage": false,
+          "grounding": "unsupported",
+          "surface_differences": {
+            "missing_selected_content": {},
+            "content_outside_selected_meanings_and_references": {
+              "mon": 1
+            }
+          },
+          "retained_confidence": null
+        }
+      ],
+      "proposed_texts": [
+        "Moi → Doudou → Maison → Maman → Content"
+      ],
+      "candidate_sources": [
+        "pcl"
+      ],
+      "decision_state": "multiple_hypotheses",
+      "fallback_reason": "unfaithful_words",
+      "received_candidates": 2,
+      "retained_candidates": 0,
+      "personal_hypotheses": 0,
+      "all_unvalidated": true,
+      "source_memory_unchanged": true,
+      "elapsed_ms": 511,
+      "http": [
+        {
+          "status": 200,
+          "token_limit_per_minute": 8000.0,
+          "tokens_remaining": 6459.0,
+          "elapsed_ms": 501
+        }
+      ],
+      "fixture_passed": null,
+      "selected_blocks": [
+        {
+          "block_id": "0cb7b959-5251-5033-9854-d621642619f5",
+          "label": "Moi",
+          "meaning": "Moi"
+        },
+        {
+          "block_id": "72cd6431-5675-569f-a969-61a781fe6893",
+          "label": "Doudou",
+          "meaning": "Doudou"
+        },
+        {
+          "block_id": "128a05ef-6c49-5c79-a4e5-060fbd3379ff",
+          "label": "Maison",
+          "meaning": "Maison"
+        },
+        {
+          "block_id": "4c254246-8754-562f-9636-35d8c7f4e0d1",
+          "label": "Maman",
+          "meaning": "Maman"
+        },
+        {
+          "block_id": "ffbc0b01-2119-584d-8920-932a14196937",
+          "label": "Content",
+          "meaning": "Content"
+        }
+      ]
+    },
+    {
+      "scenario": "eight_negation",
+      "comparison": null,
+      "selected_words": [
+        "Moi",
+        "Non",
+        "Manger",
+        "Maison",
+        "Maman",
+        "Papa",
+        "Boire",
+        "Eau"
+      ],
+      "touch_count": 8,
+      "review_focus": "Le souvenir positif ne doit pas effacer le Non choisi aujourd’hui.",
+      "memory_examples": [
+        {
+          "reference_id": "27a93201-48bc-5c89-a7c1-6b453f9f307b",
+          "blocks": [
+            {
+              "block_id": "45debe6e-5c03-583b-a6f3-047d4f8b963e",
+              "label": "Moi",
+              "meaning": "Moi"
+            },
+            {
+              "block_id": "d3add9ad-b401-5326-9453-7c5ab9865637",
+              "label": "Manger",
+              "meaning": "Manger"
+            },
+            {
+              "block_id": "fc89112a-6ad9-5088-b7b9-b795ff44c117",
+              "label": "Maison",
+              "meaning": "Maison"
+            },
+            {
+              "block_id": "49d45c04-bc30-5b55-bc68-72215227d621",
+              "label": "Boire",
+              "meaning": "Boire"
+            }
+          ],
+          "text": "Je voudrais manger à la maison et boire de l’eau.",
+          "occurrences": 1
+        }
+      ],
+      "memory_example_characters": 485,
+      "request_characters": 1279,
+      "provider_texts": [
+        "Maman, Papa, je ne veux pas manger à la maison. Je voudrais boire de l’eau.",
+        "Maman, Papa, je ne veux pas manger à la maison. Je voudrais juste boire de l’eau."
+      ],
+      "provider_status": "proposal",
+      "token_usage": {
+        "input": 1629,
+        "output": 137
+      },
+      "candidate_checks": [
+        {
+          "text": "Maman, Papa, je ne veux pas manger à la maison. Je voudrais boire de l’eau.",
+          "confidence": 0.85,
+          "retained": true,
+          "strict_word_coverage": true,
+          "grounding": "strict_words",
+          "surface_differences": {
+            "missing_selected_content": {},
+            "content_outside_selected_meanings_and_references": {}
+          },
+          "retained_confidence": 0.85
+        },
+        {
+          "text": "Maman, Papa, je ne veux pas manger à la maison. Je voudrais juste boire de l’eau.",
+          "confidence": 0.75,
+          "retained": false,
+          "strict_word_coverage": false,
+          "grounding": "unsupported",
+          "surface_differences": {
+            "missing_selected_content": {},
+            "content_outside_selected_meanings_and_references": {
+              "juste": 1
+            }
+          },
+          "retained_confidence": null
+        }
+      ],
+      "proposed_texts": [
+        "Maman, Papa, je ne veux pas manger à la maison. Je voudrais boire de l’eau."
+      ],
+      "candidate_sources": [
+        "openai-compatible"
+      ],
+      "decision_state": "confirmation_required",
+      "fallback_reason": null,
+      "received_candidates": 2,
+      "retained_candidates": 1,
+      "personal_hypotheses": 0,
+      "all_unvalidated": true,
+      "source_memory_unchanged": true,
+      "elapsed_ms": 543,
+      "http": [
+        {
+          "status": 200,
+          "token_limit_per_minute": 8000.0,
+          "tokens_remaining": 6211.0,
+          "elapsed_ms": 529
+        }
+      ],
+      "fixture_passed": null,
+      "selected_blocks": [
+        {
+          "block_id": "45debe6e-5c03-583b-a6f3-047d4f8b963e",
+          "label": "Moi",
+          "meaning": "Moi"
+        },
+        {
+          "block_id": "7297da3e-0ec5-5496-a0a5-83c63f74230e",
+          "label": "Non",
+          "meaning": "Non"
+        },
+        {
+          "block_id": "d3add9ad-b401-5326-9453-7c5ab9865637",
+          "label": "Manger",
+          "meaning": "Manger"
+        },
+        {
+          "block_id": "fc89112a-6ad9-5088-b7b9-b795ff44c117",
+          "label": "Maison",
+          "meaning": "Maison"
+        },
+        {
+          "block_id": "fcf31017-b16d-500d-b552-53c7a4bb82be",
+          "label": "Maman",
+          "meaning": "Maman"
+        },
+        {
+          "block_id": "b9dc44e8-1ec9-508b-802c-1b35c6f514de",
+          "label": "Papa",
+          "meaning": "Papa"
+        },
+        {
+          "block_id": "49d45c04-bc30-5b55-bc68-72215227d621",
+          "label": "Boire",
+          "meaning": "Boire"
+        },
+        {
+          "block_id": "a475c9cb-9ceb-5922-bc97-94f9b1b72907",
+          "label": "Eau",
+          "meaning": "Eau"
+        }
+      ]
+    },
+    {
+      "scenario": "ten_repetition_stop",
+      "comparison": null,
+      "selected_words": [
+        "Moi",
+        "Maman",
+        "Papa",
+        "Boire",
+        "Eau",
+        "Boire",
+        "Maison",
+        "Manger",
+        "Content",
+        "Stop"
+      ],
+      "touch_count": 10,
+      "review_focus": "Vérifier les deux Boire et Stop, sans émotion déduite du rythme.",
+      "memory_examples": [],
+      "memory_example_characters": 0,
+      "request_characters": 972,
+      "provider_texts": [
+        "Maman, Papa, je voudrais boire de l'eau et manger à la maison. Je suis content. Stop.",
+        "Maman, Papa, je veux boire de l'eau. Je veux manger à la maison. Je suis content. Stop."
+      ],
+      "provider_status": "proposal",
+      "token_usage": {
+        "input": 1451,
+        "output": 128
+      },
+      "candidate_checks": [
+        {
+          "text": "Maman, Papa, je voudrais boire de l'eau et manger à la maison. Je suis content. Stop.",
+          "confidence": 0.9,
+          "retained": false,
+          "strict_word_coverage": false,
+          "grounding": "unsupported",
+          "surface_differences": {
+            "missing_selected_content": {
+              "boire": 1
+            },
+            "content_outside_selected_meanings_and_references": {}
+          },
+          "retained_confidence": null
+        },
+        {
+          "text": "Maman, Papa, je veux boire de l'eau. Je veux manger à la maison. Je suis content. Stop.",
+          "confidence": 0.8,
+          "retained": false,
+          "strict_word_coverage": false,
+          "grounding": "unsupported",
+          "surface_differences": {
+            "missing_selected_content": {
+              "boire": 1
+            },
+            "content_outside_selected_meanings_and_references": {}
+          },
+          "retained_confidence": null
+        }
+      ],
+      "proposed_texts": [
+        "Moi → Maman → Papa → Boire → Eau → Boire → Maison → Manger → Content → Stop"
+      ],
+      "candidate_sources": [
+        "pcl"
+      ],
+      "decision_state": "multiple_hypotheses",
+      "fallback_reason": "unfaithful_words",
+      "received_candidates": 2,
+      "retained_candidates": 0,
+      "personal_hypotheses": 0,
+      "all_unvalidated": true,
+      "source_memory_unchanged": true,
+      "elapsed_ms": 553,
+      "http": [
+        {
+          "status": 200,
+          "token_limit_per_minute": 8000.0,
+          "tokens_remaining": 6427.0,
+          "elapsed_ms": 542
+        }
+      ],
+      "fixture_passed": null,
+      "selected_blocks": [
+        {
+          "block_id": "28ded6f1-1b8d-52c3-90d2-027fd3b8fef5",
+          "label": "Moi",
+          "meaning": "Moi"
+        },
+        {
+          "block_id": "f5b09c78-5e55-576f-a878-af89072eecf8",
+          "label": "Maman",
+          "meaning": "Maman"
+        },
+        {
+          "block_id": "e613d50e-c44a-5b6c-8a3b-9ec7fed179d2",
+          "label": "Papa",
+          "meaning": "Papa"
+        },
+        {
+          "block_id": "aa82358f-5853-5fc0-af45-9898aec024f7",
+          "label": "Boire",
+          "meaning": "Boire"
+        },
+        {
+          "block_id": "f6afc20a-37b5-5f8b-868c-6c5ce9510de4",
+          "label": "Eau",
+          "meaning": "Eau"
+        },
+        {
+          "block_id": "aa82358f-5853-5fc0-af45-9898aec024f7",
+          "label": "Boire",
+          "meaning": "Boire"
+        },
+        {
+          "block_id": "8d4b0191-a4d4-5387-b7a0-671e45d31f10",
+          "label": "Maison",
+          "meaning": "Maison"
+        },
+        {
+          "block_id": "3226395a-320f-5c8c-936a-18a4eb1f68d5",
+          "label": "Manger",
+          "meaning": "Manger"
+        },
+        {
+          "block_id": "873acbb6-12c0-5606-a081-d155f08836bc",
+          "label": "Content",
+          "meaning": "Content"
+        },
+        {
+          "block_id": "a6fa4fca-319d-570b-8fff-2e68be387fd0",
+          "label": "Stop",
+          "meaning": "Stop"
+        }
+      ]
+    },
+    {
+      "scenario": "six_withdrawn_memory",
+      "comparison": "meal_memory",
+      "selected_words": [
+        "Maman",
+        "Papa",
+        "Manger",
+        "Maison",
+        "Moi",
+        "Content"
+      ],
+      "touch_count": 6,
+      "review_focus": "Vérifier les actions, les personnes et le sens voulu, pas seulement les mots.",
+      "memory_examples": [],
+      "memory_example_characters": 0,
+      "request_characters": 634,
+      "provider_texts": [
+        "Maman, Papa, je voudrais manger à la maison. Je suis content."
+      ],
+      "provider_status": "proposal",
+      "token_usage": {
+        "input": 1253,
+        "output": 78
+      },
+      "candidate_checks": [
+        {
+          "text": "Maman, Papa, je voudrais manger à la maison. Je suis content.",
+          "confidence": 0.95,
+          "retained": true,
+          "strict_word_coverage": true,
+          "grounding": "strict_words",
+          "surface_differences": {
+            "missing_selected_content": {},
+            "content_outside_selected_meanings_and_references": {}
+          },
+          "retained_confidence": 0.95
+        }
+      ],
+      "proposed_texts": [
+        "Maman, Papa, je voudrais manger à la maison. Je suis content."
+      ],
+      "candidate_sources": [
+        "openai-compatible"
+      ],
+      "decision_state": "proposal",
+      "fallback_reason": null,
+      "received_candidates": 1,
+      "retained_candidates": 1,
+      "personal_hypotheses": 0,
+      "all_unvalidated": true,
+      "source_memory_unchanged": true,
+      "elapsed_ms": 376,
+      "http": [
+        {
+          "status": 200,
+          "token_limit_per_minute": 8000.0,
+          "tokens_remaining": 6587.0,
+          "elapsed_ms": 365
+        }
+      ],
+      "fixture_passed": null,
+      "selected_blocks": [
+        {
+          "block_id": "4b307595-8e1b-5399-b83f-fdd8d5345334",
+          "label": "Maman",
+          "meaning": "Maman"
+        },
+        {
+          "block_id": "54c5e130-d86d-552f-a9f9-ef46358d3518",
+          "label": "Papa",
+          "meaning": "Papa"
+        },
+        {
+          "block_id": "8ed965d9-fd3d-5f61-8b6c-c4458f173ec7",
+          "label": "Manger",
+          "meaning": "Manger"
+        },
+        {
+          "block_id": "c2c98706-6ee5-5c78-90ef-340d1ca82e34",
+          "label": "Maison",
+          "meaning": "Maison"
+        },
+        {
+          "block_id": "3b5f90b5-a327-56be-8ee6-6c1e0fd410c2",
+          "label": "Moi",
+          "meaning": "Moi"
+        },
+        {
+          "block_id": "65980f9f-5c4d-5109-9354-67793492803a",
+          "label": "Content",
+          "meaning": "Content"
+        }
+      ]
+    },
+    {
+      "scenario": "six_foreign_memory",
+      "comparison": "meal_memory",
+      "selected_words": [
+        "Maman",
+        "Papa",
+        "Manger",
+        "Maison",
+        "Moi",
+        "Content"
+      ],
+      "touch_count": 6,
+      "review_focus": "Vérifier les actions, les personnes et le sens voulu, pas seulement les mots.",
+      "memory_examples": [],
+      "memory_example_characters": 0,
+      "request_characters": 634,
+      "provider_texts": [
+        "Maman, Papa, je voudrais manger à la maison. Je suis content."
+      ],
+      "provider_status": "proposal",
+      "token_usage": {
+        "input": 1241,
+        "output": 73
+      },
+      "candidate_checks": [
+        {
+          "text": "Maman, Papa, je voudrais manger à la maison. Je suis content.",
+          "confidence": 0.9,
+          "retained": true,
+          "strict_word_coverage": true,
+          "grounding": "strict_words",
+          "surface_differences": {
+            "missing_selected_content": {},
+            "content_outside_selected_meanings_and_references": {}
+          },
+          "retained_confidence": 0.9
+        }
+      ],
+      "proposed_texts": [
+        "Maman, Papa, je voudrais manger à la maison. Je suis content."
+      ],
+      "candidate_sources": [
+        "openai-compatible"
+      ],
+      "decision_state": "proposal",
+      "fallback_reason": null,
+      "received_candidates": 1,
+      "retained_candidates": 1,
+      "personal_hypotheses": 0,
+      "all_unvalidated": true,
+      "source_memory_unchanged": true,
+      "elapsed_ms": 384,
+      "http": [
+        {
+          "status": 200,
+          "token_limit_per_minute": 8000.0,
+          "tokens_remaining": 6631.0,
+          "elapsed_ms": 375
+        }
+      ],
+      "fixture_passed": null,
+      "selected_blocks": [
+        {
+          "block_id": "f577e73f-bc67-5134-b487-b19e8c1e9616",
+          "label": "Maman",
+          "meaning": "Maman"
+        },
+        {
+          "block_id": "aee185d1-a306-59c1-bf3d-5048d5ad0e37",
+          "label": "Papa",
+          "meaning": "Papa"
+        },
+        {
+          "block_id": "0b944e03-9071-52a0-afa1-a2b7c5078195",
+          "label": "Manger",
+          "meaning": "Manger"
+        },
+        {
+          "block_id": "f41be97b-e6df-5dd8-b16d-d03cf0b328ab",
+          "label": "Maison",
+          "meaning": "Maison"
+        },
+        {
+          "block_id": "f6dcb3dd-f0a4-531a-a107-dde08ace0789",
+          "label": "Moi",
+          "meaning": "Moi"
+        },
+        {
+          "block_id": "32e20cff-059c-553e-b800-13e5c11c4659",
+          "label": "Content",
+          "meaning": "Content"
+        }
+      ]
+    },
+    {
+      "scenario": "six_ambiguous_roles",
+      "comparison": null,
+      "selected_words": [
+        "Maman",
+        "Papa",
+        "Manger",
+        "Maison",
+        "Moi",
+        "Content"
+      ],
+      "touch_count": 6,
+      "review_focus": "Plusieurs rôles sont possibles : une phrase grammaticale n’en prouve aucun.",
+      "memory_examples": [],
+      "memory_example_characters": 0,
+      "request_characters": 634,
+      "provider_texts": [
+        "Maman, Papa, je voudrais manger à la maison. Je suis content."
+      ],
+      "provider_status": "proposal",
+      "token_usage": {
+        "input": 1249,
+        "output": 72
+      },
+      "candidate_checks": [
+        {
+          "text": "Maman, Papa, je voudrais manger à la maison. Je suis content.",
+          "confidence": 0.9,
+          "retained": true,
+          "strict_word_coverage": true,
+          "grounding": "strict_words",
+          "surface_differences": {
+            "missing_selected_content": {},
+            "content_outside_selected_meanings_and_references": {}
+          },
+          "retained_confidence": 0.9
+        }
+      ],
+      "proposed_texts": [
+        "Maman, Papa, je voudrais manger à la maison. Je suis content."
+      ],
+      "candidate_sources": [
+        "openai-compatible"
+      ],
+      "decision_state": "proposal",
+      "fallback_reason": null,
+      "received_candidates": 1,
+      "retained_candidates": 1,
+      "personal_hypotheses": 0,
+      "all_unvalidated": true,
+      "source_memory_unchanged": true,
+      "elapsed_ms": 1116,
+      "http": [
+        {
+          "status": 200,
+          "token_limit_per_minute": 8000.0,
+          "tokens_remaining": 6623.0,
+          "elapsed_ms": 1107
+        }
+      ],
+      "fixture_passed": null,
+      "selected_blocks": [
+        {
+          "block_id": "41d7bf8a-3f8e-5171-a108-b9841edde327",
+          "label": "Maman",
+          "meaning": "Maman"
+        },
+        {
+          "block_id": "ab21c700-3129-525e-a34b-ca518f040f80",
+          "label": "Papa",
+          "meaning": "Papa"
+        },
+        {
+          "block_id": "42b87cc8-f8b5-573e-8957-5e3ea098c981",
+          "label": "Manger",
+          "meaning": "Manger"
+        },
+        {
+          "block_id": "08909adb-1558-53f1-8b65-48199400672d",
+          "label": "Maison",
+          "meaning": "Maison"
+        },
+        {
+          "block_id": "45b24574-cbf2-53e1-82af-3b08f3ff13ab",
+          "label": "Moi",
+          "meaning": "Moi"
+        },
+        {
+          "block_id": "f2625f0d-0d4a-5194-8217-c7ce08864c73",
+          "label": "Content",
+          "meaning": "Content"
+        }
+      ]
+    }
+  ],
+  "configuration": {
+    "model": "qwen/qwen3.8-27b",
+    "response_format": "json_object",
+    "temperature": 0.2
+  },
+  "experiment": "expanded-guidance-v2",
+  "pipeline_base_commit": "9f871b20cac4e9a15e3ab460e5818fd1d7404d24",
+  "review_diagnostics_added_after_capture": true
+}

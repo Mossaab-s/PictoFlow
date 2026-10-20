@@ -51,7 +51,10 @@ jobs:
       - run: python -m ruff format --check .
       - run: python -m pytest
       - run: python -m app.ai.evaluation --output ai-evaluation.json
+      - run: python -m app.ai.personal_evaluation --output personal-evaluation.json
       - uses: actions/upload-artifact@v4
         with:
           name: ai-evaluation-python-${{ matrix.python-version }}
-          path: backend/ai-evaluation.json
+          path: |
+            backend/ai-evaluation.json
+            backend/personal-evaluation.json

@@ -79,6 +79,11 @@ PCL, même lorsqu’elles ne sont pas réutilisées comme exemples IA.
 
 ## Évaluation reproductible
 
+Une évaluation complémentaire couvre maintenant les compositions de **5 à 10
+touches**, les mémoires personnelles distinctes et les causes HTTP/contrat/filtre :
+voir [la méthode et les résultats du 20 octobre](PERSONAL_PHRASE_EVALUATION.md).
+Les essais réels restent synthétiques, sans déploiement ni validation automatique.
+
 Depuis `backend/`, dans l’environnement Python installé :
 
 ```powershell
