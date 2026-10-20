@@ -10,6 +10,7 @@ from app.ai.configuration import (
     ConfigurationConflict,
     ConfigurationView,
     ProbeResult,
+    ProviderOptions,
     probe_provider,
 )
 from app.ai.manager import create_provider
@@ -31,16 +32,33 @@ def repository(request):
 
 
 @asynccontextmanager
-async def active_provider(request):
+async def active_provider(request, *, include_configuration=False):
     # Each operation holds its own immutable provider/settings snapshot. Switching
     # providers never closes another request's HTTP client or changes its provenance.
-    settings = repository(request).override() if request.app.state.pcl_units else None
+    version = 0
+    if include_configuration and request.app.state.pcl_units:
+        settings, version = repository(request).override_snapshot()
+    else:
+        settings = repository(request).override() if request.app.state.pcl_units else None
+    configuration = (
+        {
+            **ProviderOptions.from_settings(settings or request.app.state.settings).model_dump(),
+            "version": version,
+            "prism_capabilities": (settings or request.app.state.settings).prism_capabilities,
+        }
+        if include_configuration
+        else None
+    )
     if settings is None:
-        yield request.app.state.ai_provider
+        yield (
+            (request.app.state.ai_provider, configuration)
+            if include_configuration
+            else request.app.state.ai_provider
+        )
         return
     provider = create_provider(settings, request.app.state.telemetry)
     try:
-        yield provider
+        yield (provider, configuration) if include_configuration else provider
     finally:
         await provider.aclose()
 

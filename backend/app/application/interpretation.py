@@ -152,11 +152,18 @@ class InterpretationService:
         )
 
     async def interpret(
-        self, profile_id: UUID, sequence_id: UUID, *, declared_context: tuple[str, ...] = ()
+        self,
+        profile_id: UUID,
+        sequence_id: UUID,
+        *,
+        declared_context: tuple[str, ...] = (),
+        prepared_request: InterpretationRequest | None = None,
     ):
         if self.provider.provider_id == "disabled":
             return self.fallback(profile_id, sequence_id, "disabled")
-        request = self.request(profile_id, sequence_id, declared_context=declared_context)
+        request = prepared_request or self.request(
+            profile_id, sequence_id, declared_context=declared_context
+        )
         source = self.provider.provider_id
         examples = len(request.correction_examples)
         memory = len(request.memory_examples)
@@ -200,6 +207,7 @@ class InterpretationService:
                 )
                 refs = support or request.memory_examples
                 details[candidate.id] = {
+                    "declared_context": list(declared_context),
                     "personal_hypothesis": bool(support),
                     "memory_examples_selected": memory,
                     "memory_examples_sent": len(request.memory_examples),

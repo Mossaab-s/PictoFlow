@@ -439,6 +439,8 @@ def remap_archive(archive: ProfileArchive, profile: UserCommunicationProfile) ->
                     }
                     for ref in item
                 ]
+            elif key == "cache_root_id":
+                decoded[key] = str(identity("interpretations", item))
         return json.dumps(decoded, ensure_ascii=False, allow_nan=False)
 
     collections = {}

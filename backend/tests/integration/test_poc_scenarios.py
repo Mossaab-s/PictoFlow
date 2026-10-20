@@ -161,13 +161,21 @@ def test_scenario_choice_retention_recall_withdrawal_and_profile_isolation(api, 
     assert call(api, "get", base + "/audit") == before_read
     assert call(api, "get", base + "/memory") == memory
     assert len(requests) == 1  # Recall and a new composition do not call the provider.
-    # A deliberately requested new proposal can use eligible human corrections,
-    # but neither that example nor a high provider score accepts the new message.
+    # Normal requests first reuse the accepted alignment without calling the model.
     next_decision = call(api, "post", base + "/sequences/" + repeated["id"] + "/interpret", {})
+    assert len(requests) == 1
+    assert next_decision["candidates"][0]["source"] == "pcl-memory"
+    assert next_decision["candidates"][0]["text"] == expected
+    assert all(item["status"] == "proposed" for item in next_decision["candidates"])
+    # Explicit refresh can still use eligible corrections, without accepting a new message.
+    refreshed = call(
+        api, "post", base + "/sequences/" + repeated["id"] + "/interpret", {"refresh": True}
+    )
+    assert len(requests) == 2
     assert requests[1]["correction_examples"] == (
         [correction] if name in ("deux_personnes", "ambiguite_relation") else []
     )
-    assert all(item["status"] == "proposed" for item in next_decision["candidates"])
+    assert all(item["status"] == "proposed" for item in refreshed["candidates"])
     assert call(api, "get", base + "/memory") == memory
     assert call(api, "get", foreign + "/memory")["interpretations"] == []
     assert api.get("/api/v1/" + foreign + "/phrases/" + accepted["id"]).status_code == 404

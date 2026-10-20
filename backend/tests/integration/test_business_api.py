@@ -90,6 +90,7 @@ def test_literal_reason_is_candidate_scoped_read_only_and_unknown_for_legacy_aud
         "personal_hypothesis": False,
         "references": [],
         "fallback_reason": "disabled",
+        "reuse": None,
     }
     assert api.get(base + "/audit").json() == before
     assert api.get(base + "/memory").json()["interpretations"] == []

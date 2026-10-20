@@ -2,6 +2,7 @@
 
 import inspect
 from contextlib import nullcontext
+from hashlib import sha256
 from importlib.resources import files
 
 from pydantic import TypeAdapter, ValidationError
@@ -28,7 +29,7 @@ from app.config import Settings
 class ProviderManager:
     """Validate one provider; never receive or mutate persistent PCL repositories."""
 
-    def __init__(self, provider: AIProvider, telemetry=None):
+    def __init__(self, provider: AIProvider, telemetry=None, *, cache_revision: str | None = None):
         operations = ("interpret", "simplify", "suggest_representation", "health")
         if not isinstance(provider, AIProvider) or not all(
             inspect.iscoroutinefunction(getattr(provider, operation)) for operation in operations
@@ -42,6 +43,7 @@ class ProviderManager:
             raise ProviderConfigurationError("Provider ID is invalid") from None
         self._provider = provider
         self.telemetry = telemetry
+        self.cache_revision = cache_revision
 
     @property
     def provider_id(self) -> str:
@@ -145,4 +147,6 @@ def create_provider(settings: Settings, telemetry=None) -> ProviderManager:
         fixtures = FakeFixtures.model_validate_json(content)
     except (OSError, UnicodeError, ValidationError):
         raise ProviderConfigurationError("Cannot load valid fake provider fixtures") from None
-    return ProviderManager(FakeProvider(fixtures), telemetry)
+    return ProviderManager(
+        FakeProvider(fixtures), telemetry, cache_revision=sha256(content.encode()).hexdigest()
+    )

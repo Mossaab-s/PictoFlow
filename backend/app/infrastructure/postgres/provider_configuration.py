@@ -67,9 +67,12 @@ class ProviderConfigurations:
             )
 
     def override(self):
+        return self.override_snapshot()[0]
+
+    def override_snapshot(self):
         with self.factory() as session:
             row = session.scalar(select(ProviderConfigurationRow))
             if row is None:
-                return None
-            options, key, _ = self.current(session)
-            return options.settings(self.defaults, key)
+                return None, 0
+            options, key, version = self.current(session)
+            return options.settings(self.defaults, key), version
