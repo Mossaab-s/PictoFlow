@@ -748,7 +748,7 @@ def test_strict_phrase_responses_never_promote_invalid_or_unconfirmed_meaning(ap
             output["candidates"].extend(
                 [
                     {"intent": "DRINK", "text": "Je voudrais boire.", "confidence": 0.7},
-                    {"intent": "DRINK", "text": "Je veux boire.", "confidence": 0.5},
+                    {"intent": "DRINK", "text": "Je bois.", "confidence": 0.5},
                 ]
             )
 
@@ -854,7 +854,7 @@ def test_strict_phrase_responses_never_promote_invalid_or_unconfirmed_meaning(ap
     elif kind == "alternatives":
         assert response.status_code == 200
         candidates = response.json()["candidates"]
-        assert [c["text"] for c in candidates] == ["Je voudrais boire.", "Je veux boire."]
+        assert [c["text"] for c in candidates] == ["Je voudrais boire.", "Je bois."]
         assert all(c["source"] == "openai-compatible" for c in candidates)
         assert {c["id"] for c in api.get(base + "/interpretations").json()} == {
             c["id"] for c in candidates

@@ -12,6 +12,7 @@ from app.application.pcl_repository import PCLUnits
 from app.application.personal_examples import select_examples
 from app.application.personal_hypotheses import grounding
 from app.application.phrase_fidelity import faithful_words
+from app.application.proposal_variants import surface_key
 from app.domain.pcl.entities import (
     CommunicationBlock,
     CommunicationSequence,
@@ -190,12 +191,11 @@ class InterpretationService:
                         )
                     }
                 )
-            details, items, texts = {}, [], set()
+            details, variants = {}, {}
             for item in result.candidates:
                 support = grounding(request, item.text)
-                if support is None or item.text.casefold().strip() in texts:
+                if support is None:
                     continue
-                texts.add(item.text.casefold().strip())
                 candidate = Interpretation(
                     profile_id=profile_id,
                     sequence_id=sequence_id,
@@ -205,8 +205,16 @@ class InterpretationService:
                     else item.confidence,
                     source=source,
                 )
+                key = surface_key(item.text)
+                previous = variants.get(key)
+                if previous is not None:
+                    if previous.confidence >= candidate.confidence:
+                        continue
+                    details.pop(previous.id)
+                variants[key] = candidate
                 refs = support or request.memory_examples
                 details[candidate.id] = {
+                    "provider_intent": item.intent,
                     "declared_context": list(declared_context),
                     "personal_hypothesis": bool(support),
                     "memory_examples_selected": memory,
@@ -226,8 +234,7 @@ class InterpretationService:
                         else {}
                     ),
                 }
-                items.append(candidate)
-            items = tuple(items)
+            items = tuple(variants.values())
             if not items:
                 return self.fallback(
                     profile_id,
