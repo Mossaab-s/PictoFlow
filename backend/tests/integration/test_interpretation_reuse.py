@@ -337,6 +337,44 @@ def test_acceptance_while_reading_redis_takes_precedence_over_pending_cache(comm
     assert reuse.interpreter.provider.interpret.await_count == 1
 
 
+def test_restore_remaps_cache_lineage_without_recreating_transient_entries(communication):
+    import json
+    from uuid import UUID
+
+    from app.application.profile_archive import RestoreRequest, parse_archive
+    from app.domain.pcl.entities import HumanRole
+    from app.infrastructure.postgres.profile_archives import PostgresProfileArchives
+
+    service, profile, _, blocks = communication
+    reuse = setup(service)
+    original = run(reuse, profile, completed(service, profile, blocks))
+    run(reuse, profile, completed(service, profile, blocks))
+    archives = PostgresProfileArchives(service.units.factory)
+    restored = archives.restore(
+        RestoreRequest(
+            request_id=uuid4(),
+            actor_role=HumanRole.USER,
+            confirm=True,
+            display_name="Cache fictif restauré",
+            snapshot=parse_archive(archives.export(profile)),
+        )
+    )
+    with service.units() as store:
+        markers = [
+            e
+            for e in store.audit_history(
+                restored.id, target_type="interpretation", target_id=None, limit=100
+            )
+            if e.event_type == "interpretation_reuse"
+        ]
+        assert len(markers) == 4
+        for marker in markers:
+            root = UUID(json.loads(marker.new_state)["presentation"]["cache_root_id"])
+            assert root not in {i.id for i in original.candidates}
+            assert store.get(restored.id, Interpretation, root).profile_id == restored.id
+    assert all(key[0] == profile for key in reuse.transient.values)
+
+
 @pytest.mark.redis
 def test_real_redis_contains_only_ids_and_reads_do_not_extend_ttl(communication, redis_url):
     from app.application.transient import TransientKind

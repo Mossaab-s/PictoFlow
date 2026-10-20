@@ -124,7 +124,7 @@ try {
   await card.getByText("Modifier la phrase", { exact: true }).click();
   await card.locator("textarea").fill("J’aime boire de l’eau.");
   await card
-    .getByRole("button", { name: "Je corrige la phrase", exact: true })
+    .getByRole("button", { name: "Valider ma correction", exact: true })
     .click();
   await expect(
     card.getByText("Mémoire validée", { exact: true }),
