@@ -47,6 +47,53 @@ def test_personal_hypothesis_requires_human_choice_and_becomes_next_reference(co
     assert [e.reference_id for e in future.memory_examples] == [candidate.id]
 
 
+@pytest.mark.parametrize("personal_score", [0.99, 0.4, 0.39])
+def test_personal_priority_keeps_generic_alternatives_and_requires_explicit_acceptance(
+    communication, personal_score
+):
+    service, profile, _, blocks = communication
+    source, target, ai = hypothesis(service, profile, blocks)
+    literal = "Bruit, stop : je veux partir."
+    ai.provider.interpret.return_value = InterpretationProposal.model_validate(
+        {
+            "candidates": [
+                {"intent": "literal", "text": literal, "confidence": 0.98},
+                {"intent": "personal", "text": TEXT, "confidence": personal_score},
+                {"intent": "literal", "text": "Stop, bruit : je veux partir.", "confidence": 0.8},
+            ]
+        }
+    )
+    before = service.memory(profile, validated=True)
+    decision = asyncio.run(ai.interpret(profile, target.id))
+    assert service.memory(profile, validated=True) == before
+    assert all(item.status == "proposed" for item in decision.candidates)
+    assert all(item.validated_text is None for item in decision.candidates)
+    if personal_score < service.policy.refusal:
+        assert len(decision.candidates) == 2
+        assert decision.candidates[0].text == literal
+        assert decision.state == "proposal"
+        return
+    personal, generic, other = decision.candidates
+    assert personal.text == TEXT and generic.text == literal
+    assert personal.confidence == min(personal_score, service.policy.confirmation)
+    assert (generic.confidence, other.confidence) == (0.98, 0.8)
+    assert decision.state == (
+        "confirmation_required"
+        if personal_score >= service.policy.confirmation
+        else "multiple_hypotheses"
+    )
+    context = context_for(service.units, profile, personal.id)
+    assert context.personal_hypothesis
+    assert context.references[0].interpretation_id == source.id
+    assert not context_for(service.units, profile, generic.id).personal_hypothesis
+    service.validate(event(profile, personal, ValidationAction.REJECT))
+    assert service.memory(profile, validated=True) == before
+    assert (
+        service.validate(event(profile, generic, ValidationAction.CONFIRM)).validated_text
+        == literal
+    )
+
+
 def test_source_withdrawal_blocks_unaccepted_hypothesis_but_never_blocks_rejection(communication):
     service, profile, _, blocks = communication
     source, target, ai = hypothesis(service, profile, blocks)
