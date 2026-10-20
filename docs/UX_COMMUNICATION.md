@@ -96,6 +96,11 @@ Dynamic suggestion results are excluded from browser scroll anchoring so that
 search updates do not move controls during pointer activation. Keyboard focus
 remains visible and follows the existing tab order.
 
+Pointer activation in personal-memory suggestions focuses the visible button
+without native focus scrolling before mouseup. The outage browser check splits
+press and release and verifies stable button position, a real click and the
+injected unavailable response. Keyboard activation retains its usual behavior.
+
 The header has a direct usual-phrases entry; opening it does not replace the
 composition or accept a meaning. Empty personal memory offers an explicit path
 back to the normal formulation workflow without calling AI. On the dedicated

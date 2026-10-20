@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import { chromium, request } from "@playwright/test";
+import { chromium, request, expect } from "@playwright/test";
 
 const origin = "http://127.0.0.1:3130";
 const api = await request.newContext({ baseURL: origin });
@@ -328,9 +328,18 @@ try {
         { capture: true },
       );
   });
-  await panel
-    .getByRole("button", { name: "Actualiser les suggestions", exact: true })
-    .click();
+  await refreshButton.scrollIntoViewIfNeeded();
+  const refreshBounds = await refreshButton.boundingBox();
+  const scrollBeforePress = await page.evaluate(() => window.scrollY);
+  await page.mouse.move(
+    refreshBounds.x + refreshBounds.width / 2,
+    refreshBounds.y + refreshBounds.height / 2,
+  );
+  await page.mouse.down();
+  await expect(refreshButton).toBeFocused();
+  assert.equal(await page.evaluate(() => window.scrollY), scrollBeforePress);
+  assert.equal((await refreshButton.boundingBox()).y, refreshBounds.y);
+  await page.mouse.up();
   console.log(
     "Synthetic refresh pointer events:",
     await page.evaluate(() => window.__uxPointer),
