@@ -208,12 +208,16 @@ try {
   });
   await expect(editor).toHaveAttribute(
     "href",
-    `/accompagnement/personnes/${p}/clavier`,
+    `/accompagnement/personnes/${p}/clavier?need=${groups[0].need.id}#keyboard-create`,
   );
   await editor.click();
   await expect(page).toHaveURL(
-    `${origin}/accompagnement/personnes/${p}/clavier`,
+    `${origin}/accompagnement/personnes/${p}/clavier?need=${groups[0].need.id}#keyboard-create`,
   );
+  await expect(page.locator(".need-touch-preparation")).toContainText(
+    groups[0].text,
+  );
+  assert.deepEqual(await call(base + "/blocks"), beforeBlocks);
   await page.goto(url);
   await evidence(groups[1]);
   await card(groups[1])
