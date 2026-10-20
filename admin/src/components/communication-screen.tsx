@@ -52,6 +52,8 @@ import {
 import { useMemorySuggestionMode } from "./use-memory-suggestion-mode";
 import type { MemoryProposalBody } from "@/lib/memory-suggestions";
 
+class MissingMessageCopy extends Error {}
+
 export default function CommunicationScreen({
   profileId,
   standalone = false,
@@ -120,6 +122,14 @@ export default function CommunicationScreen({
   const base = `profiles/${profileId}`;
   const storageKey = `pictoflow:sequence:${profileId}`;
   const copyKey = copyAttemptKey(profileId);
+  async function readCopy(attempt: CopyAttempt, signal?: AbortSignal) {
+    const result = await api<{ sequence: Sequence | null }>(
+      `${base}/sequences/${attempt.sourceId}/copies/${attempt.requestId}`,
+      { signal },
+    );
+    if (!result.sequence) throw new MissingMessageCopy();
+    return result.sequence;
+  }
   function clearCopyAttempt() {
     copyRequest.current = null;
     try {
@@ -177,10 +187,7 @@ export default function CommunicationScreen({
         const attempt = copyRequest.current;
         if (attempt) {
           try {
-            recoveredCopy = await api<Sequence>(
-              `${base}/sequences/${attempt.sourceId}/copies/${attempt.requestId}`,
-              { signal: controller.signal },
-            );
+            recoveredCopy = await readCopy(attempt, controller.signal);
             if (!controller.signal.aborted) {
               if (
                 recoveredCopy.profile_id !== profileId ||
@@ -210,7 +217,7 @@ export default function CommunicationScreen({
             }
           } catch (error) {
             if (controller.signal.aborted) return;
-            if (error instanceof APIError && error.status === 404)
+            if (error instanceof MissingMessageCopy)
               setNotice(
                 "La copie n’a pas été retrouvée. Vous pouvez réessayer Modifier une copie sur le message d’origine.",
               );
@@ -548,12 +555,10 @@ export default function CommunicationScreen({
             );
           }
           try {
-            copied = await api<Sequence>(
-              `${base}/sequences/${selected.attempt.sourceId}/copies/${selected.attempt.requestId}`,
-            );
+            copied = await readCopy(selected.attempt);
             recovered = true;
           } catch (failure) {
-            if (failure instanceof APIError && failure.status === 404)
+            if (failure instanceof MissingMessageCopy)
               throw new Error(
                 "La copie n’a pas été retrouvée. Réessayez Modifier une copie : la même demande sera utilisée.",
               );

@@ -33,7 +33,10 @@ class MessageCopies:
     def read(self, profile_id: UUID, source_id: UUID, request_id: UUID):
         with self.units() as store:
             store.get(profile_id, CommunicationSequence, source_id)
-            return self.provenance(store, profile_id, source_id, request_id)[0]
+            try:
+                return self.provenance(store, profile_id, source_id, request_id)[0]
+            except SemanticNotFoundError:
+                return None
 
     def create(
         self,

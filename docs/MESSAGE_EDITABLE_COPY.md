@@ -77,7 +77,10 @@ atomic; the first event records `copied_from_sequence_id` with the original
 selections. No migration is required.
 
 `GET /api/v1/profiles/{profile_id}/sequences/{sequence_id}/copies/{request_id}`
-returns only a copy whose creation audit belongs to that source. It returns the
+returns `{ "sequence": ... }` for a copy whose creation audit belongs to that
+source, or `{ "sequence": null }` while no copy exists in the profile. A missing
+copy is a normal recovery outcome and does not trigger account-access refresh.
+A foreign source still returns 404. The lookup returns the
 actual current sequence state without mutation; an unrelated existing ID cannot
 be adopted as a recovered copy. Creation requires `communicate`; read access uses
 the existing communication-read capabilities. It does not grant meaning review,

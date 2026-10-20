@@ -61,7 +61,7 @@ def test_atomic_copy_preserves_source_meaning_and_rhythm_and_retries_return_actu
         and copied["context_id"] is None
     )
     assert api.get(path).json() == source
-    assert api.get(path + f"/copies/{copied['id']}").json() == copied
+    assert api.get(path + f"/copies/{copied['id']}").json() == {"sequence": copied}
     copy_path = base + f"/sequences/{copied['id']}"
     assert api.get(copy_path + "/rhythm").json()["intervals"] == []
     after = api.get(base + "/audit").json()
@@ -82,7 +82,7 @@ def test_atomic_copy_preserves_source_meaning_and_rhythm_and_retries_return_actu
     edited = api.post(copy_path + "/selection", json={"action": "undo"}).json()
     after = api.get(base + "/audit").json()
     assert api.post(path + "/copy", json=body).json() == edited
-    assert api.get(path + f"/copies/{copied['id']}").json() == edited
+    assert api.get(path + f"/copies/{copied['id']}").json() == {"sequence": edited}
     assert api.get(base + "/audit").json() == after
     assert (
         api.post(
@@ -116,7 +116,11 @@ def test_copy_scope_unavailable_source_and_request_collisions_never_add_partial_
     assert api.post(path + "/copy", json={**body, "request_id": source["id"]}).status_code == 409
     assert api.post(path + "/copy", json={**body, "request_id": foreign["id"]}).status_code == 409
     assert api.get(foreign_path).json() == foreign
-    assert api.get(path + f"/copies/{foreign['id']}").status_code == 404
+    assert api.get(path + f"/copies/{foreign['id']}").json() == {"sequence": None}
+    assert (
+        api.get(foreign_base + f"/sequences/{source['id']}/copies/{body['request_id']}").status_code
+        == 404
+    )
     assert api.get(path + f"/copies/{source['id']}").status_code == 409
     assert api.get(base + "/audit").json() == audit
     api.post(

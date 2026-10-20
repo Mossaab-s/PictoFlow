@@ -212,6 +212,10 @@ class MessageCopyBody(Body):
         return self
 
 
+class MessageCopyLookup(BaseModel):
+    sequence: CommunicationSequence | None
+
+
 class InterpretationBody(Body):
     declared_context: tuple[str, ...] = Field(default=(), max_length=8)
 
@@ -658,11 +662,11 @@ def copy_message(request: Request, profile_id: UUID, sequence_id: UUID, body: Me
 
 @router.get(
     "/profiles/{profile_id}/sequences/{sequence_id}/copies/{request_id}",
-    response_model=CommunicationSequence,
+    response_model=MessageCopyLookup,
 )
 def copied_message(request: Request, profile_id: UUID, sequence_id: UUID, request_id: UUID):
     try:
-        return MessageCopies(units(request)).read(profile_id, sequence_id, request_id)
+        return {"sequence": MessageCopies(units(request)).read(profile_id, sequence_id, request_id)}
     except MessageCopyConflict:
         raise HTTPException(409, "This request belongs to another message") from None
 
