@@ -22,7 +22,13 @@ from app.domain.pcl.entities import (
     ValidationEvent,
     utc_now,
 )
-from app.domain.pcl.gaps import GapPolicy, GapStatus, SemanticGapCandidate, sequence_signature
+from app.domain.pcl.gaps import (
+    GapPolicy,
+    GapStatus,
+    SemanticGapCandidate,
+    gap_block_meaning,
+    sequence_signature,
+)
 from app.domain.pcl.invariants import DomainInvariantError
 from app.domain.pcl.keyboard import KeyboardGroup, KeyboardPosition, KeyboardZone, project_keyboard
 from app.domain.pcl.pictograms import PICTOGRAM_SOURCE, PictogramKey, pictogram_reference
@@ -30,6 +36,10 @@ from app.domain.pcl.pictograms import PICTOGRAM_SOURCE, PictogramKey, pictogram_
 
 class GapReviewConflict(RuntimeError):
     """A pending need has already been decided by another request."""
+
+
+class GapTouchConflict(RuntimeError):
+    """The accepted need or its unique touch changed during preparation."""
 
 
 @dataclass(frozen=True)
@@ -63,6 +73,7 @@ class BlockService:
                 store.list(profile_id, CommunicationSequence),
                 store.list(profile_id, Interpretation),
                 store.list(profile_id, CommunicationBlock),
+                store.list(profile_id, Concept),
             )
             existing = {
                 (g.source_sequence_signature, g.validated_intent): g
@@ -85,6 +96,7 @@ class BlockService:
             sequences = store.list(profile_id, CommunicationSequence)
             interpretations = store.list(profile_id, Interpretation)
             blocks = store.list(profile_id, CommunicationBlock)
+            concepts = store.list(profile_id, Concept)
             matching = {
                 s.id: s
                 for s in sequences
@@ -99,7 +111,7 @@ class BlockService:
             eligible = any(
                 g.source_sequence_signature == gap.source_sequence_signature
                 and g.validated_intent == gap.validated_intent
-                for g in self.gaps.detect(profile_id, sequences, interpretations, blocks)
+                for g in self.gaps.detect(profile_id, sequences, interpretations, blocks, concepts)
             )
             latest = sorted(accepted, key=lambda i: (i.created_at, i.id), reverse=True)[:5]
             return GapEvidence(
@@ -111,7 +123,8 @@ class BlockService:
                 len(accepted),
                 eligible,
                 any(
-                    b.status == "validated" and b.canonical_intent == gap.validated_intent
+                    b.status == "validated"
+                    and gap_block_meaning(b, concepts) == gap.validated_intent
                     for b in blocks
                 ),
                 tuple(GapExample(matching[i.sequence_id], i) for i in latest),
@@ -130,13 +143,14 @@ class BlockService:
             raise DomainInvariantError("Gap approval must be explicit")
         with self.units() as store:
             previous = store.get(profile_id, SemanticGapCandidate, gap_id)
+            concepts = store.list(profile_id, Concept)
             if expected_status is not None and previous.status != expected_status:
                 raise GapReviewConflict("Vocabulary need already decided; reload")
             if previous.status == GapStatus.RESOLVED:
                 raise DomainInvariantError("Resolved gaps cannot be reopened")
             if any(
                 b.status == ProposalStatus.VALIDATED
-                and b.canonical_intent == previous.validated_intent
+                and gap_block_meaning(b, concepts) == previous.validated_intent
                 for b in store.list(profile_id, CommunicationBlock)
             ):
                 raise DomainInvariantError("An active block already represents this meaning")
@@ -147,6 +161,7 @@ class BlockService:
                     store.list(profile_id, CommunicationSequence),
                     store.list(profile_id, Interpretation),
                     store.list(profile_id, CommunicationBlock),
+                    store.list(profile_id, Concept),
                 )
                 eligible = next(
                     (
@@ -196,6 +211,7 @@ class BlockService:
                 store.list(profile_id, CommunicationSequence),
                 store.list(profile_id, Interpretation),
                 store.list(profile_id, CommunicationBlock),
+                store.list(profile_id, Concept),
             )
             if not any(
                 g.source_sequence_signature == gap.source_sequence_signature
@@ -215,6 +231,84 @@ class BlockService:
             store.add(profile_id, block)
             store.audit(profile_id, "block_proposed", None, block, "pcl")
         return block
+
+    def illustrate_gap(
+        self,
+        profile_id: UUID,
+        gap_id: UUID,
+        request_id: UUID,
+        label: str,
+        pictogram_key: PictogramKey,
+        expected_intent: str,
+        actor_role: HumanRole,
+    ):
+        """A human prepares an illustration of an accepted meaning, never a new meaning."""
+        label = label.strip()
+        block_id = uuid5(gap_id, f"illustrated-touch:{request_id}")
+        concept_id = uuid5(block_id, "concept")
+        reference = pictogram_reference(pictogram_key)
+        source = f"human:{HumanRole(actor_role).value}"
+        with self.units() as store:
+            gap = store.get(profile_id, SemanticGapCandidate, gap_id)
+            if len(expected_intent) > 512:
+                raise GapTouchConflict(
+                    "This expression exceeds the 512-character touch meaning limit"
+                )
+            if gap.validated_intent != expected_intent:
+                raise GapTouchConflict("The accepted meaning changed; reload the need")
+            existing = next(
+                (
+                    b
+                    for b in store.list(profile_id, CommunicationBlock)
+                    if b.semantic_gap_id == gap_id
+                ),
+                None,
+            )
+            if existing is not None:
+                if existing.id != block_id or existing.concept_id != concept_id:
+                    raise GapTouchConflict(
+                        "This need already has a touch; review the existing touch"
+                    )
+                visual = store.get(profile_id, Representation, existing.representation_id)
+                if existing.label != label or visual.asset_reference != reference:
+                    raise GapTouchConflict(
+                        "This preparation already has a different word or drawing"
+                    )
+                return existing  # A retry returns actual state, including later human decisions.
+            self._eligible_gap(store, profile_id, gap)
+            concept = Concept(
+                id=concept_id,
+                profile_id=profile_id,
+                canonical_key=f"USER_{concept_id.hex}",
+                label=gap.validated_intent,
+            )
+            store.add(profile_id, concept)
+            store.audit(profile_id, "concept_created", None, concept, source)
+            return self._create(
+                store,
+                profile_id,
+                concept_id,
+                label,
+                pictogram_key=pictogram_key,
+                block_id=block_id,
+                origin=BlockOrigin.PCL_SUGGESTION,
+                source=source,
+                semantic_gap_id=gap_id,
+            )
+
+    def _eligible_gap(self, store, profile_id: UUID, gap: SemanticGapCandidate):
+        if gap.status != GapStatus.APPROVED or not any(
+            g.source_sequence_signature == gap.source_sequence_signature
+            and g.validated_intent == gap.validated_intent
+            for g in self.gaps.detect(
+                profile_id,
+                store.list(profile_id, CommunicationSequence),
+                store.list(profile_id, Interpretation),
+                store.list(profile_id, CommunicationBlock),
+                store.list(profile_id, Concept),
+            )
+        ):
+            raise GapTouchConflict("This need no longer has approval and enough accepted evidence")
 
     def create(
         self,
@@ -320,6 +414,7 @@ class BlockService:
         block_id: UUID | None = None,
         origin: BlockOrigin = BlockOrigin.USER,
         source: str = "human",
+        semantic_gap_id: UUID | None = None,
     ):
         visual = None
         if pictogram_key is not None:
@@ -336,6 +431,7 @@ class BlockService:
             **({"id": block_id} if block_id is not None else {}),
             profile_id=profile_id,
             concept_id=concept_id,
+            semantic_gap_id=semantic_gap_id,
             label=label,
             origin=origin,
             representation_id=visual.id if visual else None,
@@ -372,6 +468,13 @@ class BlockService:
                 else None
             )
             accepted = action != ValidationAction.REJECT
+            concepts = store.list(profile_id, Concept)
+            if accepted and gap and previous.concept_id is not None:
+                concept = store.get(profile_id, Concept, previous.concept_id)
+                if concept.label != gap.validated_intent:
+                    raise GapTouchConflict("This touch no longer preserves the accepted meaning")
+                if gap.status != GapStatus.RESOLVED:
+                    self._eligible_gap(store, profile_id, gap)
             if confirm_representation:
                 if not accepted or previous.representation_id is None:
                     raise DomainInvariantError(
@@ -394,11 +497,11 @@ class BlockService:
                     )
             if (
                 accepted
-                and previous.canonical_intent is not None
+                and gap_block_meaning(previous, concepts) is not None
                 and any(
                     b.id != block_id
                     and b.status == ProposalStatus.VALIDATED
-                    and b.canonical_intent == previous.canonical_intent
+                    and gap_block_meaning(b, concepts) == gap_block_meaning(previous, concepts)
                     for b in store.list(profile_id, CommunicationBlock)
                 )
             ):

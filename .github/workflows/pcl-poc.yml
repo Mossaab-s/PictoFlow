@@ -152,6 +152,10 @@ jobs:
         if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
         working-directory: admin
         run: node tests/e2e/keyboard-preparation.mjs
+      - name: Prepare an illustrated touch from an accepted vocabulary need
+        if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/need-touch.mjs
       - name: Find and organize existing touches
         if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
         working-directory: admin
@@ -198,6 +202,7 @@ jobs:
             admin/.local/ux-communication/*.png
             admin/.local/literal-explanations/*.png
             admin/.local/keyboard-preparation/*.png
+            admin/.local/need-touch/*.png
             admin/.local/touch-library/*.png
             admin/.local/visual-placement/*.png
             admin/.local/communication-search/*.png

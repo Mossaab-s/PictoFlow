@@ -7,12 +7,16 @@ import ProfileSection from "@/components/profile-section";
 import PhraseReview from "@/components/phrase-review";
 import MemoryEvolution from "@/components/memory-evolution";
 import VocabularyNeeds from "@/components/vocabulary-needs";
+import { needParameter } from "@/lib/vocabulary-needs";
 export default async function Page({
   params,
   searchParams,
 }: {
   params: Promise<{ profileId: string; tool: string }>;
-  searchParams: Promise<{ resume?: string | string[] }>;
+  searchParams: Promise<{
+    resume?: string | string[];
+    need?: string | string[];
+  }>;
 }) {
   const { profileId, tool } = await params;
   if (
@@ -33,6 +37,7 @@ export default async function Page({
         key={profileId}
         profileId={profileId}
         resume={(await searchParams).resume === "1"}
+        needId={needParameter((await searchParams).need)}
       />
     );
   if (section === "memory")

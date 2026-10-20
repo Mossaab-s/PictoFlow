@@ -56,6 +56,11 @@ page organization and keyboard preview remain available.
 Existing validated touches can be found and edited through the
 [searchable touch library](KEYBOARD_TOUCH_LIBRARY.md).
 
+An accepted vocabulary need can also open this wizard with its
+[personal reference meaning preserved](ACCEPTED_NEED_TOUCH.md). That path prepares
+a catalogue drawing and a short displayed word without redefining the accepted
+expression, then reuses explicit touch validation and visual placement.
+
 The missing-word return journey still keeps the ongoing communication sequence;
 the newly prepared touch is never appended to it automatically. Preparing or
 validating a touch does not accept a phrase or invoke AI.

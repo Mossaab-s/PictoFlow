@@ -77,7 +77,12 @@ class PCLSnapshot:
         for block in self.blocks:
             if block.semantic_gap_id is not None:
                 gap = require(TargetType.SEMANTIC_GAP_CANDIDATE, block.semantic_gap_id)
-                if block.canonical_intent != gap.validated_intent:
+                meaning = (
+                    require(TargetType.CONCEPT, block.concept_id).label
+                    if block.concept_id is not None
+                    else block.canonical_intent
+                )
+                if meaning != gap.validated_intent:
                     raise DomainInvariantError("A gap block must preserve the approved meaning")
             if block.concept_id is not None:
                 require(TargetType.CONCEPT, block.concept_id)

@@ -11,6 +11,7 @@ from app.domain.pcl import invariants as check
 from app.domain.pcl.entities import (
     CommunicationBlock,
     CommunicationSequence,
+    Concept,
     Interpretation,
     SequenceStatus,
     utc_now,
@@ -54,6 +55,15 @@ def sequence_signature(sequence: CommunicationSequence) -> str:
     return hashlib.sha256(encoded.encode()).hexdigest()
 
 
+def gap_block_meaning(block: CommunicationBlock, concepts: tuple[Concept, ...]) -> str | None:
+    """Illustrated needs target a concept; ordinary concepts are not gap evidence."""
+    if block.canonical_intent is not None:
+        return block.canonical_intent
+    if block.semantic_gap_id is not None:
+        return next((c.label for c in concepts if c.id == block.concept_id), None)
+    return None
+
+
 @dataclass(frozen=True)
 class GapPolicy:
     minimum_occurrences: int = 5
@@ -73,9 +83,13 @@ class GapPolicy:
         sequences: tuple[CommunicationSequence, ...],
         interpretations: tuple[Interpretation, ...],
         blocks: tuple[CommunicationBlock, ...],
+        concepts: tuple[Concept, ...] = (),
     ):
         check.identifier(profile_id, "profile_id")
-        if any(item.profile_id != profile_id for item in (*sequences, *interpretations, *blocks)):
+        if any(
+            item.profile_id != profile_id
+            for item in (*sequences, *interpretations, *blocks, *concepts)
+        ):
             raise check.DomainInvariantError("Gap evidence must belong to exactly one profile")
         completed = {s.id: s for s in sequences if s.status == SequenceStatus.COMPLETED}
         if len({s.id for s in sequences}) != len(sequences):
@@ -96,7 +110,7 @@ class GapPolicy:
         evidence = Counter(
             (sequence_signature(completed[key]), meaning) for key, meaning in accepted.items()
         )
-        active_intents = {b.canonical_intent for b in blocks if b.status == "validated"}
+        active_intents = {gap_block_meaning(b, concepts) for b in blocks if b.status == "validated"}
         return tuple(
             SemanticGapCandidate(
                 profile_id=profile_id,

@@ -6,13 +6,17 @@ import CommunicationScreen from "@/components/communication-screen";
 import ProfileBackup from "@/components/profile-backup";
 import ProfileMemory from "@/components/profile-memory";
 import AIQuality from "@/components/ai-quality";
+import { needParameter } from "@/lib/vocabulary-needs";
 
 export default async function Page({
   params,
   searchParams,
 }: {
   params: Promise<{ profileId: string; section: string }>;
-  searchParams: Promise<{ resume?: string | string[] }>;
+  searchParams: Promise<{
+    resume?: string | string[];
+    need?: string | string[];
+  }>;
 }) {
   const { profileId, section } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(profileId) || !Object.hasOwn(sections, section))
@@ -23,6 +27,7 @@ export default async function Page({
         key={profileId}
         profileId={profileId}
         resume={(await searchParams).resume === "1"}
+        needId={needParameter((await searchParams).need)}
       />
     );
   if (section === "communication")

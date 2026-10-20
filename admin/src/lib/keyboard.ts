@@ -11,6 +11,7 @@ export type Block = {
   profile_id: string;
   concept_id: string | null;
   representation_id?: string | null;
+  semantic_gap_id?: string | null;
   canonical_intent: string | null;
   label: string;
   status: "proposed" | "validated" | "rejected" | "archived";

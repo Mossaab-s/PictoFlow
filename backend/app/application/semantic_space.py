@@ -42,6 +42,8 @@ class SemanticRepository(Protocol):
 
     def concept(self, profile_id: UUID, concept_id: UUID, *, lock: bool = False) -> Concept: ...
 
+    def concept_has_gap(self, profile_id: UUID, concept_id: UUID) -> bool: ...
+
     def relation(
         self, profile_id: UUID, relation_id: UUID, *, lock: bool = False
     ) -> SemanticRelation: ...
@@ -87,6 +89,11 @@ class SemanticSpace:
         self._scope(profile_id, concept_id)
         with self.units() as store:
             previous = store.concept(profile_id, concept_id, lock=True)
+            if label != previous.label and store.concept_has_gap(profile_id, concept_id):
+                raise DomainInvariantError(
+                    "A vocabulary need keeps its accepted meaning; "
+                    "prepare a separate meaning instead"
+                )
             value = replace(previous, label=label, updated_at=utc_now())
             store.save(profile_id, value)
             self._audit(store, "concept_renamed", previous, value, "pcl")

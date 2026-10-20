@@ -24,6 +24,8 @@ import { Pictogram, TouchContent } from "./pictogram";
 import PictogramPicker from "./pictogram-picker";
 import PhotoPicker from "./photo-picker";
 import TouchPreparation, { type TouchDraft } from "./touch-preparation";
+import NeedTouchPreparation from "./need-touch-preparation";
+import type { VocabularyNeed } from "@/lib/vocabulary-needs";
 import TouchLibrary from "./touch-library";
 import TouchPlacementPicker from "./touch-placement-picker";
 import { placementLimit } from "@/lib/keyboard-placement";
@@ -44,9 +46,11 @@ import {
 export default function KeyboardEditor({
   profileId,
   resume = false,
+  needId = null,
 }: {
   profileId: string;
   resume?: boolean;
+  needId?: string | null;
 }) {
   const canCommunicate = canProfile(
     useAuthentication(),
@@ -56,6 +60,7 @@ export default function KeyboardEditor({
   const data = useProfileKeyboard(profileId);
   const [role, setRole] = useState<HumanRole>("user");
   const [createdId, setCreatedId] = useState<string | null>(null);
+  const [needAvailable, setNeedAvailable] = useState(false);
   useEffect(() => {
     if (createdId && data.blocks.some((b) => b.id === createdId)) {
       document.getElementById(`prepared-${createdId}`)?.focus();
@@ -92,14 +97,10 @@ export default function KeyboardEditor({
       setBusy(false);
     }
   }
-  async function createBlock({
-    label,
-    meaning,
-    conceptId,
-    pictogramKey,
-    visualMode,
-    photo,
-  }: TouchDraft) {
+  async function createBlock(
+    { label, meaning, conceptId, pictogramKey, visualMode, photo }: TouchDraft,
+    need?: VocabularyNeed,
+  ) {
     const signature = JSON.stringify([
       label.trim(),
       visualMode,
@@ -107,12 +108,33 @@ export default function KeyboardEditor({
       conceptId,
       conceptId ? null : meaning.trim(),
       photo ? [photo.name, photo.size, photo.lastModified] : null,
+      need ? [need.id, need.validated_intent] : null,
     ]);
     if (creation.current?.signature !== signature) {
       creation.current = { signature, id: newIdentity() };
     }
     let created: Block;
-    if (visualMode === "photo") {
+    if (need) {
+      if (
+        need.profile_id !== profileId ||
+        !pictogramKey ||
+        visualMode !== "drawing"
+      )
+        throw new Error("Vérifiez le besoin et choisissez un dessin.");
+      created = await api<Block>(
+        `${base}/suggestions/${need.id}/illustrated-block`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            request_id: creation.current.id,
+            label: label.trim(),
+            pictogram_key: pictogramKey,
+            expected_intent: need.validated_intent,
+            actor_role: role,
+          }),
+        },
+      );
+    } else if (visualMode === "photo") {
       if (!photo) throw new Error("Choisissez une photo.");
       created = await sendPhoto(`${base}/blocks/photo`, "POST", {
         request_id: creation.current.id,
@@ -225,7 +247,13 @@ export default function KeyboardEditor({
       "La page a été créée. Choisissez-la dans la place des touches à y ajouter.",
     );
   }
-  const proposed = data.blocks.filter((block) => block.status === "proposed");
+  const proposed = data.blocks.filter(
+    (block) =>
+      block.status === "proposed" ||
+      (needId &&
+        block.semantic_gap_id === needId &&
+        block.status === "rejected"),
+  );
   const validated = data.blocks.filter((block) => block.status === "validated");
   return (
     <>
@@ -309,26 +337,46 @@ export default function KeyboardEditor({
         ) : (
           <>
             <div className="touch-creator" id="keyboard-create">
-              <section className="panel">
-                <h2>1. Préparer une touche</h2>
-                <p>
-                  Choisissez un dessin et écrivez votre mot. Vous vérifierez la
-                  touche avant de l'utiliser.
-                </p>
-                <TouchPreparation
-                  key={profileId}
-                  concepts={data.concepts}
-                  disabled={busy}
-                  onCreate={async (draft) => {
+              {needId !== null ? (
+                <NeedTouchPreparation
+                  key={`${profileId}:${needId}`}
+                  profileId={profileId}
+                  needId={needId}
+                  blocks={data.blocks}
+                  visuals={data.representations}
+                  disabled={busy || !!data.error}
+                  onAvailability={setNeedAvailable}
+                  onCreate={async (need, draft) => {
                     let created = false;
                     await perform(async () => {
-                      await createBlock(draft);
+                      await createBlock(draft, need);
                       created = true;
                     });
                     return created;
                   }}
                 />
-              </section>
+              ) : (
+                <section className="panel">
+                  <h2>1. Préparer une touche</h2>
+                  <p>
+                    Choisissez un dessin et écrivez votre mot. Vous vérifierez
+                    la touche avant de l'utiliser.
+                  </p>
+                  <TouchPreparation
+                    key={profileId}
+                    concepts={data.concepts}
+                    disabled={busy}
+                    onCreate={async (draft) => {
+                      let created = false;
+                      await perform(async () => {
+                        await createBlock(draft);
+                        created = true;
+                      });
+                      return created;
+                    }}
+                  />
+                </section>
+              )}
             </div>
             {proposed.length > 0 && (
               <section className="review-section">
@@ -388,7 +436,12 @@ export default function KeyboardEditor({
                               )
                             }
                             disabled={
-                              busy || (!!block.representation_id && !supported)
+                              busy ||
+                              (needId !== null && !!data.error) ||
+                              (needId !== null &&
+                                block.semantic_gap_id === needId &&
+                                !needAvailable) ||
+                              (!!block.representation_id && !supported)
                             }
                           >
                             {block.representation_id

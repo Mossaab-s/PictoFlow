@@ -505,19 +505,20 @@ function NeedCard({
           </>
         )}
       </details>
-      {need.status === "approved" && (
+      {(need.status === "approved" || need.status === "resolved") && (
         <>
           <p>
-            L’acceptation conserve ce besoin dans le suivi. La préparation du
-            dessin et du mot, puis la validation de la touche, se font dans
-            l’éditeur de clavier.
+            Préparez un dessin et un mot pour cette expression, puis vérifiez la
+            touche et choisissez sa place dans le clavier.
           </p>
           {canPrepare && (
             <Link
               className="button-link"
-              href={profileToolPath(session, profileId, "keyboard")}
+              href={`${profileToolPath(session, profileId, "keyboard")}?need=${need.id}#keyboard-create`}
             >
-              Ouvrir la préparation du clavier
+              {need.status === "resolved"
+                ? "Retrouver la touche de ce besoin"
+                : "Ouvrir la préparation du clavier"}
             </Link>
           )}
         </>

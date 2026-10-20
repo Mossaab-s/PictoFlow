@@ -27,6 +27,7 @@ from app.domain.pcl.invariants import identifier
 from app.infrastructure.postgres.database import transaction
 from app.infrastructure.postgres.models import (
     AuditRow,
+    BlockRow,
     ConceptRow,
     ProfileRow,
     RelationRow,
@@ -90,6 +91,21 @@ class PostgresSemanticRepository:
 
     def concept(self, profile_id: UUID, concept_id: UUID, *, lock: bool = False) -> Concept:
         return to_domain(Concept, self._find(ConceptRow, profile_id, concept_id, lock=lock))
+
+    def concept_has_gap(self, profile_id: UUID, concept_id: UUID) -> bool:
+        self._scope(profile_id)
+        return (
+            self.session.scalar(
+                select(BlockRow.id)
+                .where(
+                    BlockRow.profile_id == profile_id,
+                    BlockRow.concept_id == concept_id,
+                    BlockRow.semantic_gap_id.is_not(None),
+                )
+                .limit(1)
+            )
+            is not None
+        )
 
     def relation(
         self, profile_id: UUID, relation_id: UUID, *, lock: bool = False
