@@ -58,7 +58,8 @@ Use fictitious content for public screenshots and issue attachments.
    of the message, cancel once, then confirm only if they want to remove it.
    If useful, try [moving an occurrence](MESSAGE_TOUCH_ORDER.md) or
    [replacing its picture and word](MESSAGE_TOUCH_REPLACEMENT.md), or
-   [inserting a forgotten touch](MESSAGE_TOUCH_INSERTION.md). Observe
+   [inserting a forgotten touch](MESSAGE_TOUCH_INSERTION.md). For a finished message,
+   try [modifying an independent copy](MESSAGE_EDITABLE_COPY.md). Observe
    whether its numbered preview helps the person choose their own word order.
 3. **Move between pages.** Find a familiar touch on another page, keeping the
    message. Check whether saved positions and empty anchor spaces remain useful.

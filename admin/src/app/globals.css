@@ -1958,6 +1958,17 @@ pre {
 .replacement-another {
   margin-top: 12px;
 }
+.message-copy-dialog {
+  width: min(680px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  padding: 16px;
+}
+.communication-page .message-copy-dialog .actions {
+  display: flex;
+  flex-wrap: wrap;
+}
 .insertion-choice {
   display: flex;
   align-items: center;

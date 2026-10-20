@@ -180,6 +180,10 @@ jobs:
         if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
         working-directory: admin
         run: node tests/e2e/message-insertion.mjs
+      - name: Prepare an independent editable copy of a finished message
+        if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/message-copy.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -201,6 +205,7 @@ jobs:
             admin/.local/message-order/*.png
             admin/.local/message-replacement/*.png
             admin/.local/message-insertion/*.png
+            admin/.local/message-copy/*.png
             admin/.local/profile-capabilities/*.png
             admin/.local/three-spaces/*.png
             admin/.local/support-review/*.png

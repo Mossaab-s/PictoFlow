@@ -150,7 +150,11 @@ export default function MemorySuggestions({
         if (event.button !== 0 || !(event.target instanceof Element)) return;
         const button = event.target.closest("button");
         // Focus a visible pointer target without scrolling it away before mouseup/click.
-        if (button && !button.disabled) button.focus({ preventScroll: true });
+        if (button && !button.disabled) {
+          // Suppress the subsequent native focus step; it can scroll even after focus() above.
+          event.preventDefault();
+          button.focus({ preventScroll: true });
+        }
       }}
     >
       <h2 ref={heading} tabIndex={-1}>

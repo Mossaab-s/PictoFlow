@@ -34,6 +34,14 @@ import AIContext from "./ai-context";
 import LiteralExplanation from "./literal-explanation";
 import MessageResetDialog from "./message-reset-dialog";
 import MessageTouchEditor, { type TouchRemoval } from "./message-touch-editor";
+import MessageCopyDialog, {
+  type MessageCopyChoice,
+} from "./message-copy-dialog";
+import {
+  copyAttemptKey,
+  parseCopyAttempt,
+  type CopyAttempt,
+} from "@/lib/message-copy";
 import { useOnlineStatus } from "./use-online-status";
 import SelectionRhythm from "./selection-rhythm";
 import {
@@ -43,6 +51,8 @@ import {
 } from "@/lib/selection-rhythm";
 import { useMemorySuggestionMode } from "./use-memory-suggestion-mode";
 import type { MemoryProposalBody } from "@/lib/memory-suggestions";
+
+class MissingMessageCopy extends Error {}
 
 export default function CommunicationScreen({
   profileId,
@@ -101,10 +111,33 @@ export default function CommunicationScreen({
   } | null>(null);
   const current = useRef<Sequence | null>(null);
   const gate = useRef(false);
+  const [copyChoice, setCopyChoice] = useState<MessageCopyChoice | null>(null);
+  const copyButton = useRef<HTMLButtonElement>(null);
+  const copyDialog = useRef<HTMLDialogElement>(null);
+  const copyRequest = useRef<CopyAttempt | null>(null);
+  const copySending = useRef(false);
+  const copyReturn = useRef<{ origin: Element | null } | null>(null);
   const alive = useRef(true);
   const speech = useLocalSpeech(profileId);
   const base = `profiles/${profileId}`;
   const storageKey = `pictoflow:sequence:${profileId}`;
+  const copyKey = copyAttemptKey(profileId);
+  async function readCopy(attempt: CopyAttempt, signal?: AbortSignal) {
+    const result = await api<{ sequence: Sequence | null }>(
+      `${base}/sequences/${attempt.sourceId}/copies/${attempt.requestId}`,
+      { signal },
+    );
+    if (!result.sequence) throw new MissingMessageCopy();
+    return result.sequence;
+  }
+  function clearCopyAttempt() {
+    copyRequest.current = null;
+    try {
+      sessionStorage.removeItem(copyKey);
+    } catch {
+      /* Optional browser storage. */
+    }
+  }
   function remember(value: Sequence | null, result: Decision | null) {
     current.current = value;
     setSequence(value);
@@ -121,21 +154,87 @@ export default function CommunicationScreen({
     }
   }
   useEffect(() => {
+    if (busy || copyChoice || !copyReturn.current) return;
+    const origin = copyReturn.current.origin;
+    copyReturn.current = null;
+    requestAnimationFrame(() => {
+      if (
+        !alive.current ||
+        (document.activeElement !== origin &&
+          document.activeElement !== document.body)
+      )
+        return;
+      if (copyButton.current && !copyButton.current.disabled)
+        copyButton.current.focus();
+      else messageHeading.current?.focus();
+    });
+  }, [busy, copyChoice]);
+  useEffect(() => {
     alive.current = true;
     const controller = new AbortController();
     async function restore() {
       try {
         let cached = null;
+        let recoveredCopy: Sequence | null = null;
         try {
           cached = parseDraft(sessionStorage.getItem(storageKey));
+          copyRequest.current = parseCopyAttempt(
+            sessionStorage.getItem(copyKey),
+          );
         } catch {
           /* Restricted browser storage. */
         }
+        const attempt = copyRequest.current;
+        if (attempt) {
+          try {
+            recoveredCopy = await readCopy(attempt, controller.signal);
+            if (!controller.signal.aborted) {
+              if (
+                recoveredCopy.profile_id !== profileId ||
+                recoveredCopy.id !== attempt.requestId
+              )
+                throw new Error(
+                  "Cette copie ne correspond pas à votre profil.",
+                );
+              if (recoveredCopy.status === "cancelled") {
+                recoveredCopy = null;
+                clearCopyAttempt();
+                setNotice(
+                  "La copie a été fermée. Votre message d’origine reste disponible.",
+                );
+              } else {
+                cached = { sequence_id: recoveredCopy.id };
+                try {
+                  sessionStorage.setItem(storageKey, JSON.stringify(cached));
+                } catch {
+                  /* Storage is optional. */
+                }
+                clearCopyAttempt();
+                setNotice(
+                  "Votre copie a été retrouvée. Vérifiez ses pictos avant de continuer.",
+                );
+              }
+            }
+          } catch (error) {
+            if (controller.signal.aborted) return;
+            if (error instanceof MissingMessageCopy)
+              setNotice(
+                "La copie n’a pas été retrouvée. Vous pouvez réessayer Modifier une copie sur le message d’origine.",
+              );
+            else if (error instanceof APIError && error.status === 409) {
+              clearCopyAttempt();
+              setNotice(
+                "Cette demande ne correspond plus à une copie. Vérifiez le message d’origine.",
+              );
+            } else throw error;
+          }
+        }
         if (!cached) return;
-        const restored = await api<Sequence>(
-          `${base}/sequences/${cached.sequence_id}`,
-          { signal: controller.signal },
-        );
+        const restored =
+          recoveredCopy ??
+          (await api<Sequence>(`${base}/sequences/${cached.sequence_id}`, {
+            signal: controller.signal,
+          }));
         if (restored.status === "cancelled") {
           try {
             sessionStorage.removeItem(storageKey);
@@ -195,7 +294,7 @@ export default function CommunicationScreen({
       alive.current = false;
       controller.abort();
     };
-  }, [base, profileId, storageKey, data.setError]);
+  }, [base, profileId, storageKey, copyKey, data.setError]);
 
   useEffect(() => {
     setObserveRhythm(false);
@@ -398,6 +497,111 @@ export default function CommunicationScreen({
     );
     if (alive.current) remember(current.current, result);
   }
+  function closeCopy() {
+    copyDialog.current?.close();
+    copyReturn.current = { origin: document.activeElement };
+    setCopyChoice(null);
+  }
+  function cancelCopy() {
+    if (!copySending.current) closeCopy();
+  }
+  async function confirmCopy() {
+    if (
+      !copyChoice ||
+      copySending.current ||
+      gate.current ||
+      !online ||
+      restoreFailed
+    )
+      return;
+    copySending.current = true;
+    const selected = copyChoice;
+    try {
+      await perform(async () => {
+        if (
+          current.current?.id !== selected.source.id ||
+          current.current.status !== "completed"
+        )
+          return;
+        copyRequest.current = selected.attempt;
+        try {
+          sessionStorage.setItem(copyKey, JSON.stringify(selected.attempt));
+        } catch {
+          /* Optional browser storage. */
+        }
+        let copied: Sequence;
+        let recovered = false;
+        try {
+          copied = await api<Sequence>(
+            `${base}/sequences/${selected.source.id}/copy`,
+            {
+              method: "POST",
+              body: JSON.stringify({
+                request_id: selected.attempt.requestId,
+                expected_block_ids: selected.source.block_ids,
+                confirm: true,
+              }),
+            },
+          );
+        } catch (error) {
+          if (
+            error instanceof APIError &&
+            error.status >= 400 &&
+            error.status < 500
+          ) {
+            clearCopyAttempt();
+            throw new Error(
+              "La copie ne peut pas être créée. Vérifiez les touches du message d’origine et actualisez le clavier.",
+            );
+          }
+          try {
+            copied = await readCopy(selected.attempt);
+            recovered = true;
+          } catch (failure) {
+            if (failure instanceof MissingMessageCopy)
+              throw new Error(
+                "La copie n’a pas été retrouvée. Réessayez Modifier une copie : la même demande sera utilisée.",
+              );
+            if (alive.current) setRestoreFailed(true);
+            throw new Error(
+              "La copie ne peut pas être vérifiée. Actualisez la page avant de continuer.",
+            );
+          }
+        }
+        if (!alive.current) return;
+        if (
+          copied.profile_id !== profileId ||
+          copied.id !== selected.attempt.requestId
+        ) {
+          setRestoreFailed(true);
+          throw new Error(
+            "Cette copie ne correspond pas à votre profil. Actualisez la page.",
+          );
+        }
+        if (copied.status === "cancelled") {
+          clearCopyAttempt();
+          throw new Error(
+            "Cette copie a déjà été fermée. Votre message d’origine est conservé.",
+          );
+        }
+        speech.stop();
+        lastSelection.current = null;
+        remember(copied, null);
+        clearCopyAttempt();
+        setContext("");
+        setNotice(
+          copied.status === "completed"
+            ? "Cette copie a déjà été terminée ailleurs. Vérifiez le message retrouvé."
+            : recovered
+              ? "Votre copie a été retrouvée après la coupure. Vérifiez ses pictos avant de continuer."
+              : "Votre copie est prête. Vérifiez et modifiez ses pictos, puis terminez ce nouveau message pour choisir ce qu’il veut dire.",
+        );
+      }, false);
+    } finally {
+      copySending.current = false;
+      closeCopy();
+    }
+  }
   async function feedback(
     candidate: Interpretation,
     action: "confirm" | "correct" | "reject",
@@ -473,6 +677,7 @@ export default function CommunicationScreen({
         body: JSON.stringify({ action: "cancel" }),
       });
     if (alive.current) {
+      clearCopyAttempt();
       speech.stop();
       remember(null, null);
       setContext("");
@@ -482,6 +687,7 @@ export default function CommunicationScreen({
   async function replay() {
     const previous = current.current;
     if (!previous || !replayAvailable(profileId, previous, data.blocks)) return;
+    clearCopyAttempt();
     speech.stop();
     let active = await api<Sequence>(`${base}/sequences`, {
       method: "POST",
@@ -725,6 +931,34 @@ export default function CommunicationScreen({
             </button>
           </div>
           <div className="message-flow-actions">
+            {completed && sequence && (
+              <button
+                ref={copyButton}
+                className="secondary"
+                disabled={
+                  pending || !replayAvailable(profileId, sequence, data.blocks)
+                }
+                onClick={() => {
+                  if (
+                    pending ||
+                    !replayAvailable(profileId, sequence, data.blocks)
+                  )
+                    return;
+                  const attempt =
+                    copyRequest.current?.sourceId === sequence.id
+                      ? copyRequest.current
+                      : { sourceId: sequence.id, requestId: newIdentity() };
+                  copyRequest.current = attempt;
+                  setCopyChoice({
+                    source: { ...sequence, block_ids: [...sequence.block_ids] },
+                    words: [...chosen],
+                    attempt,
+                  });
+                }}
+              >
+                Modifier une copie
+              </button>
+            )}
             <a
               ref={suggestionsButton}
               className="button-link secondary"
@@ -767,6 +1001,24 @@ export default function CommunicationScreen({
               </button>
             )}
           </div>
+          {copyChoice && (
+            <MessageCopyDialog
+              choice={copyChoice}
+              dialogRef={copyDialog}
+              disabled={pending}
+              busy={busy}
+              cancel={cancelCopy}
+              confirm={() => void confirmCopy()}
+            />
+          )}
+          {completed &&
+            sequence &&
+            !replayAvailable(profileId, sequence, data.blocks) && (
+              <p className="helper">
+                Certaines touches ne sont plus disponibles. Préparez un nouveau
+                message avec votre clavier actuel.
+              </p>
+            )}
           <p className="helper">
             {!chosen.length
               ? "Choisissez vos touches, puis Parler pour les lire."

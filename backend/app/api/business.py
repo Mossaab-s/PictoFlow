@@ -29,6 +29,7 @@ from app.application.keyboard_groups import KeyboardGroupService
 from app.application.keyboard_organization import KeyboardChangePreview, KeyboardOrganization
 from app.application.memory_suggestions import MemorySuggestions, SuggestionPage
 from app.application.memory_vocabulary import MemoryReference, MemorySuggestionConflict
+from app.application.message_copy import MessageCopies, MessageCopyConflict
 from app.application.offline_communication import CommunicationSnapshot, OfflineCommunication
 from app.application.pcl_repository import FeedbackPage
 from app.application.phrases import PhraseConflict, PhraseService, ReusablePhrase
@@ -197,6 +198,22 @@ class SelectionBody(Body):
         elif self.target_index is not None:
             raise ValueError("Only moving accepts a destination index")
         return self
+
+
+class MessageCopyBody(Body):
+    request_id: UUID
+    expected_block_ids: Annotated[tuple[UUID, ...], Field(min_length=1, max_length=32)]
+    confirm: bool = Field(strict=True)
+
+    @model_validator(mode="after")
+    def explicit_copy(self):
+        if self.confirm is not True:
+            raise ValueError("Explicit copy confirmation required")
+        return self
+
+
+class MessageCopyLookup(BaseModel):
+    sequence: CommunicationSequence | None
 
 
 class InterpretationBody(Body):
@@ -627,6 +644,31 @@ def selection(request: Request, profile_id: UUID, sequence_id: UUID, body: Selec
         )
     except SequenceEditConflict:
         raise HTTPException(409, "Message changed; review the current draft") from None
+
+
+@router.post(
+    "/profiles/{profile_id}/sequences/{sequence_id}/copy", response_model=CommunicationSequence
+)
+def copy_message(request: Request, profile_id: UUID, sequence_id: UUID, body: MessageCopyBody):
+    try:
+        return MessageCopies(units(request)).create(
+            profile_id, sequence_id, body.request_id, body.expected_block_ids
+        )
+    except MessageCopyConflict:
+        raise HTTPException(
+            409, "This message cannot be copied; review the current source"
+        ) from None
+
+
+@router.get(
+    "/profiles/{profile_id}/sequences/{sequence_id}/copies/{request_id}",
+    response_model=MessageCopyLookup,
+)
+def copied_message(request: Request, profile_id: UUID, sequence_id: UUID, request_id: UUID):
+    try:
+        return {"sequence": MessageCopies(units(request)).read(profile_id, sequence_id, request_id)}
+    except MessageCopyConflict:
+        raise HTTPException(409, "This request belongs to another message") from None
 
 
 @router.get("/profiles/{profile_id}/sequences/{sequence_id}/rhythm", response_model=RhythmReport)
