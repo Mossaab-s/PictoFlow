@@ -38,6 +38,9 @@ export default function MessageTouchEditor({
   const dialog = useRef<HTMLDialogElement>(null);
   const moveDialog = useRef<HTMLDialogElement>(null);
   const sending = useRef(false);
+  const returnFocus = useRef<{ index: number; origin: Element | null } | null>(
+    null,
+  );
   const canEdit = sequence?.status === "in_progress" && words.length > 0;
   const active = editing && canEdit;
   const moving = active && operation === "move" && words.length > 1;
@@ -52,6 +55,17 @@ export default function MessageTouchEditor({
     if (choice && !dialog.current?.open) dialog.current?.showModal();
     if (!choice && dialog.current?.open) dialog.current.close();
   }, [choice]);
+  useEffect(() => {
+    if (busy || choice || moveChoice || !returnFocus.current) return;
+    const requested = returnFocus.current;
+    returnFocus.current = null;
+    focusOccurrence(requested.index, requested.origin);
+  }, [busy, choice, moveChoice]);
+
+  function closeAndReturn(modal: HTMLDialogElement | null, index: number) {
+    modal?.close();
+    returnFocus.current = { index, origin: document.activeElement };
+  }
 
   function focusOccurrence(index: number, origin = document.activeElement) {
     requestAnimationFrame(() => {
@@ -88,9 +102,8 @@ export default function MessageTouchEditor({
   function cancel() {
     if (sending.current) return;
     const index = choice?.index ?? 0;
-    dialog.current?.close();
+    closeAndReturn(dialog.current, index);
     setChoice(null);
-    focusOccurrence(index);
   }
   async function confirm() {
     if (!choice || disabled || sending.current) return;
@@ -101,17 +114,15 @@ export default function MessageTouchEditor({
     } finally {
       sending.current = false;
       // Closing does not retry an uncertain request. The parent has already reread the draft.
-      dialog.current?.close();
+      closeAndReturn(dialog.current, selected.index);
       setChoice(null);
-      focusOccurrence(selected.index);
     }
   }
   function cancelMove() {
     if (sending.current) return;
     const index = moveChoice?.index ?? 0;
-    moveDialog.current?.close();
+    closeAndReturn(moveDialog.current, index);
     setMoveChoice(null);
-    focusOccurrence(index);
   }
   async function confirmMove(targetIndex: number) {
     if (!moveChoice || disabled || sending.current) return;
@@ -120,9 +131,8 @@ export default function MessageTouchEditor({
       await move({ ...moveChoice, targetIndex });
     } finally {
       sending.current = false;
-      moveDialog.current?.close();
+      closeAndReturn(moveDialog.current, targetIndex);
       setMoveChoice(null);
-      focusOccurrence(targetIndex);
     }
   }
   return (

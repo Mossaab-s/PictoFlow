@@ -210,7 +210,7 @@ export default function CommunicationScreen({
     return () => document.removeEventListener("visibilitychange", reset);
   }, []);
 
-  async function perform(task: () => Promise<void>) {
+  async function perform(task: () => Promise<void>, restoreFocus = true) {
     if (gate.current) return;
     const origin =
       document.activeElement instanceof HTMLButtonElement
@@ -268,16 +268,17 @@ export default function CommunicationScreen({
       gate.current = false;
       if (alive.current) {
         setBusy(false);
-        requestAnimationFrame(() => {
-          if (
-            !alive.current ||
-            (document.activeElement !== document.body &&
-              document.activeElement !== origin)
-          )
-            return;
-          if (origin?.isConnected && !origin.disabled) origin.focus();
-          else messageHeading.current?.focus();
-        });
+        if (restoreFocus)
+          requestAnimationFrame(() => {
+            if (
+              !alive.current ||
+              (document.activeElement !== document.body &&
+                document.activeElement !== origin)
+            )
+              return;
+            if (origin?.isConnected && !origin.disabled) origin.focus();
+            else messageHeading.current?.focus();
+          });
       }
     }
   }
@@ -667,8 +668,8 @@ export default function CommunicationScreen({
             words={chosen}
             disabled={pending}
             busy={busy}
-            remove={(choice) => perform(() => editTouch(choice))}
-            move={(choice) => perform(() => editTouch(choice))}
+            remove={(choice) => perform(() => editTouch(choice), false)}
+            move={(choice) => perform(() => editTouch(choice), false)}
           />
           <div className="actions">
             <button
