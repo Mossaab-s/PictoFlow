@@ -161,9 +161,11 @@ export default function MessageReplaceDialog({
         <p role="status">
           {busy
             ? "Remplacement en cours…"
-            : changed
-              ? "Les autres touches garderont leur place."
-              : "Cette touche est déjà à cette place."}
+            : !chosen
+              ? "Cette touche n’est plus disponible."
+              : changed
+                ? "Les autres touches garderont leur place."
+                : "Cette touche est déjà à cette place."}
         </p>
         <div className="actions">
           <button type="button" disabled={busy} onClick={cancel}>

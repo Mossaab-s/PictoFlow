@@ -22,7 +22,11 @@ def personal_block(api, base, action="confirm"):
     if action:
         api.post(
             base + f"/blocks/{block['id']}/feedback",
-            json={"action": action, "actor_role": "user", "confirm_representation": True},
+            json={
+                "action": action,
+                "actor_role": "user",
+                "confirm_representation": action == "confirm",
+            },
         ).raise_for_status()
     return block["id"]
 
