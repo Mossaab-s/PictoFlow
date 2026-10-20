@@ -53,9 +53,14 @@ export default function MessageTouchEditor({
     if (!choice && dialog.current?.open) dialog.current.close();
   }, [choice]);
 
-  function focusOccurrence(index: number) {
+  function focusOccurrence(index: number, origin = document.activeElement) {
     requestAnimationFrame(() => {
       if (!root.current?.isConnected) return;
+      if (
+        document.activeElement !== origin &&
+        document.activeElement !== document.body
+      )
+        return;
       const buttons =
         tokens.current?.querySelectorAll<HTMLButtonElement>("button");
       const target = buttons?.[Math.min(index, buttons.length - 1)];
@@ -63,6 +68,21 @@ export default function MessageTouchEditor({
       else if (toggle.current && !toggle.current.disabled)
         toggle.current.focus();
       else tokens.current?.focus();
+    });
+  }
+  function focusToggle(origin = document.activeElement) {
+    requestAnimationFrame(() => {
+      if (
+        !root.current?.isConnected ||
+        !toggle.current ||
+        toggle.current.disabled
+      )
+        return;
+      if (
+        document.activeElement === origin ||
+        document.activeElement === document.body
+      )
+        toggle.current.focus();
     });
   }
   function cancel() {
@@ -121,7 +141,7 @@ export default function MessageTouchEditor({
         ) {
           event.preventDefault();
           setEditing(false);
-          requestAnimationFrame(() => toggle.current?.focus());
+          focusToggle();
         }
       }}
     >
@@ -225,7 +245,7 @@ export default function MessageTouchEditor({
             if (!active) {
               setOperation("remove");
               focusOccurrence(0);
-            } else requestAnimationFrame(() => toggle.current?.focus());
+            } else focusToggle();
           }}
         >
           {active ? "Finir la correction" : "Corriger une touche"}
