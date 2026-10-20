@@ -444,6 +444,19 @@ try {
   assert(
     await preview.evaluate((node) => node.scrollHeight > node.clientHeight),
   );
+  await expect
+    .poll(() =>
+      preview.evaluate((node) => {
+        const chosen = node
+          .querySelector('[aria-current="step"]')
+          .getBoundingClientRect();
+        const bounds = node.getBoundingClientRect();
+        return (
+          chosen.top >= bounds.top - 1 && chosen.bottom <= bounds.bottom + 1
+        );
+      }),
+    )
+    .toBe(true);
   await dialog.screenshot({
     path: ".local/message-order/long-preview-mobile.png",
   });

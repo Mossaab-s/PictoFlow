@@ -18,6 +18,8 @@ Preview: [Mother] [Water] [Book] [Water]
 The native selector reaches any destination; step buttons support keyboard and
 mouse without dragging. The numbered preview retains every drawing/photo and
 word and marks the moved occurrence. Long previews scroll inside a bounded area.
+The preview follows the chosen occurrence within its own scroll area, including
+the last place of a 32-touch message, without moving focus or the outer page.
 No change reaches the message/server until **Confirmer cet ordre**. An unchanged
 result, including swapping indistinguishable repeated IDs, disables confirmation
 and says **L’ordre reste inchangé.** Moving preserves every occurrence and the

@@ -22,6 +22,7 @@ export default function MessageMoveDialog({
   dialogRef: RefObject<HTMLDialogElement | null>;
 }) {
   const keep = useRef<HTMLButtonElement>(null);
+  const orderPreview = useRef<HTMLOListElement>(null);
   const before = useRef<HTMLButtonElement>(null);
   const after = useRef<HTMLButtonElement>(null);
   const placeId = useId();
@@ -37,6 +38,17 @@ export default function MessageMoveDialog({
     keep.current?.focus();
     return () => dialog?.close();
   }, [dialogRef]);
+  useEffect(() => {
+    const list = orderPreview.current;
+    const chosen = list?.querySelector<HTMLElement>('[aria-current="step"]');
+    if (!list || !chosen) return;
+    const viewport = list.getBoundingClientRect();
+    const item = chosen.getBoundingClientRect();
+    // Follow the chosen occurrence inside the preview without scrolling the page or moving focus.
+    if (item.bottom > viewport.bottom)
+      list.scrollTop += item.bottom - viewport.bottom;
+    else if (item.top < viewport.top) list.scrollTop += item.top - viewport.top;
+  }, [destination]);
   function step(target: number, origin: HTMLButtonElement) {
     setDestination(target);
     if (target !== 0 && target !== choice.words.length - 1) return;
@@ -102,6 +114,7 @@ export default function MessageMoveDialog({
       </div>
       <h3>Ordre proposé</h3>
       <ol
+        ref={orderPreview}
         className="message-order-preview"
         aria-label="Ordre proposé"
         tabIndex={0}
