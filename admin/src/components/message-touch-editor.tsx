@@ -1,8 +1,17 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import type { Representation, Sequence } from "@/lib/keyboard";
+import type {
+  Representation,
+  Sequence,
+  Tile,
+  KeyboardGroup,
+} from "@/lib/keyboard";
+import type { DisplaySize } from "@/lib/display";
 import { TouchContent } from "./pictogram";
 import MessageMoveDialog, { type TouchMove } from "./message-move-dialog";
+import MessageReplaceDialog, {
+  type TouchReplacement,
+} from "./message-replace-dialog";
 
 export type Word = { label: string; representation?: Representation };
 export type TouchRemoval = {
@@ -18,6 +27,11 @@ export default function MessageTouchEditor({
   busy,
   remove,
   move,
+  replace,
+  profileId,
+  tiles,
+  groups,
+  displaySize,
 }: {
   sequence: Sequence | null;
   words: Word[];
@@ -25,9 +39,17 @@ export default function MessageTouchEditor({
   busy: boolean;
   remove: (choice: TouchRemoval) => Promise<void>;
   move: (choice: TouchRemoval & { targetIndex: number }) => Promise<void>;
+  replace: (choice: TouchRemoval & { blockId: string }) => Promise<void>;
+  profileId: string;
+  tiles: Tile[];
+  groups: KeyboardGroup[];
+  displaySize: DisplaySize;
 }) {
   const [editing, setEditing] = useState(false);
-  const [operation, setOperation] = useState<"remove" | "move">("remove");
+  const [operation, setOperation] = useState<"remove" | "move" | "replace">(
+    "remove",
+  );
+  const [replacement, setReplacement] = useState<TouchReplacement | null>(null);
   const [moveChoice, setMoveChoice] = useState<TouchMove | null>(null);
   const [choice, setChoice] = useState<(TouchRemoval & { word: Word }) | null>(
     null,
@@ -37,6 +59,7 @@ export default function MessageTouchEditor({
   const tokens = useRef<HTMLDivElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const moveDialog = useRef<HTMLDialogElement>(null);
+  const replaceDialog = useRef<HTMLDialogElement>(null);
   const sending = useRef(false);
   const returnFocus = useRef<{ index: number; origin: Element | null } | null>(
     null,
@@ -44,23 +67,26 @@ export default function MessageTouchEditor({
   const canEdit = sequence?.status === "in_progress" && words.length > 0;
   const active = editing && canEdit;
   const moving = active && operation === "move" && words.length > 1;
+  const replacing = active && operation === "replace";
+  const verb = replacing ? "Remplacer" : moving ? "Déplacer" : "Retirer";
 
   useEffect(() => {
     if (!canEdit) setEditing(false);
   }, [canEdit]);
   useEffect(() => {
-    if (words.length < 2) setOperation("remove");
-  }, [words.length]);
+    if (words.length < 2 && operation === "move") setOperation("remove");
+  }, [words.length, operation]);
   useEffect(() => {
     if (choice && !dialog.current?.open) dialog.current?.showModal();
     if (!choice && dialog.current?.open) dialog.current.close();
   }, [choice]);
   useEffect(() => {
-    if (busy || choice || moveChoice || !returnFocus.current) return;
+    if (busy || choice || moveChoice || replacement || !returnFocus.current)
+      return;
     const requested = returnFocus.current;
     returnFocus.current = null;
     focusOccurrence(requested.index, requested.origin);
-  }, [busy, choice, moveChoice]);
+  }, [busy, choice, moveChoice, replacement]);
 
   function closeAndReturn(modal: HTMLDialogElement | null, index: number) {
     modal?.close();
@@ -135,6 +161,23 @@ export default function MessageTouchEditor({
       setMoveChoice(null);
     }
   }
+  function cancelReplacement() {
+    if (sending.current) return;
+    closeAndReturn(replaceDialog.current, replacement?.index ?? 0);
+    setReplacement(null);
+  }
+  async function confirmReplacement(tile: Tile) {
+    if (!replacement || disabled || sending.current) return;
+    sending.current = true;
+    const selected = replacement;
+    try {
+      await replace({ ...selected, blockId: tile.block_id });
+    } finally {
+      sending.current = false;
+      closeAndReturn(replaceDialog.current, selected.index);
+      setReplacement(null);
+    }
+  }
   return (
     <div
       ref={root}
@@ -147,6 +190,7 @@ export default function MessageTouchEditor({
           active &&
           !choice &&
           !moveChoice &&
+          !replacement &&
           !busy
         ) {
           event.preventDefault();
@@ -164,7 +208,7 @@ export default function MessageTouchEditor({
           <button
             type="button"
             className="secondary"
-            aria-pressed={!moving}
+            aria-pressed={!moving && !replacing}
             disabled={disabled}
             onClick={() => {
               setOperation("remove");
@@ -185,12 +229,24 @@ export default function MessageTouchEditor({
           >
             Déplacer une touche
           </button>
+          <button
+            type="button"
+            className="secondary"
+            aria-pressed={replacing}
+            disabled={disabled}
+            onClick={() => {
+              setOperation("replace");
+              focusOccurrence(0);
+            }}
+          >
+            Remplacer une touche
+          </button>
         </div>
       )}
       {active && (
         <p className="helper" id="message-edit-help">
-          Choisissez la touche à {moving ? "déplacer" : "retirer"}, puis
-          vérifiez votre choix.
+          Choisissez la touche à {verb.toLowerCase()}, puis vérifiez votre
+          choix.
         </p>
       )}
       <div
@@ -211,7 +267,7 @@ export default function MessageTouchEditor({
                 type="button"
                 className="message-touch secondary"
                 disabled={disabled}
-                aria-label={`${moving ? "Déplacer" : "Retirer"} « ${word.label} », touche ${index + 1} sur ${words.length}`}
+                aria-label={`${verb} « ${word.label} », touche ${index + 1} sur ${words.length}`}
                 onClick={() => {
                   if (!sequence) return;
                   const selected = {
@@ -220,7 +276,9 @@ export default function MessageTouchEditor({
                     index,
                     word,
                   };
-                  if (moving) setMoveChoice({ ...selected, words: [...words] });
+                  if (replacing) setReplacement(selected);
+                  else if (moving)
+                    setMoveChoice({ ...selected, words: [...words] });
                   else setChoice(selected);
                 }}
               >
@@ -313,6 +371,20 @@ export default function MessageTouchEditor({
           busy={busy}
           cancel={cancelMove}
           confirm={(index) => void confirmMove(index)}
+        />
+      )}
+      {replacement && (
+        <MessageReplaceDialog
+          choice={replacement}
+          dialogRef={replaceDialog}
+          profileId={profileId}
+          tiles={tiles}
+          groups={groups}
+          displaySize={displaySize}
+          disabled={disabled}
+          busy={busy}
+          cancel={cancelReplacement}
+          confirm={(tile) => void confirmReplacement(tile)}
         />
       )}
     </div>

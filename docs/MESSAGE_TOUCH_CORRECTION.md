@@ -1,5 +1,8 @@
 # Correct one touch in a draft message
 
+Correction also supports [moving](MESSAGE_TOUCH_ORDER.md) and
+[replacing a chosen touch](MESSAGE_TOUCH_REPLACEMENT.md) after explicit review.
+
 An in-progress, nonempty message offers **Corriger une touche**. This optional
 mode turns the existing message pictures and words into buttons with explicit
 occurrence numbers. The person chooses one occurrence, sees its picture/photo,

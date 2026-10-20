@@ -172,6 +172,10 @@ jobs:
         if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
         working-directory: admin
         run: node tests/e2e/message-order.mjs
+      - name: Replace a chosen touch after picture and word review
+        if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/message-replacement.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -191,6 +195,7 @@ jobs:
             admin/.local/communication-search/*.png
             admin/.local/message-correction/*.png
             admin/.local/message-order/*.png
+            admin/.local/message-replacement/*.png
             admin/.local/profile-capabilities/*.png
             admin/.local/three-spaces/*.png
             admin/.local/support-review/*.png

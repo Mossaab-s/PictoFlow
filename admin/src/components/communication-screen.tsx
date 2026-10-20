@@ -335,7 +335,9 @@ export default function CommunicationScreen({
         );
     }
   }
-  async function editTouch(choice: TouchRemoval & { targetIndex?: number }) {
+  async function editTouch(
+    choice: TouchRemoval & { targetIndex?: number; blockId?: string },
+  ) {
     const active = current.current;
     if (!active || active.id !== choice.sequenceId) return;
     lastSelection.current = null;
@@ -344,9 +346,15 @@ export default function CommunicationScreen({
       result = await api<Sequence>(`${base}/sequences/${active.id}/selection`, {
         method: "POST",
         body: JSON.stringify({
-          action: choice.targetIndex === undefined ? "remove" : "move",
+          action:
+            choice.blockId !== undefined
+              ? "replace"
+              : choice.targetIndex === undefined
+                ? "remove"
+                : "move",
           index: choice.index,
           expected_block_ids: choice.blockIds,
+          ...(choice.blockId === undefined ? {} : { block_id: choice.blockId }),
           ...(choice.targetIndex === undefined
             ? {}
             : { target_index: choice.targetIndex }),
@@ -355,18 +363,22 @@ export default function CommunicationScreen({
     } catch (error) {
       if (error instanceof APIError && error.status === 409)
         throw new Error(
-          choice.targetIndex === undefined
-            ? "Le message a changé ailleurs. Votre retrait n’a pas été appliqué. Vérifiez le message rechargé avant de choisir à nouveau."
-            : "Le message a changé ailleurs. Votre déplacement n’a pas été appliqué. Vérifiez le message rechargé avant de choisir à nouveau.",
+          choice.blockId !== undefined
+            ? "Le message a changé ailleurs. Votre remplacement n’a pas été appliqué. Vérifiez le message rechargé avant de choisir à nouveau."
+            : choice.targetIndex === undefined
+              ? "Le message a changé ailleurs. Votre retrait n’a pas été appliqué. Vérifiez le message rechargé avant de choisir à nouveau."
+              : "Le message a changé ailleurs. Votre déplacement n’a pas été appliqué. Vérifiez le message rechargé avant de choisir à nouveau.",
         );
       throw error;
     }
     if (alive.current) {
       remember(result, null);
       setNotice(
-        choice.targetIndex === undefined
-          ? "La touche choisie a été retirée. Les autres gardent leur ordre."
-          : "La touche choisie a été déplacée. Votre nouvel ordre est enregistré.",
+        choice.blockId !== undefined
+          ? "La touche choisie a été remplacée. Les autres gardent leur place."
+          : choice.targetIndex === undefined
+            ? "La touche choisie a été retirée. Les autres gardent leur ordre."
+            : "La touche choisie a été déplacée. Votre nouvel ordre est enregistré.",
       );
     }
   }
@@ -665,11 +677,16 @@ export default function CommunicationScreen({
           <MessageTouchEditor
             key={sequence?.id ?? "empty"}
             sequence={sequence}
+            profileId={profileId}
+            tiles={tiles}
+            groups={data.groups}
+            displaySize={display.size}
             words={chosen}
             disabled={pending}
             busy={busy}
             remove={(choice) => perform(() => editTouch(choice), false)}
             move={(choice) => perform(() => editTouch(choice), false)}
+            replace={(choice) => perform(() => editTouch(choice), false)}
           />
           <div className="actions">
             <button
