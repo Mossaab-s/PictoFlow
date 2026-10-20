@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { findCommunicationTouches } from "../src/lib/communication-search.ts";
+import {
+  availableCommunicationTouches,
+  findCommunicationTouches,
+} from "../src/lib/communication-search.ts";
 
 const profile = "person-a";
 const groups = [
@@ -38,6 +41,50 @@ const mother = tile("mother", "Maman", null, { zone: "stable", locked: true });
 const tiles = [water, pool, heart, mother];
 const find = (query, source = tiles) =>
   findCommunicationTouches(profile, source, groups, query);
+
+test("picture browsing exposes all available personal touches without merging equal words", () => {
+  const available = availableCommunicationTouches(
+    profile,
+    [...tiles, water],
+    groups,
+  );
+  assert.deepEqual(
+    available.map((t) => t.block_id),
+    ["water", "pool", "heart", "mother"],
+  );
+  assert.deepEqual(find(""), []); // Opening optional text lookup still exposes no results.
+  assert.deepEqual(
+    tiles.map((t) => t.block_id),
+    ["water", "pool", "heart", "mother"],
+  );
+});
+
+test("picture browsing shares lookup availability and personal-image isolation", () => {
+  const foreign = {
+    ...water,
+    representation: {
+      id: "image-water",
+      profile_id: "person-b",
+      concept_id: "concept-water",
+      type: "pictogram",
+      status: "validated",
+    },
+  };
+  const source = [
+    { ...water, profile_id: "person-b" },
+    { ...water, group_id: "old" },
+    { ...water, block: { ...water.block, status: "proposed" } },
+    foreign,
+    pool,
+  ];
+  const available = availableCommunicationTouches(profile, source, groups);
+  assert.deepEqual(
+    available.map((t) => t.block_id),
+    ["water", "pool"],
+  );
+  assert.equal(available[0].representation, undefined);
+  assert.deepEqual(available, find("eau", source));
+});
 
 test("lookup matches displayed personal words across pages, ignoring case, accents and œ", () => {
   assert.deepEqual(

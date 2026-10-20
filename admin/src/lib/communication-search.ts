@@ -19,6 +19,25 @@ export function findCommunicationTouches(
       .replaceAll("œ", "oe");
   const terms = normalize(query).trim().split(/\s+/).filter(Boolean);
   if (!terms.length) return [];
+  return scopedTouches(profileId, tiles, groups, (tile) =>
+    terms.every((term) => normalize(tile.block.label).includes(term)),
+  );
+}
+
+export function availableCommunicationTouches(
+  profileId: string,
+  tiles: Tile[],
+  groups: KeyboardGroup[],
+): Tile[] {
+  return scopedTouches(profileId, tiles, groups, () => true);
+}
+
+function scopedTouches(
+  profileId: string,
+  tiles: Tile[],
+  groups: KeyboardGroup[],
+  matches: (tile: Tile) => boolean,
+): Tile[] {
   const pages = new Set(
     groups
       .filter((g) => g.profile_id === profileId && g.status !== "archived")
@@ -39,12 +58,7 @@ export function findCommunicationTouches(
         (tile.zone === "stable"
           ? group === null
           : group === null || pages.has(group));
-      if (
-        !available ||
-        seen.has(tile.block_id) ||
-        !terms.every((term) => normalize(tile.block.label).includes(term))
-      )
-        return false;
+      if (!available || seen.has(tile.block_id) || !matches(tile)) return false;
       seen.add(tile.block_id);
       return true;
     })

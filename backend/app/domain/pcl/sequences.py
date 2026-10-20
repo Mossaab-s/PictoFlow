@@ -24,6 +24,16 @@ def edit_sequence(
         return replace(sequence, block_ids=(*sequence.block_ids, block_id))
     if action == "undo":
         return replace(sequence, block_ids=sequence.block_ids[:-1])
+    if action == "replace":
+        identifier(block_id, "block_id")
+        if type(index) is not int or not 0 <= index < len(sequence.block_ids):
+            raise DomainInvariantError("Replacement requires an existing selection index")
+        if sequence.block_ids[index] == block_id:
+            raise DomainInvariantError("Replacement must choose a different block")
+        return replace(
+            sequence,
+            block_ids=sequence.block_ids[:index] + (block_id,) + sequence.block_ids[index + 1 :],
+        )
     if action == "remove":
         if type(index) is not int or not 0 <= index < len(sequence.block_ids):
             raise DomainInvariantError("Removal requires an existing selection index")

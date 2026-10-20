@@ -1,6 +1,7 @@
 # Move an occurrence in a draft message
 
-**Corriger une touche** offers two operations. **Retirer une touche** remains the
+**Corriger une touche** includes removal, ordering and
+[reviewed replacement](MESSAGE_TOUCH_REPLACEMENT.md). **Retirer une touche** remains the
 default; **Déplacer une touche** becomes available with at least two selections.
 The selected occurrence is identified by its picture/photo, word and ordinal.
 
