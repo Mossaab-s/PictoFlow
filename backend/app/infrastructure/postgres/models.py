@@ -87,6 +87,22 @@ class AccountRow(Timestamps, Base):
     )
 
 
+class ProviderConfigurationRow(Base):
+    __tablename__ = "ai_provider_configuration"
+    id: Mapped[int] = mapped_column(sa.SmallInteger, primary_key=True)
+    version: Mapped[int] = mapped_column()
+    configuration: Mapped[dict] = mapped_column(JSONB)
+    api_key: Mapped[str | None] = mapped_column(sa.Text)
+    updated_by: Mapped[UUID] = mapped_column(sa.ForeignKey("auth_account.id", ondelete="RESTRICT"))
+    updated_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
+    __table_args__ = (
+        sa.CheckConstraint("id = 1", name="singleton"),
+        sa.CheckConstraint("version >= 1", name="positive_version"),
+    )
+
+
 class AuthSessionRow(Base):
     __tablename__ = "auth_session"
     token_hash: Mapped[str] = mapped_column(sa.String(64), primary_key=True)

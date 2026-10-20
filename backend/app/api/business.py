@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_vali
 from sqlalchemy import select
 
 from app.ai.contracts import ProviderHealth
+from app.api.provider_configuration import active_provider
 from app.application.ai_context import AIContext, context_for
 from app.application.ai_quality import QualitySummary
 from app.application.audit import AuditService
@@ -694,19 +695,20 @@ def selection_rhythm(request: Request, profile_id: UUID, sequence_id: UUID):
 async def interpret(
     request: Request, profile_id: UUID, sequence_id: UUID, body: InterpretationBody
 ):
-    service = InterpretationService(
-        units(request),
-        communication(request),
-        request.app.state.ai_provider,
-        telemetry=request.app.state.telemetry,
-        memory_limit=request.app.state.settings.ai_memory_examples,
-    )
-    try:
-        result = await service.interpret(
-            profile_id, sequence_id, declared_context=body.declared_context
+    async with active_provider(request) as provider:
+        service = InterpretationService(
+            units(request),
+            communication(request),
+            provider,
+            telemetry=request.app.state.telemetry,
+            memory_limit=request.app.state.settings.ai_memory_examples,
         )
-    except MemorySuggestionConflict as error:
-        raise HTTPException(409, str(error)) from None
+        try:
+            result = await service.interpret(
+                profile_id, sequence_id, declared_context=body.declared_context
+            )
+        except MemorySuggestionConflict as error:
+            raise HTTPException(409, str(error)) from None
     request.app.state.telemetry.signal("interpretation.result", result_state=result.state.value)
     return result
 
@@ -995,7 +997,8 @@ def audit(
 
 @router.get("/providers", response_model=ProviderHealth)
 async def providers(request: Request):
-    return await request.app.state.ai_provider.health()
+    async with active_provider(request) as provider:
+        return await provider.health()
 
 
 @router.get("/readiness")
