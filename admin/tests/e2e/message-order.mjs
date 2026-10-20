@@ -268,6 +268,9 @@ try {
   await expect(
     dialog.getByRole("button", { name: "← Une place avant", exact: true }),
   ).toBeDisabled();
+  await expect(
+    dialog.getByRole("button", { name: "Une place après →", exact: true }),
+  ).toBeFocused();
   await dialog
     .getByRole("button", { name: "Une place après →", exact: true })
     .click();

@@ -20,6 +20,8 @@ export default function MessageMoveDialog({
   confirm: (destination: number) => void;
 }) {
   const modal = useRef<HTMLDialogElement>(null);
+  const before = useRef<HTMLButtonElement>(null);
+  const after = useRef<HTMLButtonElement>(null);
   const placeId = useId();
   const titleId = useId();
   const helpId = useId();
@@ -32,6 +34,19 @@ export default function MessageMoveDialog({
     dialog?.showModal();
     return () => dialog?.close();
   }, []);
+  function step(target: number, origin: HTMLButtonElement) {
+    setDestination(target);
+    if (target !== 0 && target !== choice.words.length - 1) return;
+    requestAnimationFrame(() => {
+      if (
+        document.activeElement !== origin &&
+        document.activeElement !== document.body
+      )
+        return;
+      const next = target === 0 ? after.current : before.current;
+      if (next?.isConnected && !next.disabled) next.focus();
+    });
+  }
   return (
     <dialog
       ref={modal}
@@ -64,18 +79,20 @@ export default function MessageMoveDialog({
       </select>
       <div className="message-move-steps">
         <button
+          ref={before}
           type="button"
           className="secondary"
           disabled={disabled || destination <= 0}
-          onClick={() => setDestination(destination - 1)}
+          onClick={(event) => step(destination - 1, event.currentTarget)}
         >
           ← Une place avant
         </button>
         <button
+          ref={after}
           type="button"
           className="secondary"
           disabled={disabled || destination >= choice.words.length - 1}
-          onClick={() => setDestination(destination + 1)}
+          onClick={(event) => step(destination + 1, event.currentTarget)}
         >
           Une place après →
         </button>
@@ -98,7 +115,7 @@ export default function MessageMoveDialog({
             />
             <small>
               Place {index + 1}
-              {index === destination ? " · déplacée" : ""}
+              {index === destination ? " · choisie" : ""}
             </small>
           </li>
         ))}
