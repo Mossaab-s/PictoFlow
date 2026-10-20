@@ -155,7 +155,14 @@ class CommunicationService:
             item.profile_id != profile_id or item.sequence_id != sequence_id for item in candidates
         ):
             raise DomainInvariantError("Proposals must belong to this profile and sequence")
-        decision = self.policy.decide(candidates)
+        # Grounding is computed by the application, never trusted from a model score.
+        # Apply priority before the three-choice limit, keeping the original scores.
+        preferred_ids = frozenset(
+            item.id
+            for item in candidates
+            if (proposal_details or {}).get(item.id, {}).get("personal_hypothesis")
+        )
+        decision = self.policy.decide(candidates, preferred_ids=preferred_ids)
         with self.units() as store:
             sequence = store.get(profile_id, CommunicationSequence, sequence_id)
             if sequence.status != SequenceStatus.COMPLETED:

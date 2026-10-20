@@ -67,6 +67,59 @@ def test_high_confidence_does_not_hide_other_eligible_hypotheses(best_score):
     assert ConfidencePolicy().decide(items).candidates == items[:3]
 
 
+def test_preferred_hypothesis_survives_the_limit_without_changing_scores_or_validation():
+    profile, sequence = uuid4(), uuid4()
+    items = tuple(
+        Interpretation(
+            profile_id=profile, sequence_id=sequence, text=str(i), confidence=score, source="fake"
+        )
+        for i, score in enumerate((0.99, 0.95, 0.9, 0.65))
+    )
+    decision = ConfidencePolicy().decide(items, preferred_ids=frozenset({items[-1].id}))
+    assert decision.candidates == (items[-1], items[0], items[1])
+    assert decision.state == HandlingState.CONFIRMATION_REQUIRED
+    assert [item.confidence for item in decision.candidates] == [0.65, 0.99, 0.95]
+    assert all(item.validated_text is None for item in decision.candidates)
+
+
+@pytest.mark.parametrize("score", [0.0, 0.3999, 0.4, 0.6499])
+def test_priority_preserves_refusal_and_confirmation_thresholds(score):
+    generic = Interpretation(
+        profile_id=uuid4(), sequence_id=uuid4(), text="Generic", confidence=0.99, source="fake"
+    )
+    personal = replace(generic, id=uuid4(), text="Personal", confidence=score)
+    decision = ConfidencePolicy().decide(
+        (generic, personal), preferred_ids=frozenset({personal.id})
+    )
+    if score < 0.4:
+        assert decision.candidates == (generic,)
+        assert decision.state == HandlingState.PROPOSAL
+        assert (
+            ConfidencePolicy().decide((personal,), preferred_ids=frozenset({personal.id})).state
+            == HandlingState.NOT_UNDERSTOOD
+        )
+    else:
+        assert decision.candidates == (personal, generic)
+        assert decision.state == HandlingState.MULTIPLE_HYPOTHESES
+
+
+def test_priority_preserves_confidence_order_within_each_group_and_ignores_missing_ids():
+    profile, sequence = uuid4(), uuid4()
+    items = tuple(
+        Interpretation(
+            profile_id=profile, sequence_id=sequence, text=str(i), confidence=score, source="fake"
+        )
+        for i, score in enumerate((0.9, 0.6, 0.65))
+    )
+    decision = ConfidencePolicy().decide(
+        items, preferred_ids=frozenset({items[1].id, items[2].id, uuid4()})
+    )
+    assert decision.candidates == (items[2], items[1], items[0])
+    assert ConfidencePolicy().decide(items, preferred_ids=frozenset({uuid4()})) == (
+        ConfidencePolicy().decide(items)
+    )
+
+
 def test_order_repetition_undo_clear_completion_and_terminal_state():
     sequence = CommunicationSequence(profile_id=uuid4(), session_id=uuid4())
     a, b = uuid4(), uuid4()
