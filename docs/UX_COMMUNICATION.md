@@ -102,6 +102,8 @@ press and release and verifies stable button position, a real click and the
 injected unavailable response. Keyboard activation retains its usual behavior.
 Primary mouse press also suppresses the browser's subsequent native focus step;
 focus is set once without scrolling, while mouseup/click activation remains native.
+Deferred touch-lookup opening and closing focus also respect a newer focus target.
+The insertion browser journey verifies this before selecting a result with Enter.
 
 The header has a direct usual-phrases entry; opening it does not replace the
 composition or accept a meaning. Empty personal memory offers an explicit path

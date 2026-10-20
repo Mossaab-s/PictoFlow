@@ -287,6 +287,42 @@ try {
   const input = picker.getByLabel("Chercher le mot de ma touche", {
     exact: true,
   });
+  // Delayed opening/closing focus must not reclaim a newer deliberate focus target.
+  await page.evaluate(() => {
+    const modal = document.querySelector(".message-insert-dialog");
+    [...modal.querySelectorAll("button")]
+      .find((b) => b.textContent.trim() === "Fermer la recherche")
+      .click();
+    [...modal.querySelectorAll("button")]
+      .find((b) => b.textContent.trim() === "Garder le message actuel")
+      .focus();
+  });
+  await page.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
+  await expect(keep).toBeFocused();
+  await expect(input).toHaveCount(0);
+  await page.evaluate(() => {
+    const modal = document.querySelector(".message-insert-dialog");
+    const opener = [...modal.querySelectorAll("button")].find(
+      (b) => b.textContent.trim() === "Retrouver une touche",
+    );
+    opener.focus();
+    opener.click();
+    [...modal.querySelectorAll("button")]
+      .find((b) => b.textContent.trim() === "Garder le message actuel")
+      .focus();
+  });
+  await page.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
+  await expect(keep).toBeFocused();
   await input.fill("Maman");
   const result = picker.locator(".touch-search-results").getByRole("button", {
     name: "Choisir « Maman » pour l’insertion",

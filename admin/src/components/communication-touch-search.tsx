@@ -31,9 +31,17 @@ export default function CommunicationTouchSearch(props: SearchProps) {
     query,
   );
   function close() {
+    const origin = document.activeElement;
     setOpen(false);
     setQuery("");
-    requestAnimationFrame(() => opener.current?.focus());
+    requestAnimationFrame(() => {
+      if (
+        opener.current?.isConnected &&
+        (document.activeElement === origin ||
+          document.activeElement === document.body)
+      )
+        opener.current.focus();
+    });
   }
   return (
     <div className="communication-touch-search">
@@ -43,11 +51,19 @@ export default function CommunicationTouchSearch(props: SearchProps) {
         className="secondary"
         aria-expanded={open}
         aria-controls={panelId}
-        onClick={() => {
+        onClick={(event) => {
           if (open) close();
           else {
+            const origin = event.currentTarget;
             setOpen(true);
-            requestAnimationFrame(() => input.current?.focus());
+            requestAnimationFrame(() => {
+              if (
+                input.current?.isConnected &&
+                (document.activeElement === origin ||
+                  document.activeElement === document.body)
+              )
+                input.current.focus();
+            });
           }
         }}
       >
