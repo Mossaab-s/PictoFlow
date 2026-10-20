@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import { movedMessage } from "@/lib/message-order";
 import { TouchContent } from "./pictogram";
 import type { TouchRemoval, Word } from "./message-touch-editor";
@@ -12,14 +12,16 @@ export default function MessageMoveDialog({
   busy,
   cancel,
   confirm,
+  dialogRef,
 }: {
   choice: TouchMove;
   disabled: boolean;
   busy: boolean;
   cancel: () => void;
   confirm: (destination: number) => void;
+  dialogRef: RefObject<HTMLDialogElement | null>;
 }) {
-  const modal = useRef<HTMLDialogElement>(null);
+  const keep = useRef<HTMLButtonElement>(null);
   const before = useRef<HTMLButtonElement>(null);
   const after = useRef<HTMLButtonElement>(null);
   const placeId = useId();
@@ -30,10 +32,11 @@ export default function MessageMoveDialog({
   const preview = movedMessage(choice.words, choice.index, destination);
   const changed = !!ids?.some((id, index) => id !== choice.blockIds[index]);
   useEffect(() => {
-    const dialog = modal.current;
+    const dialog = dialogRef.current;
     dialog?.showModal();
+    keep.current?.focus();
     return () => dialog?.close();
-  }, []);
+  }, [dialogRef]);
   function step(target: number, origin: HTMLButtonElement) {
     setDestination(target);
     if (target !== 0 && target !== choice.words.length - 1) return;
@@ -49,7 +52,7 @@ export default function MessageMoveDialog({
   }
   return (
     <dialog
-      ref={modal}
+      ref={dialogRef}
       className="message-reset-dialog message-move-dialog"
       aria-labelledby={titleId}
       aria-describedby={helpId}
@@ -128,7 +131,13 @@ export default function MessageMoveDialog({
             : "L’ordre reste inchangé."}
       </p>
       <div className="actions">
-        <button type="button" autoFocus disabled={busy} onClick={cancel}>
+        <button
+          ref={keep}
+          type="button"
+          autoFocus
+          disabled={busy}
+          onClick={cancel}
+        >
           Garder l’ordre actuel
         </button>
         <button

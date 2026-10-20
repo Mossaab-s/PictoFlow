@@ -36,14 +36,18 @@ export default function MessageTouchEditor({
   const toggle = useRef<HTMLButtonElement>(null);
   const tokens = useRef<HTMLDivElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
+  const moveDialog = useRef<HTMLDialogElement>(null);
   const sending = useRef(false);
   const canEdit = sequence?.status === "in_progress" && words.length > 0;
   const active = editing && canEdit;
-  const moving = active && operation === "move";
+  const moving = active && operation === "move" && words.length > 1;
 
   useEffect(() => {
     if (!canEdit) setEditing(false);
   }, [canEdit]);
+  useEffect(() => {
+    if (words.length < 2) setOperation("remove");
+  }, [words.length]);
   useEffect(() => {
     if (choice && !dialog.current?.open) dialog.current?.showModal();
     if (!choice && dialog.current?.open) dialog.current.close();
@@ -64,6 +68,7 @@ export default function MessageTouchEditor({
   function cancel() {
     if (sending.current) return;
     const index = choice?.index ?? 0;
+    dialog.current?.close();
     setChoice(null);
     focusOccurrence(index);
   }
@@ -76,6 +81,7 @@ export default function MessageTouchEditor({
     } finally {
       sending.current = false;
       // Closing does not retry an uncertain request. The parent has already reread the draft.
+      dialog.current?.close();
       setChoice(null);
       focusOccurrence(selected.index);
     }
@@ -83,6 +89,7 @@ export default function MessageTouchEditor({
   function cancelMove() {
     if (sending.current) return;
     const index = moveChoice?.index ?? 0;
+    moveDialog.current?.close();
     setMoveChoice(null);
     focusOccurrence(index);
   }
@@ -93,6 +100,7 @@ export default function MessageTouchEditor({
       await move({ ...moveChoice, targetIndex });
     } finally {
       sending.current = false;
+      moveDialog.current?.close();
       setMoveChoice(null);
       focusOccurrence(targetIndex);
     }
@@ -269,6 +277,7 @@ export default function MessageTouchEditor({
       </dialog>
       {moveChoice && (
         <MessageMoveDialog
+          dialogRef={moveDialog}
           choice={moveChoice}
           disabled={disabled}
           busy={busy}

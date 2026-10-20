@@ -366,6 +366,24 @@ try {
     book.id,
   ]);
   await choose("Maman", 1, 4, 3);
+  for (let i = 0; i < 3; i++)
+    await call(path + "/selection", "POST", { action: "undo" });
+  await confirm.click();
+  await expect(words).toHaveText(["Maman"]);
+  await expect(removeMode).toHaveAttribute("aria-pressed", "true");
+  await expect(moveMode).toBeDisabled();
+  await expect(
+    group.getByRole("button", {
+      name: "Retirer « Maman », touche 1 sur 1",
+      exact: true,
+    }),
+  ).toBeFocused();
+  for (const [index, label] of ["Eau", "Eau", "Livre"].entries()) {
+    await keyboard.getByRole("button", { name: label, exact: true }).click();
+    await expect(words).toHaveCount(index + 2);
+  }
+  await moveMode.click();
+  await choose("Maman", 1, 4, 3);
   const beforeOffline = writes.length;
   await page.context().setOffline(true);
   await expect(confirm).toBeDisabled();
@@ -464,7 +482,7 @@ try {
   for (const resource of Object.keys(before))
     assert.deepEqual(await call(base + "/" + resource), before[resource]);
   const moves = writes.filter((req) => req.postDataJSON()?.action === "move");
-  assert.equal(moves.length, 5); // Three applied, two stale conflicts; no automatic replay.
+  assert.equal(moves.length, 6); // Three applied, three stale conflicts; no automatic replay.
   for (const req of moves)
     assert.deepEqual(Object.keys(req.postDataJSON()).sort(), [
       "action",

@@ -227,6 +227,33 @@ try {
     exact: true,
   });
   const words = message.locator(".message-touch .touch-word");
+  const previousRange = regular.getByRole("button", {
+    name: "Touches précédentes : Mes touches",
+    exact: true,
+  });
+  await expect(previousRange).toBeFocused();
+  await previousRange.click();
+  // A delayed boundary-focus callback must respect someone moving to search.
+  await page.evaluate(() => {
+    document
+      .querySelector(
+        '.communication-keyboard [aria-label="Touches suivantes : Mes touches"]',
+      )
+      .click();
+    [...document.querySelectorAll(".communication-keyboard button")]
+      .find((button) => button.textContent === "Retrouver une touche")
+      .focus();
+  });
+  await page.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
+  await expect(opener).toBeFocused();
+  await expect(
+    regular.getByRole("button", { name: "Eau", exact: true }),
+  ).toBeVisible();
   await expect(opener).toHaveAttribute("aria-expanded", "false");
   await opener.press("Enter");
   await expect(input).toBeFocused();

@@ -36,6 +36,9 @@ or repeated submission. Offline previews cannot change/confirm a destination but
 can be dismissed. Reconnection never queues a move. Reload/profile navigation
 discards local previews and restores only the existing server sequence by ID.
 Reopening correction defaults to removal again.
+If a concurrent edit leaves only one touch, correction also returns to removal
+and disables moving until there are two touches again. A pending pagination
+focus callback respects someone who has already moved to another control.
 
 ## API and consistency
 
