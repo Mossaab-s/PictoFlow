@@ -17,6 +17,7 @@ from app.api.business import router as business_router
 from app.api.health import router as health_router
 from app.api.photos import router as photo_router
 from app.api.profile_archives import router as archive_router
+from app.api.provider_configuration import router as provider_configuration_router
 from app.api.router import router as api_router
 from app.application.keyboard_groups import KeyboardOrganizationConflict
 from app.application.offline_communication import OfflineConflict, OfflineSnapshotTooLarge
@@ -75,6 +76,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(archive_router, dependencies=[Depends(require_access)])
     application.include_router(business_router, dependencies=[Depends(require_access)])
     application.include_router(photo_router, dependencies=[Depends(require_access)])
+    application.include_router(provider_configuration_router)
 
     @application.middleware("http")
     async def private_responses(request, call_next):

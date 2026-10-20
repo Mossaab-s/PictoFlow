@@ -43,6 +43,11 @@ n'est nécessaire pour reproduire cette livraison depuis l'archive.
 
 ## Configurer un provider externe
 
+Une fois le mode multi-compte activé, les administrateurs peuvent aussi modifier,
+tester et activer le provider depuis `/admin/providers`, sans redémarrage. Les
+réglages enregistrés prennent alors le pas sur l'environnement pour les demandes
+suivantes. Voir [la configuration administrateur](ADMIN_PROVIDER_CONFIGURATION.md).
+
 Ajouter ces valeurs dans le fichier privé `.env.server` sur le serveur :
 
 ```ini

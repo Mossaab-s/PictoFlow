@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
+import ProviderSettings from "@/components/provider-settings";
 
 type Health = { provider_id: string; status: string; capabilities: string[] };
 export default function Providers() {
@@ -40,9 +41,10 @@ export default function Providers() {
         </p>
         <p>
           Cette lecture consulte les métadonnées du fournisseur configuré. Elle
-          ne teste pas la qualité des phrases. La configuration et la clé d’API
-          se gèrent sur le serveur.
+          ne teste pas la qualité des phrases. Vous pouvez tester de nouveaux
+          paramètres ci-dessous avant de les enregistrer et de les activer.
         </p>
+        <ProviderSettings onSaved={() => void load()} />
         {error && (
           <div className="error" role="alert">
             {error}
