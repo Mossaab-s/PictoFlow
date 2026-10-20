@@ -337,6 +337,10 @@ try {
   );
   await page.mouse.down();
   await expect(refreshButton).toBeFocused();
+  console.log(
+    "Synthetic refresh press events:",
+    await page.evaluate(() => window.__uxPointer),
+  );
   assert.equal(await page.evaluate(() => window.scrollY), scrollBeforePress);
   assert.equal((await refreshButton.boundingBox()).y, refreshBounds.y);
   await page.mouse.up();
