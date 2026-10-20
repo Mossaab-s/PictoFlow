@@ -1,4 +1,4 @@
-import type { Sequence } from "./keyboard";
+import type { Block, Sequence } from "./keyboard";
 import { memoryMatches, messageText, type MemoryMessage } from "./memory.ts";
 
 export type VocabularyNeed = {
@@ -21,6 +21,27 @@ export type NeedEvidence = {
   existing_block_match: boolean;
   examples: { sequence: Sequence; interpretation: MemoryMessage }[];
 };
+
+export function needParameter(value: unknown): string | null {
+  if (value === undefined) return null;
+  return typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      value,
+    )
+    ? value.toLowerCase()
+    : "";
+}
+
+export function needTouch(profileId: string, gapId: string, blocks: Block[]) {
+  const found = blocks.filter(
+    (b) => b.profile_id === profileId && b.semantic_gap_id === gapId,
+  );
+  if (found.length > 1)
+    throw new Error(
+      "Plusieurs touches sont liées à ce besoin. Actualisez le clavier.",
+    );
+  return found[0];
+}
 export function visibleNeeds(
   profileId: string,
   items: VocabularyNeed[],

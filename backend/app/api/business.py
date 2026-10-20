@@ -15,6 +15,7 @@ from app.application.blocks import (
     BlockService,
     GapEvidence,
     GapReviewConflict,
+    GapTouchConflict,
     RepresentationService,
 )
 from app.application.communication import (
@@ -261,6 +262,14 @@ class PersonalBlockBody(Body):
     pictogram_key: PictogramKey
     actor_role: HumanRole
     meaning: PersonalMeaning | None = None
+
+
+class GapIllustrationBody(Body):
+    request_id: UUID
+    label: PersonalMeaning
+    pictogram_key: PictogramKey
+    expected_intent: str = Field(min_length=1, max_length=512)
+    actor_role: HumanRole
 
 
 class PictogramSelectionBody(Body):
@@ -590,14 +599,17 @@ def create_personal_block(request: Request, profile_id: UUID, body: PersonalBloc
 
 @router.post("/profiles/{profile_id}/blocks/{block_id}/feedback", response_model=CommunicationBlock)
 def block_feedback(request: Request, profile_id: UUID, block_id: UUID, body: BlockFeedbackBody):
-    return blocks(request).validate(
-        profile_id,
-        block_id,
-        action=body.action,
-        actor_role=body.actor_role,
-        label=body.corrected_value,
-        confirm_representation=body.confirm_representation,
-    )
+    try:
+        return blocks(request).validate(
+            profile_id,
+            block_id,
+            action=body.action,
+            actor_role=body.actor_role,
+            label=body.corrected_value,
+            confirm_representation=body.confirm_representation,
+        )
+    except GapTouchConflict as error:
+        raise HTTPException(409, str(error)) from None
 
 
 @router.put("/profiles/{profile_id}/blocks/{block_id}/pictogram", response_model=CommunicationBlock)
@@ -865,6 +877,20 @@ def decide_gap(request: Request, profile_id: UUID, gap_id: UUID, body: GapDecisi
 )
 def block_from_gap(request: Request, profile_id: UUID, gap_id: UUID, body: LabelBody):
     return blocks(request).from_gap(profile_id, gap_id, body.label)
+
+
+@router.post(
+    "/profiles/{profile_id}/suggestions/{gap_id}/illustrated-block",
+    status_code=201,
+    response_model=CommunicationBlock,
+)
+def illustrated_gap_block(
+    request: Request, profile_id: UUID, gap_id: UUID, body: GapIllustrationBody
+):
+    try:
+        return blocks(request).illustrate_gap(profile_id, gap_id, **body.model_dump())
+    except GapTouchConflict as error:
+        raise HTTPException(409, str(error)) from None
 
 
 @router.get("/profiles/{profile_id}/keyboard", response_model=tuple[KeyboardPosition, ...])

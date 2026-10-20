@@ -46,12 +46,12 @@ cards per page. A withdrawn accepted interpretation disappears from current
 examples. Approval always rechecks current evidence on the server; insufficient
 evidence or an existing active key prevents approval.
 
-Acceptance records a need. This increment does **not** create, validate, place or
-activate a key. An accepted card links to the existing keyboard editor only when
-the supporter can prepare it. The drawing, word and key validation remain explicit
-preparation steps. The existing intent-only `from_gap` API is unchanged and is not
-called by this screen. Connecting such candidates to pictogram preparation needs
-a separate domain change preserving the Concept/Representation relationship.
+Acceptance records a need. Accepted and resolved cards now link to the
+[illustrated-touch preparation journey](ACCEPTED_NEED_TOUCH.md) when the supporter
+can prepare the keyboard. The drawing, word, touch validation and chosen placement
+remain explicit steps. The existing intent-only `from_gap` API is unchanged;
+new illustrated preparation preserves Concept/Representation through a separate
+endpoint and does not silently convert legacy candidates.
 
 ## Access and concurrency
 

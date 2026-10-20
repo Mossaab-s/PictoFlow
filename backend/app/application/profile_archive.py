@@ -180,6 +180,14 @@ class ProfileArchive(Contract):
             ref("concepts", block.concept_id)
             ref("representations", block.representation_id)
             ref("gaps", block.semantic_gap_id)
+            if block.semantic_gap_id:
+                meaning = (
+                    known["concepts"][block.concept_id].label
+                    if block.concept_id
+                    else block.canonical_intent
+                )
+                if meaning != known["gaps"][block.semantic_gap_id].validated_intent:
+                    raise ArchiveError("Gap touch changes accepted meaning")
             if block.representation_id:
                 visual = known["representations"][block.representation_id]
                 if visual.concept_id != block.concept_id:

@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { visibleNeeds, needExamples } from "../src/lib/vocabulary-needs.ts";
+import {
+  visibleNeeds,
+  needExamples,
+  needParameter,
+  needTouch,
+} from "../src/lib/vocabulary-needs.ts";
 const p = "profile",
   other = "other";
 const need = {
@@ -34,6 +39,41 @@ const evidence = {
   eligible: true,
   examples: [sample],
 };
+test("need links accept exactly one UUID and keep invalid requests distinct from ordinary creation", () => {
+  const id = "273163ae-4e9b-4c74-ac56-c55375fd892a";
+  assert.equal(needParameter(undefined), null);
+  assert.equal(needParameter(id.toUpperCase()), id);
+  for (const invalid of [
+    "",
+    "other",
+    [id],
+    [id, id],
+    null,
+    12,
+    id + "?meaning=other",
+  ])
+    assert.equal(needParameter(invalid), "");
+});
+test("need resumption finds the unique linked touch in its own profile regardless of human decision", () => {
+  const block = {
+    id: "touch",
+    profile_id: p,
+    semantic_gap_id: need.id,
+    status: "rejected",
+  };
+  assert.equal(
+    needTouch(p, need.id, [
+      { ...block, profile_id: other },
+      { ...block, semantic_gap_id: "other" },
+      block,
+    ]),
+    block,
+  );
+  assert.equal(needTouch(p, "absent", [block]), undefined);
+  assert.throws(() =>
+    needTouch(p, need.id, [block, { ...block, id: "duplicate" }]),
+  );
+});
 test("need lists keep pending and decided states separate, scoped and searchable without accents", () => {
   const approved = { ...need, id: "accepted", status: "approved" };
   const later = { ...need, id: "later", created_at: "2026-10-20T10:00:00Z" };

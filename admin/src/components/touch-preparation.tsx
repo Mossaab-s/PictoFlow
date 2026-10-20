@@ -28,10 +28,12 @@ export default function TouchPreparation({
   concepts,
   disabled,
   onCreate,
+  acceptedMeaning,
 }: {
   concepts: Concept[];
   disabled: boolean;
   onCreate: (draft: TouchDraft) => Promise<boolean>;
+  acceptedMeaning?: string;
 }) {
   const [draft, setDraft] = useState<TouchDraft>(emptyDraft);
   const [editedWord, setEditedWord] = useState(false);
@@ -44,6 +46,7 @@ export default function TouchPreparation({
     draft.visualMode === "photo" ? !!draft.photo : !!draft.pictogramKey;
   const wordReady = !!draft.label.trim();
   const meaning =
+    acceptedMeaning ??
     concepts.find((c) => c.id === draft.conceptId)?.label ??
     (draft.meaning.trim() || draft.label.trim());
   function go(next: number) {
@@ -117,6 +120,7 @@ export default function TouchPreparation({
                 type="button"
                 className="secondary"
                 aria-pressed={draft.visualMode === "photo"}
+                hidden={acceptedMeaning !== undefined}
                 disabled={disabled}
                 onClick={() => setDraft({ ...draft, visualMode: "photo" })}
               >
@@ -169,55 +173,61 @@ export default function TouchPreparation({
               Ce mot apparaîtra sous l’image. Vous pouvez adapter le mot
               proposé.
             </p>
-            <details className="touch-meaning-options">
-              <summary>Préciser le sens (facultatif)</summary>
-              {!draft.conceptId && (
-                <label>
-                  Ce que cette touche signifie pour moi, facultatif
-                  <input
-                    value={draft.meaning}
-                    onChange={(event) =>
-                      setDraft({ ...draft, meaning: event.target.value })
-                    }
-                    maxLength={256}
-                    disabled={disabled}
-                    placeholder="Par exemple : mon ours pour me rassurer"
-                  />
-                  <span className="helper">
-                    Sans précision, le mot de la touche sert de sens.
-                  </span>
-                </label>
-              )}
-              <label htmlFor={existingMeaningId}>Sens existant</label>
-              <select
-                id={existingMeaningId}
-                value={draft.conceptId}
-                disabled={disabled}
-                onChange={(event) => {
-                  const conceptId = event.target.value;
-                  setDraft({
-                    ...draft,
-                    conceptId,
-                    label:
-                      !editedWord && conceptId
-                        ? (concepts.find((c) => c.id === conceptId)?.label ??
-                          draft.label)
-                        : draft.label,
-                  });
-                }}
-              >
-                <option value="">Créer un nouveau sens avec mon mot</option>
-                {concepts.map((concept) => (
-                  <option key={concept.id} value={concept.id}>
-                    {concept.label}
-                  </option>
-                ))}
-              </select>
-              <p className="helper">
-                Choisissez un sens existant seulement si cette touche exprime le
-                même sens personnel.
+            {acceptedMeaning !== undefined ? (
+              <p>
+                <strong>Sens du besoin accepté :</strong> {acceptedMeaning}
               </p>
-            </details>
+            ) : (
+              <details className="touch-meaning-options">
+                <summary>Préciser le sens (facultatif)</summary>
+                {!draft.conceptId && (
+                  <label>
+                    Ce que cette touche signifie pour moi, facultatif
+                    <input
+                      value={draft.meaning}
+                      onChange={(event) =>
+                        setDraft({ ...draft, meaning: event.target.value })
+                      }
+                      maxLength={256}
+                      disabled={disabled}
+                      placeholder="Par exemple : mon ours pour me rassurer"
+                    />
+                    <span className="helper">
+                      Sans précision, le mot de la touche sert de sens.
+                    </span>
+                  </label>
+                )}
+                <label htmlFor={existingMeaningId}>Sens existant</label>
+                <select
+                  id={existingMeaningId}
+                  value={draft.conceptId}
+                  disabled={disabled}
+                  onChange={(event) => {
+                    const conceptId = event.target.value;
+                    setDraft({
+                      ...draft,
+                      conceptId,
+                      label:
+                        !editedWord && conceptId
+                          ? (concepts.find((c) => c.id === conceptId)?.label ??
+                            draft.label)
+                          : draft.label,
+                    });
+                  }}
+                >
+                  <option value="">Créer un nouveau sens avec mon mot</option>
+                  {concepts.map((concept) => (
+                    <option key={concept.id} value={concept.id}>
+                      {concept.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="helper">
+                  Choisissez un sens existant seulement si cette touche exprime
+                  le même sens personnel.
+                </p>
+              </details>
+            )}
             <div className="actions">
               <button
                 type="button"

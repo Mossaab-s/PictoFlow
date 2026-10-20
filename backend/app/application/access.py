@@ -148,6 +148,7 @@ PREPARATION_WRITES = COMMUNICATION_WRITES | frozenset(
         ("POST", "/profiles/{profile_id}/suggestions/detect"),
         ("POST", "/profiles/{profile_id}/suggestions/{gap_id}/decision"),
         ("POST", "/profiles/{profile_id}/suggestions/{gap_id}/block"),
+        ("POST", "/profiles/{profile_id}/suggestions/{gap_id}/illustrated-block"),
         ("POST", "/profiles/{profile_id}/keyboard-groups"),
         ("PUT", "/profiles/{profile_id}/keyboard-groups/order"),
         ("PATCH", "/profiles/{profile_id}/keyboard-groups/{group_id}"),
