@@ -31,6 +31,7 @@ import CompositionMemory from "./composition-memory";
 import { replayAvailable } from "@/lib/learning";
 import MemorySuggestions from "./memory-suggestions";
 import AIContext from "./ai-context";
+import PhraseHypotheses from "./phrase-hypotheses";
 import LiteralExplanation from "./literal-explanation";
 import MessageResetDialog from "./message-reset-dialog";
 import MessageTouchEditor, { type TouchRemoval } from "./message-touch-editor";
@@ -1298,20 +1299,28 @@ export default function CommunicationScreen({
                     écartez-la. Aucune proposition n'entre seule dans la mémoire
                     validée.
                   </p>
-                  {decision.candidates.map((candidate) => (
-                    <InterpretationCard
-                      key={candidate.id}
-                      candidate={candidate}
-                      canReview={canReview}
-                      disabled={
-                        pending || (accepted && candidate.status === "proposed")
-                      }
-                      read={speech.available ? speech.read : undefined}
-                      feedback={(action, text) =>
-                        perform(() => feedback(candidate, action, text))
-                      }
-                    />
-                  ))}
+                  <PhraseHypotheses
+                    key={sequence?.id}
+                    candidates={decision.candidates}
+                    disabled={pending}
+                    onInspect={speech.stop}
+                  >
+                    {(candidate) => (
+                      <InterpretationCard
+                        key={candidate.id}
+                        candidate={candidate}
+                        canReview={canReview}
+                        disabled={
+                          pending ||
+                          (accepted && candidate.status === "proposed")
+                        }
+                        read={speech.available ? speech.read : undefined}
+                        feedback={(action, text) =>
+                          perform(() => feedback(candidate, action, text))
+                        }
+                      />
+                    )}
+                  </PhraseHypotheses>
                   {!accepted && suggestions.mode === "off" && (
                     <button
                       className="secondary"

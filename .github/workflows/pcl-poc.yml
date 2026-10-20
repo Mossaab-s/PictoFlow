@@ -111,6 +111,10 @@ jobs:
         if: ${{ !cancelled() && steps.fake-api.outcome == 'success' }}
         working-directory: admin
         run: node tests/e2e/interpretation-reuse.mjs
+      - name: Compare alternative meanings before explicit human validation
+        if: ${{ !cancelled() && steps.fake-api.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/phrase-hypotheses.mjs
       - name: Prepare isolated authenticated capability API
         id: capability-api
         if: ${{ !cancelled() && steps.communication-build.outcome == 'success' }}
@@ -210,6 +214,8 @@ jobs:
             admin/.local/pcl-learning/*.png
             admin/.local/interpretation-reuse/*.png
             admin/.local/interpretation-reuse/report.json
+            admin/.local/phrase-hypotheses/*.png
+            admin/.local/phrase-hypotheses/report.json
             admin/.local/memory-suggestions/*.png
             admin/.local/keyboard-usage/*.png
             admin/.local/offline-reopen/*.png

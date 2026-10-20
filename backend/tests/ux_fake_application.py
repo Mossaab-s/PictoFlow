@@ -37,7 +37,14 @@ class FixtureSelection(BaseModel):
     profile_id: UUID
     sequence_id: UUID
     mode: Literal[
-        "proposal", "disabled", "refusal", "unfaithful", "low", "invalid", "unavailable"
+        "proposal",
+        "alternatives",
+        "disabled",
+        "refusal",
+        "unfaithful",
+        "low",
+        "invalid",
+        "unavailable",
     ] = "proposal"
 
 
@@ -63,6 +70,22 @@ async def configure_fixture(body: FixtureSelection):
     elif body.mode in ("invalid", "unavailable"):
         provider = FailureFixture(body.mode)
     else:
+        candidates = [
+            {
+                "intent": "request",
+                "text": "Je voudrais un livre."
+                if body.mode == "unfaithful"
+                else "Je veux boire de l’eau.",
+                "confidence": 0.1 if body.mode == "low" else 0.92,
+            }
+        ]
+        if body.mode == "alternatives":
+            candidates.extend(
+                [
+                    {"intent": "statement", "text": "Je bois de l’eau.", "confidence": 0.86},
+                    {"intent": "question", "text": "Boire de l’eau ?", "confidence": 0.8},
+                ]
+            )
         provider = CountingFakeProvider(
             {
                 "interpretations": [
@@ -70,17 +93,7 @@ async def configure_fixture(body: FixtureSelection):
                         "request": request.model_dump(mode="json"),
                         "response": {
                             "status": "not_understood" if body.mode == "refusal" else "proposal",
-                            "candidates": []
-                            if body.mode == "refusal"
-                            else [
-                                {
-                                    "intent": "request",
-                                    "text": "Je voudrais un livre."
-                                    if body.mode == "unfaithful"
-                                    else "Je veux boire de l’eau.",
-                                    "confidence": 0.1 if body.mode == "low" else 0.92,
-                                }
-                            ],
+                            "candidates": [] if body.mode == "refusal" else candidates,
                         },
                     }
                 ]
@@ -95,6 +108,6 @@ async def configure_fixture(body: FixtureSelection):
     return {
         "provider": provider.provider_id,
         "synthetic_fixture_count": 1
-        if body.mode in ("proposal", "refusal", "unfaithful", "low")
+        if body.mode in ("proposal", "alternatives", "refusal", "unfaithful", "low")
         else 0,
     }
