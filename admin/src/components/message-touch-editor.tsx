@@ -2,8 +2,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { Representation, Sequence } from "@/lib/keyboard";
 import { TouchContent } from "./pictogram";
+import MessageMoveDialog, { type TouchMove } from "./message-move-dialog";
 
-type Word = { label: string; representation?: Representation };
+export type Word = { label: string; representation?: Representation };
 export type TouchRemoval = {
   sequenceId: string;
   blockIds: string[];
@@ -16,14 +17,18 @@ export default function MessageTouchEditor({
   disabled,
   busy,
   remove,
+  move,
 }: {
   sequence: Sequence | null;
   words: Word[];
   disabled: boolean;
   busy: boolean;
   remove: (choice: TouchRemoval) => Promise<void>;
+  move: (choice: TouchRemoval & { targetIndex: number }) => Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
+  const [operation, setOperation] = useState<"remove" | "move">("remove");
+  const [moveChoice, setMoveChoice] = useState<TouchMove | null>(null);
   const [choice, setChoice] = useState<(TouchRemoval & { word: Word }) | null>(
     null,
   );
@@ -31,21 +36,45 @@ export default function MessageTouchEditor({
   const toggle = useRef<HTMLButtonElement>(null);
   const tokens = useRef<HTMLDivElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
+  const moveDialog = useRef<HTMLDialogElement>(null);
   const sending = useRef(false);
+  const returnFocus = useRef<{ index: number; origin: Element | null } | null>(
+    null,
+  );
   const canEdit = sequence?.status === "in_progress" && words.length > 0;
   const active = editing && canEdit;
+  const moving = active && operation === "move" && words.length > 1;
 
   useEffect(() => {
     if (!canEdit) setEditing(false);
   }, [canEdit]);
   useEffect(() => {
+    if (words.length < 2) setOperation("remove");
+  }, [words.length]);
+  useEffect(() => {
     if (choice && !dialog.current?.open) dialog.current?.showModal();
     if (!choice && dialog.current?.open) dialog.current.close();
   }, [choice]);
+  useEffect(() => {
+    if (busy || choice || moveChoice || !returnFocus.current) return;
+    const requested = returnFocus.current;
+    returnFocus.current = null;
+    focusOccurrence(requested.index, requested.origin);
+  }, [busy, choice, moveChoice]);
 
-  function focusOccurrence(index: number) {
+  function closeAndReturn(modal: HTMLDialogElement | null, index: number) {
+    modal?.close();
+    returnFocus.current = { index, origin: document.activeElement };
+  }
+
+  function focusOccurrence(index: number, origin = document.activeElement) {
     requestAnimationFrame(() => {
       if (!root.current?.isConnected) return;
+      if (
+        document.activeElement !== origin &&
+        document.activeElement !== document.body
+      )
+        return;
       const buttons =
         tokens.current?.querySelectorAll<HTMLButtonElement>("button");
       const target = buttons?.[Math.min(index, buttons.length - 1)];
@@ -55,11 +84,26 @@ export default function MessageTouchEditor({
       else tokens.current?.focus();
     });
   }
+  function focusToggle(origin = document.activeElement) {
+    requestAnimationFrame(() => {
+      if (
+        !root.current?.isConnected ||
+        !toggle.current ||
+        toggle.current.disabled
+      )
+        return;
+      if (
+        document.activeElement === origin ||
+        document.activeElement === document.body
+      )
+        toggle.current.focus();
+    });
+  }
   function cancel() {
     if (sending.current) return;
     const index = choice?.index ?? 0;
+    closeAndReturn(dialog.current, index);
     setChoice(null);
-    focusOccurrence(index);
   }
   async function confirm() {
     if (!choice || disabled || sending.current) return;
@@ -70,8 +114,25 @@ export default function MessageTouchEditor({
     } finally {
       sending.current = false;
       // Closing does not retry an uncertain request. The parent has already reread the draft.
+      closeAndReturn(dialog.current, selected.index);
       setChoice(null);
-      focusOccurrence(selected.index);
+    }
+  }
+  function cancelMove() {
+    if (sending.current) return;
+    const index = moveChoice?.index ?? 0;
+    closeAndReturn(moveDialog.current, index);
+    setMoveChoice(null);
+  }
+  async function confirmMove(targetIndex: number) {
+    if (!moveChoice || disabled || sending.current) return;
+    sending.current = true;
+    try {
+      await move({ ...moveChoice, targetIndex });
+    } finally {
+      sending.current = false;
+      closeAndReturn(moveDialog.current, targetIndex);
+      setMoveChoice(null);
     }
   }
   return (
@@ -85,17 +146,51 @@ export default function MessageTouchEditor({
           !event.defaultPrevented &&
           active &&
           !choice &&
+          !moveChoice &&
           !busy
         ) {
           event.preventDefault();
           setEditing(false);
-          requestAnimationFrame(() => toggle.current?.focus());
+          focusToggle();
         }
       }}
     >
       {active && (
+        <div
+          className="message-edit-operations"
+          role="group"
+          aria-label="Type de correction"
+        >
+          <button
+            type="button"
+            className="secondary"
+            aria-pressed={!moving}
+            disabled={disabled}
+            onClick={() => {
+              setOperation("remove");
+              focusOccurrence(0);
+            }}
+          >
+            Retirer une touche
+          </button>
+          <button
+            type="button"
+            className="secondary"
+            aria-pressed={moving}
+            disabled={disabled || words.length < 2}
+            onClick={() => {
+              setOperation("move");
+              focusOccurrence(0);
+            }}
+          >
+            Déplacer une touche
+          </button>
+        </div>
+      )}
+      {active && (
         <p className="helper" id="message-edit-help">
-          Choisissez la touche à retirer, puis vérifiez votre choix.
+          Choisissez la touche à {moving ? "déplacer" : "retirer"}, puis
+          vérifiez votre choix.
         </p>
       )}
       <div
@@ -116,15 +211,17 @@ export default function MessageTouchEditor({
                 type="button"
                 className="message-touch secondary"
                 disabled={disabled}
-                aria-label={`Retirer « ${word.label} », touche ${index + 1} sur ${words.length}`}
+                aria-label={`${moving ? "Déplacer" : "Retirer"} « ${word.label} », touche ${index + 1} sur ${words.length}`}
                 onClick={() => {
                   if (!sequence) return;
-                  setChoice({
+                  const selected = {
                     sequenceId: sequence.id,
                     blockIds: [...sequence.block_ids],
                     index,
                     word,
-                  });
+                  };
+                  if (moving) setMoveChoice({ ...selected, words: [...words] });
+                  else setChoice(selected);
                 }}
               >
                 <TouchContent
@@ -155,8 +252,10 @@ export default function MessageTouchEditor({
           disabled={busy || (!active && disabled)}
           onClick={() => {
             setEditing(!active);
-            if (!active) focusOccurrence(0);
-            else requestAnimationFrame(() => toggle.current?.focus());
+            if (!active) {
+              setOperation("remove");
+              focusOccurrence(0);
+            } else focusToggle();
           }}
         >
           {active ? "Finir la correction" : "Corriger une touche"}
@@ -206,6 +305,16 @@ export default function MessageTouchEditor({
           </button>
         </div>
       </dialog>
+      {moveChoice && (
+        <MessageMoveDialog
+          dialogRef={moveDialog}
+          choice={moveChoice}
+          disabled={disabled}
+          busy={busy}
+          cancel={cancelMove}
+          confirm={(index) => void confirmMove(index)}
+        />
+      )}
     </div>
   );
 }

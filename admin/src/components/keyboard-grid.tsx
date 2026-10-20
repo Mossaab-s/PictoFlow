@@ -190,7 +190,12 @@ function ZoneGrid({
               const button = event.currentTarget;
               setPage(layout.page - 1);
               requestAnimationFrame(() => {
-                if (button.isConnected && button.disabled)
+                if (
+                  button.isConnected &&
+                  button.disabled &&
+                  (document.activeElement === button ||
+                    document.activeElement === document.body)
+                )
                   next.current?.focus();
               });
             }}
@@ -209,7 +214,12 @@ function ZoneGrid({
               const button = event.currentTarget;
               setPage(layout.page + 1);
               requestAnimationFrame(() => {
-                if (button.isConnected && button.disabled)
+                if (
+                  button.isConnected &&
+                  button.disabled &&
+                  (document.activeElement === button ||
+                    document.activeElement === document.body)
+                )
                   previous.current?.focus();
               });
             }}

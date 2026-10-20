@@ -23,6 +23,10 @@ personal concepts, accepted interpretations or stored reference phrases, and
 does not call AI or start speech. The protected standalone offline copy keeps
 its existing controls; this increment applies to the online communication screen.
 
+The later [move-a-touch journey](MESSAGE_TOUCH_ORDER.md) adds an optional order
+operation inside correction. Removal remains the default and retains the
+confirmation and recovery behavior described here.
+
 ## Deliberate controls and recovery
 
 Opening focuses the first occurrence. The confirmation initially focuses the

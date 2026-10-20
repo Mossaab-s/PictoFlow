@@ -65,8 +65,9 @@ class CommunicationService:
         *,
         index: int | None = None,
         expected_block_ids: tuple[UUID, ...] | None = None,
+        target_index: int | None = None,
     ):
-        if action == "remove":
+        if action in {"remove", "move"}:
             if (
                 type(index) is not int
                 or not isinstance(expected_block_ids, tuple)
@@ -74,18 +75,23 @@ class CommunicationService:
                 or not 0 <= index < len(expected_block_ids)
                 or block_id is not None
             ):
-                raise DomainInvariantError("Removal requires an exact ordered draft and index")
+                raise DomainInvariantError("Editing requires an exact ordered draft and index")
             for expected in expected_block_ids:
                 identifier(expected, "expected_block_id")
         elif index is not None or expected_block_ids is not None:
-            raise DomainInvariantError("Only removal accepts an expected draft and index")
+            raise DomainInvariantError("Only removal or moving accepts an expected draft and index")
+        if action == "move":
+            if type(target_index) is not int or not 0 <= target_index < len(expected_block_ids):
+                raise DomainInvariantError("Moving requires an existing destination index")
+        elif target_index is not None:
+            raise DomainInvariantError("Only moving accepts a destination index")
         if observation is not None:
             observation = SelectionObservation.model_validate(observation)
             if action != "append":
                 raise DomainInvariantError("Only an explicit selection can carry an observation")
         with self.units() as store:
             previous = store.get(profile_id, CommunicationSequence, sequence_id)
-            if action == "remove" and (
+            if action in {"remove", "move"} and (
                 previous.status != SequenceStatus.IN_PROGRESS
                 or previous.block_ids != expected_block_ids
             ):
@@ -94,7 +100,16 @@ class CommunicationService:
                 block = store.get(profile_id, CommunicationBlock, block_id)
                 if block.status != ProposalStatus.VALIDATED:
                     raise DomainInvariantError("Only validated blocks can be selected")
-            current = edit_sequence(previous, action, block_id, index=index)
+            current = edit_sequence(
+                previous, action, block_id, index=index, target_index=target_index
+            )
+            details = None
+            if observation:
+                details = {"selection_observation": observation.model_dump()}
+            elif action == "remove":
+                details = {"removed_index": index}
+            elif action == "move":
+                details = {"moved_from_index": index, "moved_to_index": target_index}
             store.save(profile_id, current)
             store.audit(
                 profile_id,
@@ -102,11 +117,7 @@ class CommunicationService:
                 previous,
                 current,
                 "human",
-                new_details={"selection_observation": observation.model_dump()}
-                if observation
-                else {"removed_index": index}
-                if action == "remove"
-                else None,
+                new_details=details,
             )
         return current
 

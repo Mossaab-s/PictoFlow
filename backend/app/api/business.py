@@ -153,17 +153,18 @@ class InterpretationFeedbackBody(FeedbackBody):
 
 
 class SelectionBody(Body):
-    action: str = Field(pattern="^(append|undo|clear|complete|cancel|remove)$")
+    action: str = Field(pattern="^(append|undo|clear|complete|cancel|remove|move)$")
     block_id: UUID | None = None
     observation: SelectionObservation | None = None
     index: int | None = Field(default=None, ge=0, le=31, strict=True)
+    target_index: int | None = Field(default=None, ge=0, le=31, strict=True)
     expected_block_ids: Annotated[tuple[UUID, ...] | None, Field(min_length=1, max_length=32)] = (
         None
     )
 
     @model_validator(mode="after")
-    def explicit_removal(self):
-        if self.action == "remove":
+    def explicit_edit(self):
+        if self.action in {"remove", "move"}:
             if (
                 self.index is None
                 or self.expected_block_ids is None
@@ -171,9 +172,24 @@ class SelectionBody(Body):
                 or self.block_id is not None
                 or self.observation is not None
             ):
-                raise ValueError("Removal requires an ordered draft and an existing index only")
+                raise ValueError("Editing requires an ordered draft and an existing index only")
         elif self.index is not None or self.expected_block_ids is not None:
-            raise ValueError("Only removal accepts a draft and index")
+            raise ValueError("Only removal or moving accepts a draft and index")
+        if self.action == "move":
+            if self.target_index is None or self.target_index >= len(self.expected_block_ids):
+                raise ValueError("Moving requires an existing destination index")
+            remaining = (
+                self.expected_block_ids[: self.index] + self.expected_block_ids[self.index + 1 :]
+            )
+            moved = (
+                remaining[: self.target_index]
+                + (self.expected_block_ids[self.index],)
+                + remaining[self.target_index :]
+            )
+            if moved == self.expected_block_ids:
+                raise ValueError("Moving must change the ordered selections")
+        elif self.target_index is not None:
+            raise ValueError("Only moving accepts a destination index")
         return self
 
 
@@ -601,6 +617,7 @@ def selection(request: Request, profile_id: UUID, sequence_id: UUID, body: Selec
             body.observation,
             index=body.index,
             expected_block_ids=body.expected_block_ids,
+            target_index=body.target_index,
         )
     except SequenceEditConflict:
         raise HTTPException(409, "Message changed; review the current draft") from None

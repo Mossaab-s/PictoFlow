@@ -13,6 +13,7 @@ def edit_sequence(
     block_id: UUID | None = None,
     *,
     index: int | None = None,
+    target_index: int | None = None,
 ) -> CommunicationSequence:
     if sequence.status != SequenceStatus.IN_PROGRESS:
         raise DomainInvariantError("Only an in-progress sequence can be edited")
@@ -29,6 +30,19 @@ def edit_sequence(
         return replace(
             sequence, block_ids=sequence.block_ids[:index] + sequence.block_ids[index + 1 :]
         )
+    if action == "move":
+        if (
+            type(index) is not int
+            or type(target_index) is not int
+            or not 0 <= index < len(sequence.block_ids)
+            or not 0 <= target_index < len(sequence.block_ids)
+        ):
+            raise DomainInvariantError("Moving requires existing source and destination indices")
+        remaining = sequence.block_ids[:index] + sequence.block_ids[index + 1 :]
+        moved = remaining[:target_index] + (sequence.block_ids[index],) + remaining[target_index:]
+        if moved == sequence.block_ids:
+            raise DomainInvariantError("Moving must change the ordered selections")
+        return replace(sequence, block_ids=moved)
     if action == "clear":
         return replace(sequence, block_ids=())
     if action == "complete":
