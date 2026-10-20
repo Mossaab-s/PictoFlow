@@ -2,8 +2,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { Representation, Sequence } from "@/lib/keyboard";
 import { TouchContent } from "./pictogram";
+import MessageMoveDialog, { type TouchMove } from "./message-move-dialog";
 
-type Word = { label: string; representation?: Representation };
+export type Word = { label: string; representation?: Representation };
 export type TouchRemoval = {
   sequenceId: string;
   blockIds: string[];
@@ -16,14 +17,18 @@ export default function MessageTouchEditor({
   disabled,
   busy,
   remove,
+  move,
 }: {
   sequence: Sequence | null;
   words: Word[];
   disabled: boolean;
   busy: boolean;
   remove: (choice: TouchRemoval) => Promise<void>;
+  move: (choice: TouchRemoval & { targetIndex: number }) => Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
+  const [operation, setOperation] = useState<"remove" | "move">("remove");
+  const [moveChoice, setMoveChoice] = useState<TouchMove | null>(null);
   const [choice, setChoice] = useState<(TouchRemoval & { word: Word }) | null>(
     null,
   );
@@ -34,6 +39,7 @@ export default function MessageTouchEditor({
   const sending = useRef(false);
   const canEdit = sequence?.status === "in_progress" && words.length > 0;
   const active = editing && canEdit;
+  const moving = active && operation === "move";
 
   useEffect(() => {
     if (!canEdit) setEditing(false);
@@ -74,6 +80,23 @@ export default function MessageTouchEditor({
       focusOccurrence(selected.index);
     }
   }
+  function cancelMove() {
+    if (sending.current) return;
+    const index = moveChoice?.index ?? 0;
+    setMoveChoice(null);
+    focusOccurrence(index);
+  }
+  async function confirmMove(targetIndex: number) {
+    if (!moveChoice || disabled || sending.current) return;
+    sending.current = true;
+    try {
+      await move({ ...moveChoice, targetIndex });
+    } finally {
+      sending.current = false;
+      setMoveChoice(null);
+      focusOccurrence(targetIndex);
+    }
+  }
   return (
     <div
       ref={root}
@@ -85,6 +108,7 @@ export default function MessageTouchEditor({
           !event.defaultPrevented &&
           active &&
           !choice &&
+          !moveChoice &&
           !busy
         ) {
           event.preventDefault();
@@ -94,8 +118,41 @@ export default function MessageTouchEditor({
       }}
     >
       {active && (
+        <div
+          className="message-edit-operations"
+          role="group"
+          aria-label="Type de correction"
+        >
+          <button
+            type="button"
+            className="secondary"
+            aria-pressed={!moving}
+            disabled={disabled}
+            onClick={() => {
+              setOperation("remove");
+              focusOccurrence(0);
+            }}
+          >
+            Retirer une touche
+          </button>
+          <button
+            type="button"
+            className="secondary"
+            aria-pressed={moving}
+            disabled={disabled || words.length < 2}
+            onClick={() => {
+              setOperation("move");
+              focusOccurrence(0);
+            }}
+          >
+            Déplacer une touche
+          </button>
+        </div>
+      )}
+      {active && (
         <p className="helper" id="message-edit-help">
-          Choisissez la touche à retirer, puis vérifiez votre choix.
+          Choisissez la touche à {moving ? "déplacer" : "retirer"}, puis
+          vérifiez votre choix.
         </p>
       )}
       <div
@@ -116,15 +173,17 @@ export default function MessageTouchEditor({
                 type="button"
                 className="message-touch secondary"
                 disabled={disabled}
-                aria-label={`Retirer « ${word.label} », touche ${index + 1} sur ${words.length}`}
+                aria-label={`${moving ? "Déplacer" : "Retirer"} « ${word.label} », touche ${index + 1} sur ${words.length}`}
                 onClick={() => {
                   if (!sequence) return;
-                  setChoice({
+                  const selected = {
                     sequenceId: sequence.id,
                     blockIds: [...sequence.block_ids],
                     index,
                     word,
-                  });
+                  };
+                  if (moving) setMoveChoice({ ...selected, words: [...words] });
+                  else setChoice(selected);
                 }}
               >
                 <TouchContent
@@ -155,8 +214,10 @@ export default function MessageTouchEditor({
           disabled={busy || (!active && disabled)}
           onClick={() => {
             setEditing(!active);
-            if (!active) focusOccurrence(0);
-            else requestAnimationFrame(() => toggle.current?.focus());
+            if (!active) {
+              setOperation("remove");
+              focusOccurrence(0);
+            } else requestAnimationFrame(() => toggle.current?.focus());
           }}
         >
           {active ? "Finir la correction" : "Corriger une touche"}
@@ -206,6 +267,15 @@ export default function MessageTouchEditor({
           </button>
         </div>
       </dialog>
+      {moveChoice && (
+        <MessageMoveDialog
+          choice={moveChoice}
+          disabled={disabled}
+          busy={busy}
+          cancel={cancelMove}
+          confirm={(index) => void confirmMove(index)}
+        />
+      )}
     </div>
   );
 }

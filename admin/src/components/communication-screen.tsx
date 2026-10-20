@@ -20,7 +20,6 @@ import { HumanRoleSelector, ProfileNavigation } from "./profile-navigation";
 import { useAuthentication } from "./authentication";
 import { canPrepare, canProfile, profileToolPath } from "@/lib/access";
 import { useProfileKeyboard } from "./use-profile-keyboard";
-import { TouchContent } from "./pictogram";
 import ProfileIdentity from "./profile-identity";
 import { useLocalSpeech } from "./use-local-speech";
 import CommunicationPreferences from "./communication-preferences";
@@ -335,7 +334,7 @@ export default function CommunicationScreen({
         );
     }
   }
-  async function removeTouch(choice: TouchRemoval) {
+  async function editTouch(choice: TouchRemoval & { targetIndex?: number }) {
     const active = current.current;
     if (!active || active.id !== choice.sequenceId) return;
     lastSelection.current = null;
@@ -344,22 +343,29 @@ export default function CommunicationScreen({
       result = await api<Sequence>(`${base}/sequences/${active.id}/selection`, {
         method: "POST",
         body: JSON.stringify({
-          action: "remove",
+          action: choice.targetIndex === undefined ? "remove" : "move",
           index: choice.index,
           expected_block_ids: choice.blockIds,
+          ...(choice.targetIndex === undefined
+            ? {}
+            : { target_index: choice.targetIndex }),
         }),
       });
     } catch (error) {
       if (error instanceof APIError && error.status === 409)
         throw new Error(
-          "Le message a changé ailleurs. Votre retrait n’a pas été appliqué. Vérifiez le message rechargé avant de choisir à nouveau.",
+          choice.targetIndex === undefined
+            ? "Le message a changé ailleurs. Votre retrait n’a pas été appliqué. Vérifiez le message rechargé avant de choisir à nouveau."
+            : "Le message a changé ailleurs. Votre déplacement n’a pas été appliqué. Vérifiez le message rechargé avant de choisir à nouveau.",
         );
       throw error;
     }
     if (alive.current) {
       remember(result, null);
       setNotice(
-        "La touche choisie a été retirée. Les autres gardent leur ordre.",
+        choice.targetIndex === undefined
+          ? "La touche choisie a été retirée. Les autres gardent leur ordre."
+          : "La touche choisie a été déplacée. Votre nouvel ordre est enregistré.",
       );
     }
   }
@@ -661,7 +667,8 @@ export default function CommunicationScreen({
             words={chosen}
             disabled={pending}
             busy={busy}
-            remove={(choice) => perform(() => removeTouch(choice))}
+            remove={(choice) => perform(() => editTouch(choice))}
+            move={(choice) => perform(() => editTouch(choice))}
           />
           <div className="actions">
             <button
