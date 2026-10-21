@@ -542,6 +542,7 @@ try {
     })
     .waitFor();
   await page.getByText("Mon compte", { exact: true }).click();
+  await page.getByRole("button", { name: "Options", exact: true }).click();
   await page.getByRole("button", { name: "Mes phrases", exact: true }).click();
   await page.locator(".phrase-library > details.phrase-picker[open]").waitFor();
   assert.equal(
