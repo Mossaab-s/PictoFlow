@@ -875,7 +875,10 @@ export default function CommunicationScreen({
     requestAnimationFrame(() => resetOpener.current?.focus());
   }
   function requestReset(action: "clear" | "new", button: HTMLButtonElement) {
-    if (chosen.length && (!completed || (!!decision && !accepted))) {
+    if (
+      chosen.length &&
+      (compact ? !accepted : !completed || (!!decision && !accepted))
+    ) {
       resetOpener.current = button;
       setResetAction(action);
     } else
@@ -891,6 +894,7 @@ export default function CommunicationScreen({
           tiles={tiles}
           groups={data.groups}
           displaySize={display.size}
+          contrastEnhanced={contrast.enhanced}
           decision={decision}
           disabled={pending}
           busy={busy}
@@ -921,7 +925,13 @@ export default function CommunicationScreen({
             speech.stop();
             changeView(true);
           }}
-          refresh={() => void perform(() => propose(true), false)}
+          refresh={() =>
+            void perform(async () => {
+              if (current.current?.status === "in_progress")
+                await selection("complete", true);
+              await propose(Boolean(decision));
+            }, false)
+          }
         />
         <MessageResetDialog
           action={resetAction}

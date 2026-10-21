@@ -512,14 +512,18 @@ try {
   }, p);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
-  await keyboard.locator(".communication-tile").first().waitFor();
+  await page
+    .getByRole("button", { name: "Revenir à la communication", exact: true })
+    .click();
+  const compactKeyboard = page.locator(".compact-keyboard");
+  await compactKeyboard.locator(".communication-tile").first().waitFor();
   assert.equal(
     await page
       .getByRole("link", { name: "Il me manque un mot", exact: true })
       .count(),
     0,
   );
-  const firstRow = await keyboard
+  const firstRow = await compactKeyboard
     .locator(".communication-tile")
     .first()
     .boundingBox();

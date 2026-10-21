@@ -21,6 +21,7 @@ export default function CompactCommunication({
   tiles,
   groups,
   displaySize,
+  contrastEnhanced,
   decision,
   disabled,
   busy,
@@ -45,10 +46,16 @@ export default function CompactCommunication({
   tiles: Tile[];
   groups: KeyboardGroup[];
   displaySize: DisplaySize;
+  contrastEnhanced: boolean;
   decision: Decision | null;
   disabled: boolean;
   busy: boolean;
-  generation: { pending: boolean; error: string; retry: () => void };
+  generation: {
+    pending: boolean;
+    busy: boolean;
+    error: string;
+    retry: () => void;
+  };
   notice: string;
   error: string;
   online: boolean;
@@ -118,7 +125,7 @@ export default function CompactCommunication({
   const currentCandidate = candidate?.status === "proposed";
   return (
     <section
-      className="compact-communication"
+      className={`compact-communication${contrastEnhanced ? " contrast-enhanced" : ""}`}
       onKeyDownCapture={(event) => {
         if (event.key === "Escape" && speech.speaking) {
           event.preventDefault();
@@ -242,6 +249,7 @@ export default function CompactCommunication({
             onClick={(event) => {
               if (candidate) {
                 opener.current = event.currentTarget;
+                setReviewError("");
                 setCorrection({ id: candidate.id, text: text ?? "" });
               }
             }}
@@ -270,13 +278,26 @@ export default function CompactCommunication({
               Pas ça
             </button>
           )}
-          {(generation.error || (decision && !accepted)) && (
+          {(!decision || generation.error || (decision && !accepted)) &&
+            words.length > 0 && (
+              <button
+                className="secondary"
+                disabled={disabled || generation.busy}
+                onClick={generation.error ? generation.retry : refresh}
+              >
+                {decision
+                  ? "Autre phrase"
+                  : generation.busy
+                    ? "Proposition en cours…"
+                    : "Formuler"}
+              </button>
+            )}
+          {error && (
             <button
               className="secondary"
-              disabled={disabled || generation.pending}
-              onClick={generation.error ? generation.retry : refresh}
+              onClick={() => window.location.reload()}
             >
-              Autre phrase
+              Recharger le message
             </button>
           )}
         </div>

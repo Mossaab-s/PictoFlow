@@ -112,6 +112,12 @@ try {
     );
   const before = await bounds();
   await stable.getByRole("button", { name: "Boire", exact: true }).click();
+  await expect(surface.locator(".proposed-phrase")).toHaveText("Boire");
+  await expect(
+    surface
+      .locator(".compact-browse")
+      .getByRole("button", { name: "Eau", exact: true }),
+  ).toBeEnabled();
   await surface
     .locator(".compact-browse")
     .getByRole("button", { name: "Eau", exact: true })

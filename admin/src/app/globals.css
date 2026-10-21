@@ -54,6 +54,20 @@ body:has(.compact-communication) > .account-bar {
 .compact-heading .profile-identity {
   font-size: 13px;
 }
+.compact-heading > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.compact-browse .grid-columns-3 .pictogram,
+.compact-browse .grid-columns-3 .touch-photo {
+  width: 112px;
+  height: 112px;
+}
+.compact-browse .grid-columns-2 .pictogram,
+.compact-browse .grid-columns-2 .touch-photo {
+  width: 148px;
+  height: 148px;
+}
 .compact-communication button {
   min-height: 44px;
 }
@@ -254,9 +268,6 @@ body:has(.compact-communication) > .account-bar {
   .compact-message {
     padding: 8px;
     grid-template-rows: 66px minmax(0, 1fr) auto;
-  }
-  .compact-words h2 {
-    display: none;
   }
   .compact-actions {
     display: grid;
@@ -2574,7 +2585,8 @@ pre {
   color: var(--muted);
   line-height: 1.5;
 }
-.communication-page.contrast-enhanced {
+.communication-page.contrast-enhanced,
+.compact-communication.contrast-enhanced {
   --ink: #142b24;
   --muted: #394d44;
   --accent: #1d513e;

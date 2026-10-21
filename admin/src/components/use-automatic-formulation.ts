@@ -70,6 +70,7 @@ export function useAutomaticFormulation({
     };
   }, [enabled, ready, selectionKey, retry, gate]);
   return {
+    busy: Boolean(requestKey),
     pending: requestKey === selectionKey && Boolean(requestKey),
     error: error?.key === selectionKey ? error.text : "",
     retry: () => {
