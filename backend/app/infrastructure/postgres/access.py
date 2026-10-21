@@ -289,6 +289,18 @@ class Accounts:
             if actor and not actor.is_admin:
                 query = query.where(AccountRow.id.in_(targets(session, actor)))
             result = tuple(self.view(session, row) for row in session.scalars(query))
+            if actor:
+                credential_permissions = {}
+                for row in result:
+                    try:
+                        authorize_credentials(session, actor.id, row.id)
+                        credential_permissions[row.id] = True
+                    except AccessDenied:
+                        credential_permissions[row.id] = False
+                result = tuple(
+                    replace(row, can_manage_credentials=credential_permissions[row.id])
+                    for row in result
+                )
             if actor and not actor.is_admin:
                 visible = set(targets(session, actor))
                 profiles = profile_grants(session, actor)

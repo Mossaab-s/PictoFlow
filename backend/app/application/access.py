@@ -97,6 +97,7 @@ class AccountView:
     account_type: AccountType | None = None
     managed_account_ids: tuple[UUID, ...] = ()
     patient_profile_id: UUID | None = None
+    can_manage_credentials: bool = False
 
 
 def manages_accounts(account: AccountView) -> bool:

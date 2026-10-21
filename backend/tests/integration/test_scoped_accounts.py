@@ -173,6 +173,7 @@ def test_shared_parent_does_not_transitively_expose_other_patient_or_credentials
     login(client, a["username"])
     users = client.get("/api/v1/auth/users").json()
     shown_parent = next(u for u in users if u["id"] == parent["id"])
+    assert shown_parent["can_manage_credentials"] is False
     assert shown_parent["managed_account_ids"] == [patient["id"]]
     assert set(shown_parent["profile_capabilities"]) == {patient["patient_profile_id"]}
     assert client.get(f"/api/v1/profiles/{other['patient_profile_id']}").status_code == 404
