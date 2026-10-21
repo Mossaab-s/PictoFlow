@@ -13,9 +13,22 @@ from app.application.phrase_fidelity import (
     faithful_words,
     words,
 )
+from app.application.reference_alignment import applicable_reference
 
 NEGATIVE = {"non", "pas", "ne", "n", "jamais", "aucun", "aucune", "sans"}
-EXPLICIT_ACTIONS = {"boire", "manger", "dormir", "partir", "aide", "aller", "faire", "aimer"}
+EXPLICIT_ACTIONS = {
+    "boire",
+    "manger",
+    "dormir",
+    "partir",
+    "aide",
+    "aller",
+    "faire",
+    "aimer",
+    "venir",
+    "rentrer",
+    "retourner",
+}
 
 
 def grounding(request, text):
@@ -40,22 +53,26 @@ def grounding(request, text):
     actual = content(text)
     if not actual:
         return None
-    if (set(required) & (EXPLICIT_ACTIONS | {"stop", "oui"})) - set(actual):
+    protected = Counter(
+        {
+            word: count
+            for word, count in required.items()
+            if word in EXPLICIT_ACTIONS | {"stop", "oui", "non"} or count > 1
+        }
+    )
+    if protected - actual:
         return None
     allowed = set(required)
     for block in request.blocks:
         allowed.update(content(block.meaning))
-    current_ids = set(b.block_id for b in request.blocks)
+    current_ids = tuple(b.block_id for b in request.blocks)
     for example in request.memory_examples:
-        source_ids = set(b.block_id for b in example.blocks)
-        overlap = len(source_ids & current_ids)
-        # Both directions matter: a one-touch greeting cannot justify importing
-        # the meaning of an unrelated long memory, or discarding most of a message.
-        if overlap / len(current_ids) < 0.5 or overlap / len(source_ids) < 0.5:
+        source_ids = tuple(b.block_id for b in example.blocks)
+        if not applicable_reference(current_ids, source_ids):
             continue
         if set(actual) - (allowed | set(content(example.text))):
             continue
-        if not (set(actual) & set(required)) and source_ids != current_ids:
+        if not (set(actual) & set(required)) and Counter(source_ids) != Counter(current_ids):
             continue
         return (example,)
     return None

@@ -109,6 +109,59 @@ def test_demo_annotations_are_not_message_words_and_unknown_paraphrases_fail_clo
 @pytest.mark.parametrize(
     "labels,text,expected",
     [
+        (
+            ("Maman", "Papa", "Voiture", "Maison"),
+            "Maman, Papa, on pourrait rentrer à la maison en voiture.",
+            True,
+        ),
+        (
+            ("Maman", "Papa", "Voiture", "Maison", "Mamie", "Papi"),
+            "Maman, Papa, Mamie, Papi, on peut venir à la maison en voiture.",
+            True,
+        ),
+        (("Moi", "Vélo", "Ecole"), "Je voudrais aller à l’école à vélo.", True),
+        (("Moi", "Boire", "Eau"), "Je peux boire de l’eau ?", True),
+        (
+            ("Maman", "Papa", "Voiture"),
+            "Maman, Papa, on peut rentrer à la maison en voiture.",
+            False,
+        ),
+        (("Papa", "Maison"), "Papa, on peut rentrer à la maison.", False),
+        (("Moi", "Voiture", "Maison"), "Je voudrais aller au parc en voiture.", False),
+        (("Moi", "Voiture", "Maison"), "Tu veux rentrer à la maison en voiture.", False),
+        (("Non", "Voiture", "Maison"), "Je veux rentrer à la maison en voiture.", False),
+        (("Stop", "Voiture", "Maison"), "Je veux rentrer à la maison en voiture.", False),
+        (("Moi", "Voiture", "Voiture", "Maison"), "Je veux rentrer à la maison en voiture.", False),
+        (
+            ("Papa", "Voiture", "Maison"),
+            "Papa, j’ai peur, je veux rentrer à la maison en voiture.",
+            False,
+        ),
+        (("Papa", "Voiture", "Maison"), "Papa conduit la voiture à la maison.", False),
+    ],
+)
+def test_contextual_linking_requires_selected_transport_place_and_preserved_content(
+    labels, text, expected
+):
+    assert faithful_words(request(*labels), text) is expected
+
+
+def test_transport_place_linking_uses_personal_meanings_not_only_the_picture_label():
+    current = request("Voiture", "Maison")
+    current = current.model_copy(
+        update={
+            "blocks": tuple(
+                b.model_copy(update={"meaning": meaning})
+                for b, meaning in zip(current.blocks, ("Pause", "Famille"), strict=True)
+            )
+        }
+    )
+    assert not faithful_words(current, "Je veux rentrer à la maison en voiture.")
+
+
+@pytest.mark.parametrize(
+    "labels,text,expected",
+    [
         (("Moi", "Caca"), "Je voudrais faire caca.", True),
         (("Moi", "Pipi"), "J’ai besoin de faire pipi.", True),
         (("Moi", "Caca"), "J’ai fait caca.", True),

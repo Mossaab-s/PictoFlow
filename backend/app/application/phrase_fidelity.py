@@ -25,6 +25,9 @@ FORMS = (
     ("non", "no", "pas"),
     ("content", "contente", "contents", "contentes"),
     ("aimer", "aime", "aimes", "aimons", "aimez", "aiment"),
+    ("venir", "viens", "vient", "venons", "venez", "viennent"),
+    ("rentrer", "rentre", "rentres", "rentrons", "rentrez", "rentrent"),
+    ("retourner", "retourne", "retournes", "retournons", "retournez", "retournent"),
     ("toilettes", "toilette", "wc"),
 )
 CANONICAL = {word: forms[0] for forms in FORMS for word in forms}
@@ -33,6 +36,7 @@ GRAMMAR = frozenset(
     "le la les l un une des du de d au aux a en dans avec pour et ou que qu qui ce cette ces "
     "ici y c est suis es sommes etes sont etre ai as avons avez ont avoir "
     "voudrais voudrait voudrais veux veut voulons voulez veulent vouloir "
+    "peux peut pouvons pouvez peuvent pourrais pourrait pourrions pourriez pourraient "
     "besoin "
     "ne n svp sil si plait please".split()
 )
@@ -63,6 +67,26 @@ def content(text: str) -> Counter[str]:
     return Counter(CANONICAL.get(word, word) for word in words(text) if word not in GRAMMAR)
 
 
+def contextual_actions(request: InterpretationRequest) -> set[str]:
+    """Link a selected transport and place using this profile's validated meanings.
+
+    These verbs add no object, destination or person. They are still inferred
+    actions, so the interpreter caps their score and requires human review.
+    A transport/place label with another personal meaning does not grant this link.
+    """
+    meanings = set(content(" ".join(block.meaning for block in request.blocks)))
+    transport = {"voiture", "velo", "bus", "train"}
+    places = {"maison", "ecole", "parc", "magasin", "dehors", "hopital"}
+    if meanings & transport and meanings & places:
+        return {"aller", "venir", "rentrer", "retourner"}
+    return set()
+
+
+def inferred_linking(request: InterpretationRequest, text: str) -> bool:
+    selected = set(content(" ".join(f"{block.label} {block.meaning}" for block in request.blocks)))
+    return bool((set(content(text)) - selected) & contextual_actions(request))
+
+
 def faithful_words(request: InterpretationRequest, text: str) -> bool:
     """Accept only covered selections and grounded vocabulary in French output."""
     if request.language.split("-")[0].casefold() != "fr":
@@ -88,6 +112,7 @@ def faithful_words(request: InterpretationRequest, text: str) -> bool:
     # movement/actions are content words and need an explicit selected meaning.
     if "toilettes" in required:
         allowed.add("aller")
+    allowed.update(contextual_actions(request))
     actual = content(text)
     # In "faire pipi/caca", faire can be a support verb rather than an added
     # action. Discount only adjacent occurrences with a selected noun, keeping

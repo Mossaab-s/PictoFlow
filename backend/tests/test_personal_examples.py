@@ -44,13 +44,27 @@ def test_relevance_then_frequency_then_recency_and_personal_text_is_not_lexicall
     sources.add("Je voudrais manger chez moi.", age=9)
     sources.add("J’aime manger à la maison.", age=1)
     sources.add("Juste une touche récente", ids=sources.ids[:1])
+    sources.add("Une association partielle applicable", ids=sources.ids[:2])
     result = sources.select()
     assert [x.text for x in result] == [
         "Je voudrais manger chez moi.",
         "J’aime manger à la maison.",
-        "Juste une touche récente",
+        "Une association partielle applicable",
     ]
     assert result[0].occurrences == 2
+
+
+def test_retrieval_excludes_absent_source_touches_and_respects_repetitions():
+    sources = Sources()
+    sources.add("Une scène complète", ids=sources.ids)
+    sources.add("Deux touches répétées", ids=(sources.ids[0], sources.ids[0]))
+    sources.add("Une association exacte", ids=sources.ids[:2])
+    current = CommunicationSequence(
+        profile_id=sources.profile, session_id=uuid4(), block_ids=sources.ids[:2]
+    )
+    assert [e.text for e in select_examples(sources, sources.profile, current)] == [
+        "Une association exacte"
+    ]
 
 
 def test_fifty_default_distinct_examples_and_total_serialized_character_budget():

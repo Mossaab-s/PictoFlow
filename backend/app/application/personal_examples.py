@@ -4,6 +4,7 @@ from collections import Counter
 from difflib import SequenceMatcher
 
 from app.ai.contracts import MemoryExample, SelectedBlock
+from app.application.reference_alignment import applicable_reference
 from app.domain.pcl.entities import CommunicationBlock, Concept
 
 MAX_EXAMPLE_CHARACTERS = 32_000
@@ -26,6 +27,8 @@ def select_examples(store, profile_id, sequence, *, limit=50):
     groups = {}
     for trace in traces:
         if not 1 <= len(trace.block_ids) <= 32:
+            continue
+        if not applicable_reference(sequence.block_ids, trace.block_ids):
             continue
         source_blocks = tuple(blocks.get(i) for i in trace.block_ids)
         if any(b is None or b.status != "validated" for b in source_blocks):
