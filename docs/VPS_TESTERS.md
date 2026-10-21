@@ -42,10 +42,11 @@ docker compose --env-file /home/ubuntu/pictoflow/.env.server \
   -f deploy/docker-compose.server.yml -f deploy/docker-compose.vps.yml up -d --build --wait
 docker compose --env-file /home/ubuntu/pictoflow/.env.server \
   -f deploy/docker-compose.server.yml -f deploy/docker-compose.vps.yml exec backend \
+  python scripts/container_entrypoint.py \
   python -m scripts.manage_accounts create-admin <login> --name '<display name>'
 ```
 
-The console prompts for the administrator's passphrase; never put it in a command, issue or environment variable. Before bootstrap, the login screen is available but protected resources require authentication. Configure AI through **Administration → Fournisseur IA** after login. Create tester accounts privately. Hierarchical practitioner/parent/patient management is tracked in [#126](https://github.com/Mossaab-s/PictoFlow/issues/126).
+The entrypoint wrapper constructs the database URL from the container's private environment; `compose exec` does not run it automatically. The console prompts for the administrator's passphrase; never put it in a command, issue or environment variable. Before bootstrap, the login screen is available but protected resources require authentication. Configure AI through **Administration → Fournisseur IA** after login. Create tester accounts privately. Hierarchical practitioner/parent/patient management is tracked in [#126](https://github.com/Mossaab-s/PictoFlow/issues/126).
 
 Keep the Compose project name `pictoflow-vps` for updates and backups. Persist `postgres_data`, `https_data` and `https_config`; never run `down --volumes` on the deployed project.
 
