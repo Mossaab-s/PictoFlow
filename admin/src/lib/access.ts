@@ -1,4 +1,11 @@
 export type ProfileRole = "communicator" | "editor";
+export const accountTypeLabels = {
+  administrator: "Administrateur",
+  practitioner: "Praticien",
+  parent: "Parent",
+  patient: "Patient",
+} as const;
+export type AccountType = keyof typeof accountTypeLabels;
 export const capabilityLabels = {
   communicate: "Communiquer et lire les phrases",
   review_meanings: "Confirmer, corriger ou refuser les phrases",
@@ -24,6 +31,10 @@ export type Account = {
   profile_access: Record<string, ProfileRole>;
   profile_capabilities?: Record<string, ProfileCapability[]>;
   assisted_profile_id?: string | null;
+  account_type?: AccountType | null;
+  managed_account_ids?: string[];
+  patient_profile_id?: string | null;
+  can_manage_credentials?: boolean;
 };
 export type AuthSession = {
   enabled: boolean;
@@ -63,6 +74,27 @@ export function canProfile(
 }
 export function isAdministrator(session: AuthSession | null): boolean {
   return !!session && (!session.enabled || !!session.account?.is_admin);
+}
+
+export function canManageAccounts(session: AuthSession | null): boolean {
+  const account = session?.account;
+  return (
+    !!session?.enabled &&
+    !!account &&
+    !account.assisted_profile_id &&
+    (account.is_admin ||
+      account.account_type === "practitioner" ||
+      account.account_type === "parent")
+  );
+}
+
+export function creatableAccountTypes(
+  account: Account | null | undefined,
+): Exclude<AccountType, "administrator">[] {
+  if (!account || account.assisted_profile_id) return [];
+  if (account.is_admin) return ["practitioner", "parent", "patient"];
+  if (account.account_type === "practitioner") return ["parent", "patient"];
+  return account.account_type === "parent" ? ["patient"] : [];
 }
 
 export function profileInPath(path: string): string | null {
@@ -168,6 +200,7 @@ export function landingPath(session: AuthSession): string {
   if (session.account?.assisted_profile_id)
     return `/communication/${session.account.assisted_profile_id}`;
   if (isAdministrator(session)) return "/admin";
+  if (canManageAccounts(session)) return "/accompagnement";
   if (assignedProfiles(session, "support").length) return "/accompagnement";
   const ids = assignedProfiles(session, "communication");
   return ids.length === 1 ? `/communication/${ids[0]}` : "/communication";
@@ -226,6 +259,7 @@ export function pathPermitted(session: AuthSession, path: string): boolean {
   const account = session.account;
   if (!account) return false;
   if (["/", "/communication", "/accompagnement"].includes(path)) return true;
+  if (path === "/accompagnement/comptes") return canManageAccounts(session);
   const profile = profileInPath(path);
   if (!profile) return false;
   const capabilities = profileCapabilities(account, profile);

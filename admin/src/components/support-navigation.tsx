@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { isAdministrator } from "@/lib/access";
+import { canManageAccounts, isAdministrator } from "@/lib/access";
 import { useAuthentication } from "./authentication";
 export default function SupportNavigation() {
   const path = usePathname();
@@ -15,6 +15,17 @@ export default function SupportNavigation() {
         Personnes accompagnées
       </Link>
       <Link href="/communication">Mes claviers de communication</Link>
+      {canManageAccounts(session) && (
+        <Link
+          href={
+            session?.account?.is_admin
+              ? "/admin/access"
+              : "/accompagnement/comptes"
+          }
+        >
+          Comptes et rattachements
+        </Link>
+      )}
       {isAdministrator(session) && <Link href="/admin">Administration</Link>}
     </nav>
   );

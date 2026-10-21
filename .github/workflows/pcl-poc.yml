@@ -210,6 +210,10 @@ jobs:
         if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
         working-directory: admin
         run: node tests/e2e/provider-settings.mjs
+      - name: Manage scoped practitioner, parent and patient accounts
+        if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/scoped-accounts.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -241,6 +245,8 @@ jobs:
             admin/.local/message-copy/*.png
             admin/.local/provider-settings/*.png
             admin/.local/provider-settings/report.json
+            admin/.local/scoped-accounts/*.png
+            admin/.local/scoped-accounts/report.json
             admin/.local/profile-capabilities/*.png
             admin/.local/three-spaces/*.png
             admin/.local/support-review/*.png
