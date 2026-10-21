@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="790" viewBox="0 0 1200 790">
+<rect width="1200" height="790" fill="#f5f8f5"/>
+<rect x="40" y="25" width="1120" height="70" rx="15" fill="#fff" stroke="#c6d7d2"/><text x="75" y="70" font-family="Arial" font-weight="bold" font-size="28" fill="#19493f">PictoFlow · I communicate</text><text x="980" y="68" font-family="Arial" font-size="18" fill="#477267">Home   ⚙</text>
+<rect x="40" y="113" width="1120" height="221" rx="18" fill="#e4f1e7" stroke="#a6c4b2" stroke-width="2"/>
+<text x="65" y="151" font-family="Arial" font-size="21" font-weight="bold" fill="#1c5144">MY MESSAGE · Always visible</text>
+<g font-family="Arial" text-anchor="middle" font-size="23" font-weight="bold" fill="#224c45">
+<rect x="65" y="169" width="150" height="80" rx="12" fill="white"/><text x="140" y="202" font-size="28">👩</text><text x="140" y="233">Mum</text>
+<rect x="226" y="169" width="150" height="80" rx="12" fill="white"/><text x="301" y="202" font-size="28">👨</text><text x="301" y="233">Dad</text>
+<rect x="387" y="169" width="150" height="80" rx="12" fill="white"/><text x="462" y="202" font-size="28">🍽</text><text x="462" y="233">Eat</text></g>
+<text x="65" y="288" font-family="Arial" font-size="22" fill="#163e35">Suggested sentence: <tspan font-weight="bold">“Mum, Dad, I want to eat.”</tspan></text>
+<rect x="740" y="257" width="178" height="54" rx="12" fill="#26775f"/><text x="829" y="291" font-family="Arial" font-size="20" font-weight="bold" text-anchor="middle" fill="white">▶ SPEAK</text>
+<rect x="929" y="257" width="105" height="54" rx="12" fill="#fff" stroke="#26775f"/><text x="982" y="291" font-family="Arial" font-size="18" text-anchor="middle" fill="#26775f">✓ YES</text>
+<rect x="1042" y="257" width="100" height="54" rx="12" fill="#fff" stroke="#a6b8b0"/><text x="1092" y="291" font-family="Arial" font-size="18" text-anchor="middle" fill="#477267">EDIT</text>
+<rect x="40" y="351" width="1120" height="119" rx="18" fill="#f0eedf" stroke="#c1c3a7"/>
+<text x="65" y="383" font-family="Arial" font-size="20" font-weight="bold" fill="#415b47">STABLE QUICK ACCESS · Same positions</text>
+<g font-family="Arial" font-size="19" font-weight="bold" text-anchor="middle" fill="#31564e"><text x="142" y="434">✅ Yes</text><text x="323" y="434">❌ No</text><text x="508" y="434">✋ Stop</text><text x="690" y="434">🛟 Help</text><text x="871" y="434">💧 Drink</text><text x="1050" y="434">🚻 Toilet</text></g>
+<rect x="40" y="487" width="1120" height="210" rx="18" fill="white" stroke="#c7d6d2"/>
+<text x="65" y="524" font-family="Arial" font-size="22" font-weight="bold" fill="#19493f">MY PICTOGRAMS · Scroll in this area only</text>
+<g font-family="Arial" text-anchor="middle" font-size="21" font-weight="bold" fill="#204e44">
+<rect x="63" y="542" width="170" height="125" rx="13" fill="#f4f8f6" stroke="#b8d2c7"/><text x="148" y="601" font-size="39">👩</text><text x="148" y="641">Mum</text>
+<rect x="244" y="542" width="170" height="125" rx="13" fill="#f4f8f6" stroke="#b8d2c7"/><text x="329" y="601" font-size="39">👨</text><text x="329" y="641">Dad</text>
+<rect x="425" y="542" width="170" height="125" rx="13" fill="#f4f8f6" stroke="#b8d2c7"/><text x="510" y="601" font-size="39">🍽</text><text x="510" y="641">Eat</text>
+<rect x="606" y="542" width="170" height="125" rx="13" fill="#f4f8f6" stroke="#b8d2c7"/><text x="691" y="601" font-size="39">💧</text><text x="691" y="641">Water</text>
+<rect x="787" y="542" width="170" height="125" rx="13" fill="#f4f8f6" stroke="#b8d2c7"/><text x="872" y="601" font-size="39">🧸</text><text x="872" y="641">Toy</text>
+<rect x="968" y="542" width="170" height="125" rx="13" fill="#f4f8f6" stroke="#b8d2c7"/><text x="1053" y="601" font-size="39">🏡</text><text x="1053" y="641">Home</text></g>
+<rect x="40" y="712" width="1120" height="55" rx="13" fill="#fff" stroke="#c6d7d2"/><text x="70" y="747" font-family="Arial" font-size="20" fill="#19493f">↶ Undo</text><text x="1000" y="747" font-family="Arial" font-size="20" fill="#19493f">↻ Restart</text>
+</svg>
