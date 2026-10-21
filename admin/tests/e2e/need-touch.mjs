@@ -112,6 +112,14 @@ try {
   const page = await browser.newPage({
     viewport: { width: 1024, height: 900 },
   });
+  // This scenario exercises the detailed tools available from Options.
+  await page.addInitScript(() => {
+    try {
+      sessionStorage.setItem("pictoflow:communication-view", "tools");
+    } catch {
+      /* Optional UI preference. */
+    }
+  });
   const errors = [],
     creations = [];
   let modelCalls = 0;

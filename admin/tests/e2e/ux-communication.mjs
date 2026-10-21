@@ -43,6 +43,14 @@ try {
   }
   const before = await call(base + "/keyboard");
   const page = await browser.newPage();
+  // This scenario exercises the detailed tools available from Options.
+  await page.addInitScript(() => {
+    try {
+      sessionStorage.setItem("pictoflow:communication-view", "tools");
+    } catch {
+      /* Optional UI preference. */
+    }
+  });
   await page.addInitScript(() => {
     window.__spoken = [];
     Object.defineProperty(window, "SpeechSynthesisUtterance", {

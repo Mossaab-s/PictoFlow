@@ -119,6 +119,14 @@ async function connect(user, width) {
     viewport: { width, height: 960 },
   });
   const page = await context.newPage();
+  // This scenario exercises the detailed tools available from Options.
+  await page.addInitScript(() => {
+    try {
+      sessionStorage.setItem("pictoflow:communication-view", "tools");
+    } catch {
+      /* Optional UI preference. */
+    }
+  });
   page.on("pageerror", (error) => errors.push(error.message));
   active = page;
   await page.goto(origin + "/");

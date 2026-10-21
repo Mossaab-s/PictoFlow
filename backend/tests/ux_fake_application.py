@@ -1,5 +1,6 @@
 """Isolated browser-CI adapter; never imported by the application or server image."""
 
+import asyncio
 import os
 from hashlib import sha256
 from typing import Literal
@@ -20,6 +21,47 @@ if os.environ.get("PICTOFLOW_UX_TESTING") != "1":
 
 app = create_app(Settings(environment="test", auth_enabled=False, ai_provider="disabled"))
 app.state.fixture_calls = 0
+app.state.automatic_requests = []
+
+
+class AutomaticFixture(FakeProvider):
+    async def interpret(self, request):
+        app.state.fixture_calls += 1
+        app.state.automatic_requests.append(request.model_dump(mode="json"))
+        if app.state.fixture_calls == 1:
+            await asyncio.sleep(2.5)
+        text = " ".join(block.label for block in request.blocks) + "."
+        provider = FakeProvider(
+            {
+                "interpretations": [
+                    {
+                        "request": request.model_dump(mode="json"),
+                        "response": {
+                            "status": "proposal",
+                            "candidates": [{"intent": "other", "text": text, "confidence": 0.92}],
+                        },
+                    }
+                ]
+            }
+        )
+        return await provider.interpret(request)
+
+
+@app.post("/_synthetic/automatic")
+async def automatic_fixture():
+    previous = app.state.ai_provider
+    app.state.fixture_calls = 0
+    app.state.automatic_requests = []
+    app.state.ai_provider = ProviderManager(
+        AutomaticFixture(), cache_revision="automatic-browser-v1"
+    )
+    await previous.aclose()
+    return {"provider": "fake"}
+
+
+@app.get("/_synthetic/automatic")
+def automatic_requests():
+    return {"requests": app.state.automatic_requests}
 
 
 class CountingFakeProvider(FakeProvider):

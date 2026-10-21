@@ -45,6 +45,14 @@ try {
     if (r.url().endsWith("/interpret")) ai++;
   });
   let page = await context.newPage();
+  // This scenario exercises the detailed tools available from Options.
+  await page.addInitScript(() => {
+    try {
+      sessionStorage.setItem("pictoflow:communication-view", "tools");
+    } catch {
+      /* Optional UI preference. */
+    }
+  });
   page.setDefaultTimeout(20000);
   await page.goto(`${origin}/communication/${p}`);
   await page
@@ -216,6 +224,14 @@ try {
   assert.equal((await call(base + "/sequences")).length, 1);
   assert.equal((await call(base + "/memory")).interpretations.length, 0);
   const online = await context.newPage();
+  // This scenario exercises the detailed tools available from Options.
+  await online.addInitScript(() => {
+    try {
+      sessionStorage.setItem("pictoflow:communication-view", "tools");
+    } catch {
+      /* Optional UI preference. */
+    }
+  });
   // Exercise actual local logout cleanup and the other tab's lock with a synthetic account view.
   await online.route("**/auth/session", (route) =>
     route.fulfill({

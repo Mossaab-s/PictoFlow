@@ -36,6 +36,14 @@ try {
     viewport: { width: 1280, height: 900 },
   });
   const page = await context.newPage();
+  // This scenario exercises the detailed tools available from Options.
+  await page.addInitScript(() => {
+    try {
+      sessionStorage.setItem("pictoflow:communication-view", "tools");
+    } catch {
+      /* Optional UI preference. */
+    }
+  });
   page.setDefaultTimeout(15000);
   const errors = [];
   let interpretations = 0;

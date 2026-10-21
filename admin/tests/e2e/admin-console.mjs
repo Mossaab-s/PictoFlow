@@ -49,6 +49,14 @@ for (const name of ["audit", "memory", "blocks", "keyboard"])
   before[name] = await call(base + "/" + name);
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1280, height: 960 } });
+// This scenario exercises the detailed tools available from Options.
+await page.addInitScript(() => {
+  try {
+    sessionStorage.setItem("pictoflow:communication-view", "tools");
+  } catch {
+    /* Optional UI preference. */
+  }
+});
 const errors = [];
 const writes = [];
 const reads = [];
@@ -264,6 +272,14 @@ try {
   // Limited users cannot mount console loaders or read admin-only provider metadata.
   const context = await browser.newContext();
   const limitedPage = await context.newPage();
+  // This scenario exercises the detailed tools available from Options.
+  await limitedPage.addInitScript(() => {
+    try {
+      sessionStorage.setItem("pictoflow:communication-view", "tools");
+    } catch {
+      /* Optional UI preference. */
+    }
+  });
   limitedPage.on("pageerror", (error) => errors.push(error.message));
   await limitedPage.goto(origin + "/");
   await limitedPage
@@ -305,6 +321,14 @@ try {
     viewport: { width: 1024, height: 900 },
   });
   const localPage = await local.newPage();
+  // This scenario exercises the detailed tools available from Options.
+  await localPage.addInitScript(() => {
+    try {
+      sessionStorage.setItem("pictoflow:communication-view", "tools");
+    } catch {
+      /* Optional UI preference. */
+    }
+  });
   localPage.on("pageerror", (error) => errors.push(error.message));
   await localPage.goto("http://127.0.0.1:3130/admin");
   await localPage

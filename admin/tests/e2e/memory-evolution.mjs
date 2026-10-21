@@ -102,6 +102,14 @@ const pending = await propose(["home"]);
 const beforeKeyboard = await call(base + "/keyboard");
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1024, height: 900 } });
+// This scenario exercises the detailed tools available from Options.
+await page.addInitScript(() => {
+  try {
+    sessionStorage.setItem("pictoflow:communication-view", "tools");
+  } catch {
+    /* Optional UI preference. */
+  }
+});
 const errors = [];
 const writes = [];
 const reads = [];

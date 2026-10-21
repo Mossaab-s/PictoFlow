@@ -34,6 +34,14 @@ try {
     });
   }
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  // This scenario exercises the detailed tools available from Options.
+  await page.addInitScript(() => {
+    try {
+      sessionStorage.setItem("pictoflow:communication-view", "tools");
+    } catch {
+      /* Optional UI preference. */
+    }
+  });
   page.setDefaultTimeout(15000);
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));

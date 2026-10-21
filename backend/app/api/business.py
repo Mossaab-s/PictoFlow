@@ -157,6 +157,7 @@ class InterpretationFeedbackBody(FeedbackBody):
 
 
 class SelectionBody(Body):
+    automatic_preview: bool = Field(default=False, strict=True)
     action: str = Field(pattern="^(append|undo|clear|complete|cancel|remove|move|replace|insert)$")
     block_id: UUID | None = None
     observation: SelectionObservation | None = None
@@ -168,6 +169,8 @@ class SelectionBody(Body):
 
     @model_validator(mode="after")
     def explicit_edit(self):
+        if self.automatic_preview and self.action != "complete":
+            raise ValueError("Automatic preview only seals a snapshot")
         if self.action in {"remove", "move", "replace", "insert"}:
             if (
                 self.index is None
@@ -656,6 +659,7 @@ def selection(request: Request, profile_id: UUID, sequence_id: UUID, body: Selec
             index=body.index,
             expected_block_ids=body.expected_block_ids,
             target_index=body.target_index,
+            automatic_preview=body.automatic_preview,
         )
     except SequenceEditConflict:
         raise HTTPException(409, "Message changed; review the current draft") from None

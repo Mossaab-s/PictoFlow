@@ -32,6 +32,8 @@ import { replayAvailable } from "@/lib/learning";
 import MemorySuggestions from "./memory-suggestions";
 import AIContext from "./ai-context";
 import PhraseHypotheses from "./phrase-hypotheses";
+import CompactCommunication from "./compact-communication";
+import { useAutomaticFormulation } from "./use-automatic-formulation";
 import LiteralExplanation from "./literal-explanation";
 import MessageResetDialog from "./message-reset-dialog";
 import MessageTouchEditor, { type TouchRemoval } from "./message-touch-editor";
@@ -59,11 +61,38 @@ export default function CommunicationScreen({
   profileId,
   standalone = false,
   initialPhraseId = null,
+  initialTools = false,
 }: {
   profileId: string;
   standalone?: boolean;
   initialPhraseId?: string | null;
+  initialTools?: boolean;
 }) {
+  const [detailed, setDetailed] = useState(initialTools);
+  const [automatic, setAutomatic] = useState(true);
+  const compact = standalone && !detailed;
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem("pictoflow:communication-view") === "tools")
+        setDetailed(true);
+      setAutomatic(
+        localStorage.getItem(`pictoflow:automatic:${profileId}`) !== "off",
+      );
+    } catch {
+      /* Preferences are optional. */
+    }
+  }, [profileId]);
+  function changeView(tools: boolean) {
+    setDetailed(tools);
+    try {
+      sessionStorage.setItem(
+        "pictoflow:communication-view",
+        tools ? "tools" : "compact",
+      );
+    } catch {
+      /* Optional. */
+    }
+  }
   const data = useProfileKeyboard(profileId);
   const online = useOnlineStatus();
   const session = useAuthentication();
@@ -93,8 +122,9 @@ export default function CommunicationScreen({
   const [sequence, setSequence] = useState<Sequence | null>(null);
   const [decision, setDecision] = useState<Decision | null>(null);
   useEffect(() => {
-    if (decision) requestAnimationFrame(() => reviewHeading.current?.focus());
-  }, [decision]);
+    if (decision && !compact)
+      requestAnimationFrame(() => reviewHeading.current?.focus());
+  }, [decision, compact]);
   const [context, setContext] = useState("");
   const [observeRhythm, setObserveRhythm] = useState(false);
   const lastSelection = useRef<SelectionMark | null>(null);
@@ -383,7 +413,7 @@ export default function CommunicationScreen({
     }
   }
   async function select(tile: Tile, clickedAt = performance.now()) {
-    let active = current.current;
+    let active = await editableCurrent();
     if (!active) {
       active = await api<Sequence>(`${base}/sequences`, {
         method: "POST",
@@ -420,16 +450,62 @@ export default function CommunicationScreen({
       remember(result, null);
     }
   }
-  async function selection(action: "undo" | "clear" | "complete") {
+  async function editableCurrent() {
+    const active = current.current;
+    if (!compact || !active || active.status !== "completed") return active;
+    speech.stop();
+    const attempt =
+      copyRequest.current?.sourceId === active.id
+        ? copyRequest.current
+        : { sourceId: active.id, requestId: newIdentity() };
+    copyRequest.current = attempt;
+    try {
+      sessionStorage.setItem(copyKey, JSON.stringify(attempt));
+    } catch {
+      /* Optional recovery reference. */
+    }
+    let copied: Sequence;
+    try {
+      copied = await api<Sequence>(`${base}/sequences/${active.id}/copy`, {
+        method: "POST",
+        body: JSON.stringify({
+          request_id: attempt.requestId,
+          expected_block_ids: active.block_ids,
+          confirm: true,
+        }),
+      });
+    } catch (error) {
+      if (error instanceof APIError && error.status < 500) {
+        clearCopyAttempt();
+        throw error;
+      }
+      copied = await readCopy(attempt);
+    }
+    if (!alive.current) throw new Error("Communication closed");
+    clearCopyAttempt();
+    remember(copied, null);
+    return copied;
+  }
+  async function selection(
+    action: "undo" | "clear" | "complete",
+    preview = false,
+  ) {
     if (!current.current) return;
+    if (action !== "complete") await editableCurrent();
     lastSelection.current = null;
     const result = await api<Sequence>(
       `${base}/sequences/${current.current.id}/selection`,
-      { method: "POST", body: JSON.stringify({ action }) },
+      {
+        method: "POST",
+        body: JSON.stringify({
+          action,
+          ...(preview ? { automatic_preview: true } : {}),
+        }),
+      },
     );
     if (alive.current) {
       remember(result, null);
-      if (action === "complete")
+      if (action === "complete" && !preview)
         setNotice(
           "Votre message est terminé. Vous pouvez le lire ou demander une proposition de phrase.",
         );
@@ -439,8 +515,10 @@ export default function CommunicationScreen({
     choice: TouchRemoval & { targetIndex?: number; blockId?: string },
     action: "remove" | "move" | "replace" | "insert",
   ) {
-    const active = current.current;
+    let active = current.current;
     if (!active || active.id !== choice.sequenceId) return;
+    active = await editableCurrent();
+    if (!active || active.block_ids.join() !== choice.blockIds.join()) return;
     lastSelection.current = null;
     let result: Sequence;
     try {
@@ -485,11 +563,17 @@ export default function CommunicationScreen({
       );
     }
   }
-  async function propose(refresh = false) {
+  async function propose(
+    refresh = false,
+    signal?: AbortSignal,
+    isCurrent = () => true,
+  ) {
     if (!current.current || current.current.status !== "completed") return;
+    const snapshot = current.current;
     const result = await api<Decision>(
-      `${base}/sequences/${current.current.id}/interpret`,
+      `${base}/sequences/${snapshot.id}/interpret`,
       {
+        signal,
         method: "POST",
         body: JSON.stringify({
           declared_context: context.trim() ? [context.trim()] : [],
@@ -497,7 +581,8 @@ export default function CommunicationScreen({
         }),
       },
     );
-    if (alive.current) remember(current.current, result);
+    if (alive.current && isCurrent() && current.current?.id === snapshot.id)
+      remember(snapshot, result);
   }
   function closeCopy() {
     copyDialog.current?.close();
@@ -617,6 +702,7 @@ export default function CommunicationScreen({
         body: JSON.stringify({
           action,
           actor_role: role,
+          ...(compact ? { expected_status: "proposed" } : {}),
           ...(action === "correct"
             ? { corrected_value: corrected?.trim() }
             : {}),
@@ -754,6 +840,36 @@ export default function CommunicationScreen({
     !contrast.ready ||
     !suggestions.ready ||
     !speech.ready;
+  const selectionKey = sequence?.block_ids.length
+    ? `${sequence.id}:${sequence.block_ids.join()}`
+    : "";
+  const generation = useAutomaticFormulation({
+    enabled: compact && automatic && suggestions.mode === "off" && !decision,
+    selectionKey,
+    ready:
+      online &&
+      !restoring &&
+      !restoreFailed &&
+      !data.loading &&
+      suggestions.ready &&
+      display.ready,
+    gate,
+    generate: async (signal, isCurrent) => {
+      if (decision || !isCurrent()) return;
+      if (current.current?.status === "in_progress") {
+        let sealed = false;
+        await perform(async () => {
+          await selection("complete", true);
+          sealed = true;
+        }, true);
+        if (!sealed) throw new Error("Snapshot unavailable");
+      }
+      if (!isCurrent()) return;
+      if (current.current?.status !== "completed")
+        throw new Error("Snapshot unavailable");
+      await propose(false, signal, isCurrent);
+    },
+  });
   function cancelReset() {
     setResetAction(null);
     requestAnimationFrame(() => resetOpener.current?.focus());
@@ -765,6 +881,58 @@ export default function CommunicationScreen({
     } else
       void perform(action === "clear" ? () => selection("clear") : newMessage);
   }
+  if (compact)
+    return (
+      <>
+        <CompactCommunication
+          profileId={profileId}
+          sequence={sequence}
+          words={chosen}
+          tiles={tiles}
+          groups={data.groups}
+          displaySize={display.size}
+          decision={decision}
+          disabled={pending}
+          busy={busy}
+          generation={generation}
+          notice={
+            suggestions.mode !== "off"
+              ? "Suggestions de mémoire actives dans les options · IA en pause."
+              : notice
+          }
+          error={data.error}
+          online={online}
+          canReview={canReview}
+          speech={speech}
+          heading={messageHeading}
+          select={(tile) => perform(() => select(tile), false)}
+          remove={(choice) => perform(() => editTouch(choice, "remove"), false)}
+          undo={() => void perform(() => selection("undo"), false)}
+          reset={(button) => requestReset("new", button)}
+          review={async (candidate, action, text) => {
+            let saved = false;
+            await perform(async () => {
+              await feedback(candidate, action, text);
+              saved = true;
+            }, false);
+            return saved;
+          }}
+          options={() => {
+            speech.stop();
+            changeView(true);
+          }}
+          refresh={() => void perform(() => propose(true), false)}
+        />
+        <MessageResetDialog
+          action={resetAction}
+          cancel={cancelReset}
+          confirm={() => {
+            setResetAction(null);
+            void perform(newMessage, false);
+          }}
+        />
+      </>
+    );
   return (
     <>
       {!standalone && (
@@ -779,6 +947,31 @@ export default function CommunicationScreen({
           }
         }}
       >
+        {standalone && (
+          <div className="compact-tools-return">
+            <button onClick={() => changeView(false)}>
+              Revenir à la communication
+            </button>
+            <label>
+              <input
+                type="checkbox"
+                checked={automatic}
+                onChange={(event) => {
+                  setAutomatic(event.target.checked);
+                  try {
+                    localStorage.setItem(
+                      `pictoflow:automatic:${profileId}`,
+                      event.target.checked ? "on" : "off",
+                    );
+                  } catch {
+                    /* Optional preference. */
+                  }
+                }}
+              />
+              Proposer une phrase automatiquement après une pause
+            </label>
+          </div>
+        )}
         <nav className="communication-jumps" aria-label="Accès rapides">
           <a href="#communication-message">Aller au message</a>
           <a href="#communication-keyboard">Aller au clavier</a>

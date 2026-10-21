@@ -70,6 +70,12 @@ try {
     viewport: { width: 1280, height: 900 },
   });
   page = await context.newPage();
+  // Exercise the detailed tools available from Options.
+  await page.addInitScript(() => {
+    try {
+      sessionStorage.setItem("pictoflow:communication-view", "tools");
+    } catch {}
+  });
   page.on("response", (r) => {
     if (r.url().includes("/memory-suggestions?"))
       console.log("Synthetic suggestion response:", r.status());

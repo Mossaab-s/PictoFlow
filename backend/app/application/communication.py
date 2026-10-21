@@ -66,7 +66,10 @@ class CommunicationService:
         index: int | None = None,
         expected_block_ids: tuple[UUID, ...] | None = None,
         target_index: int | None = None,
+        automatic_preview: bool = False,
     ):
+        if type(automatic_preview) is not bool or (automatic_preview and action != "complete"):
+            raise DomainInvariantError("Automatic preview only seals a snapshot")
         if action in {"remove", "move", "replace", "insert"}:
             if (
                 type(index) is not int
@@ -109,7 +112,9 @@ class CommunicationService:
             current = edit_sequence(
                 previous, action, block_id, index=index, target_index=target_index
             )
-            details = None
+            details = (
+                {"completion_reason": "automatic_phrase_preview"} if automatic_preview else None
+            )
             if observation:
                 details = {"selection_observation": observation.model_dump()}
             elif action == "remove":
@@ -126,7 +131,7 @@ class CommunicationService:
                 f"sequence_{action}",
                 previous,
                 current,
-                "human",
+                "application" if automatic_preview else "human",
                 new_details=details,
             )
         return current

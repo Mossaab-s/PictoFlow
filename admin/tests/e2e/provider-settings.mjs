@@ -85,6 +85,14 @@ const report = { status: "running", synthetic: true, checkpoints: [] };
 const mark = (name) => report.checkpoints.push(name);
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1280, height: 960 } });
+// This scenario exercises the detailed tools available from Options.
+await page.addInitScript(() => {
+  try {
+    sessionStorage.setItem("pictoflow:communication-view", "tools");
+  } catch {
+    /* Optional UI preference. */
+  }
+});
 const errors = [];
 page.on("pageerror", (error) => errors.push(error.message));
 await fs.mkdir(".local/provider-settings", { recursive: true });
