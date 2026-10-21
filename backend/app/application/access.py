@@ -11,6 +11,12 @@ from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError
 
 type ProfileRole = Literal["communicator", "editor"]
+type AccountType = Literal["administrator", "practitioner", "parent", "patient"]
+MANAGED_TYPES = {
+    "administrator": frozenset({"practitioner", "parent", "patient"}),
+    "practitioner": frozenset({"parent", "patient"}),
+    "parent": frozenset({"patient"}),
+}
 type ProfileCapability = Literal[
     "communicate",
     "review_meanings",
@@ -88,6 +94,16 @@ class AccountView:
     profile_access: dict[str, ProfileRole]
     profile_capabilities: dict[str, tuple[ProfileCapability, ...]] = field(default_factory=dict)
     assisted_profile_id: UUID | None = None
+    account_type: AccountType | None = None
+    managed_account_ids: tuple[UUID, ...] = ()
+    patient_profile_id: UUID | None = None
+    can_manage_credentials: bool = False
+
+
+def manages_accounts(account: AccountView) -> bool:
+    return account.assisted_profile_id is None and (
+        account.is_admin or account.account_type in {"practitioner", "parent"}
+    )
 
 
 # Exact route templates. New endpoints must be explicitly classified before use.

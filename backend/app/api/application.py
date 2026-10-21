@@ -29,6 +29,7 @@ from app.application.transient import TransientStoreUnavailable
 from app.config import Settings
 from app.domain.pcl.invariants import DomainInvariantError
 from app.infrastructure.postgres.access import AccessConflict
+from app.infrastructure.postgres.account_scope import AccessDenied
 from app.infrastructure.postgres.database import create_database_engine, create_session_factory
 from app.infrastructure.postgres.pcl_repository import PostgresPCLUnits
 from app.infrastructure.redis.factory import create_transient_store
@@ -112,6 +113,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         (IntegrityError, 409, "Conflicting persistent state"),
         (ProfileVersionConflict, 409, "Profile changed; reload before renaming"),
         (AccessConflict, 409, "Account or profile access changed; reload before saving"),
+        (AccessDenied, 403, "Account management permission required"),
         (OfflineConflict, 409, "Keyboard or offline request changed; retain draft and review"),
         (OfflineSnapshotTooLarge, 413, "Offline media snapshot too large"),
         (

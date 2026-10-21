@@ -81,9 +81,47 @@ class AccountRow(Timestamps, Base):
     password_hash: Mapped[str] = mapped_column(sa.Text)
     is_admin: Mapped[bool] = mapped_column(default=False)
     active: Mapped[bool] = mapped_column(default=True)
+    account_type: Mapped[str | None] = mapped_column(sa.String(20))
     __table_args__ = (
         sa.CheckConstraint("username ~ '^[a-z0-9][a-z0-9._-]{2,79}$'", name="valid_username"),
         sa.CheckConstraint("length(trim(display_name)) BETWEEN 1 AND 80", name="bounded_name"),
+        sa.CheckConstraint(
+            "(is_admin AND account_type IS NOT NULL AND account_type = 'administrator') "
+            "OR (NOT is_admin AND "
+            "(account_type IS NULL OR account_type IN ('practitioner','parent','patient')))",
+            name="consistent_account_type",
+        ),
+    )
+
+
+class AccountManagementRow(Base):
+    __tablename__ = "auth_account_management"
+    manager_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("auth_account.id", ondelete="CASCADE"), primary_key=True
+    )
+    dependent_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("auth_account.id", ondelete="CASCADE"), primary_key=True, index=True
+    )
+    capabilities: Mapped[list[str] | None] = mapped_column(sa.ARRAY(sa.Text))
+    __table_args__ = (
+        sa.CheckConstraint("manager_id <> dependent_id", name="different_accounts"),
+        sa.CheckConstraint(
+            "capabilities IS NULL OR (cardinality(capabilities) BETWEEN 1 AND 6 AND "
+            "array_position(capabilities, NULL) IS NULL AND "
+            "capabilities <@ ARRAY['communicate','review_meanings','prepare_keyboard',"
+            "'manage_meanings','view_history','export_profile']::text[])",
+            name="valid_management_capabilities",
+        ),
+    )
+
+
+class PatientProfileRow(Base):
+    __tablename__ = "auth_patient_profile"
+    account_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("auth_account.id", ondelete="CASCADE"), primary_key=True
+    )
+    profile_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("user_communication_profile.id", ondelete="RESTRICT"), unique=True
     )
 
 
