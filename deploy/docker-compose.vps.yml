@@ -1,0 +1,21 @@
+# Use after docker-compose.server.yml. Requires Docker Compose >= 2.24.4.
+name: pictoflow-vps
+
+services:
+  https:
+    profiles: !reset []
+    environment:
+      PICTOFLOW_PUBLIC_DOMAIN: ${PICTOFLOW_PUBLIC_DOMAIN:?Set the public DNS name first}
+    ports: !override
+      - "0.0.0.0:80:80"
+      - "0.0.0.0:443:443"
+    volumes:
+      - ./Caddyfile.public:/etc/caddy/Caddyfile:ro
+
+  backend:
+    environment:
+      PICTOFLOW_AUTH_ENABLED: "true"
+      PICTOFLOW_AUTH_ORIGIN: https://${PICTOFLOW_PUBLIC_DOMAIN:?Set the public DNS name first}
+
+  admin:
+    ports: !reset []

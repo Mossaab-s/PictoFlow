@@ -1,0 +1,15 @@
+{
+    auto_https disable_redirects
+}
+
+https://{$PICTOFLOW_PUBLIC_DOMAIN} {
+    header {
+        Strict-Transport-Security "max-age=86400"
+        X-Content-Type-Options "nosniff"
+    }
+    reverse_proxy admin:3000
+}
+
+http://:80 {
+    redir https://{$PICTOFLOW_PUBLIC_DOMAIN}{uri} 308
+}
