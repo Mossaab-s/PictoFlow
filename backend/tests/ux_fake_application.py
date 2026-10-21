@@ -131,21 +131,16 @@ async def configure_fixture(body: FixtureSelection):
             )
         if body.mode == "long_alternatives":
             words = " ".join(block.label for block in request.blocks)
+            # Stress layout with covered vocabulary only; this is no meaning-quality fixture.
             candidates = [
                 {
                     "intent": "request",
-                    "text": (
-                        f"Je voudrais parler de {words}, prendre le temps de choisir "
-                        "et expliquer ce que je souhaite pour la suite de ma journée."
-                    ),
+                    "text": f"Je voudrais {words}, avec {words}, et {words}, s’il te plaît.",
                     "confidence": 0.92,
                 },
                 {
-                    "intent": "preference",
-                    "text": (
-                        f"J’aime retrouver {words}, raconter ce qui me plaît et partager "
-                        "ces moments avec les personnes qui m’accompagnent au quotidien."
-                    ),
+                    "intent": "statement",
+                    "text": f"Pour moi, {words}; {words}; {words}, s’il te plaît.",
                     "confidence": 0.86,
                 },
             ]
