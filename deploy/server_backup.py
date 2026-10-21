@@ -181,10 +181,16 @@ class Server:
             "-f",
             str(self.release / "deploy/docker-compose.server.yml"),
         ]
+        mode = self.settings.get("PICTOFLOW_DEPLOYMENT_MODE", "lan")
+        if mode not in {"lan", "vps"}:
+            raise BackupError("Unsupported deployment mode")
+        if mode == "vps":
+            self.command.extend(["-f", str(self.release / "deploy/docker-compose.vps.yml")])
+        self.tls_mode = "public" if mode == "vps" else "local"
         self.ids = {}
         self.images = {}
         services = ["postgres", "backend", "admin"]
-        self.tls = "https" in self.settings.get("COMPOSE_PROFILES", "").split(",")
+        self.tls = mode == "vps" or "https" in self.settings.get("COMPOSE_PROFILES", "").split(",")
         if self.tls:
             services.append("https")
         if self.settings.get("PICTOFLOW_AUTH_ENABLED") == "true" and not self.tls:
@@ -360,6 +366,7 @@ def export_bundle(server, bundle, snapshot, exporter, started):
         "release": release,
         "images": server.images,
         "tls": server.tls,
+        "tls_mode": server.tls_mode,
         "proof": proof,
         "files": hashes,
         "deployment": deployment,
@@ -509,8 +516,22 @@ def validate_bundle(bundle):
                 for item in members
             ):
                 raise BackupError("Unsafe TLS archive entries")
-            for stem in ("root", "intermediate"):
-                prefix = "caddy/pki/authorities/local/" + stem
+            mode = manifest.get("tls_mode", "local")
+            if mode == "local":
+                prefixes = ["caddy/pki/authorities/local/" + stem for stem in ("root", "intermediate")]
+            elif mode == "public":
+                prefixes = [
+                    item.name[:-4] for item in members
+                    if item.isfile() and item.name.startswith("caddy/certificates/")
+                    and item.name.endswith(".crt")
+                ]
+                if not prefixes:
+                    raise BackupError("Public TLS archive has no issued certificate")
+            else:
+                raise BackupError("Unsupported TLS recovery mode")
+            for prefix in prefixes:
+                if prefix + ".key" not in archive.getnames() or prefix + ".crt" not in archive.getnames():
+                    raise BackupError("TLS certificate or private key is missing")
                 certificate = archive.extractfile(prefix + ".crt").read()
                 key = archive.extractfile(prefix + ".key").read()
                 public_cert = run(
