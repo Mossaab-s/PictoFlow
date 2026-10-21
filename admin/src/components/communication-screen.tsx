@@ -413,6 +413,7 @@ export default function CommunicationScreen({
     }
   }
   async function select(tile: Tile, clickedAt = performance.now()) {
+    if (compact) speech.stop();
     let active = await editableCurrent();
     if (!active) {
       active = await api<Sequence>(`${base}/sequences`, {
@@ -491,6 +492,7 @@ export default function CommunicationScreen({
     preview = false,
   ) {
     if (!current.current) return;
+    if (compact && action !== "complete") speech.stop();
     if (action !== "complete") await editableCurrent();
     lastSelection.current = null;
     const result = await api<Sequence>(
@@ -907,6 +909,7 @@ export default function CommunicationScreen({
           error={data.error}
           online={online}
           canReview={canReview}
+          canFormulate={suggestions.mode === "off"}
           speech={speech}
           heading={messageHeading}
           select={(tile) => perform(() => select(tile), false)}

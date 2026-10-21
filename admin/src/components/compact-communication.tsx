@@ -30,6 +30,7 @@ export default function CompactCommunication({
   error,
   online,
   canReview,
+  canFormulate,
   speech,
   heading,
   select,
@@ -60,6 +61,7 @@ export default function CompactCommunication({
   error: string;
   online: boolean;
   canReview: boolean;
+  canFormulate: boolean;
   speech: {
     available: boolean;
     speaking: boolean;
@@ -90,7 +92,10 @@ export default function CompactCommunication({
     accepted ??
     candidates.find((item) => item.id === inspectedId) ??
     candidates[0];
-  const text = candidate?.corrected_text ?? candidate?.text;
+  const text =
+    candidate?.status === "rejected"
+      ? undefined
+      : (candidate?.corrected_text ?? candidate?.text);
   const literal = words.map((word) => word.label).join(" ");
   const [correction, setCorrection] = useState<{
     id: string;
@@ -209,7 +214,12 @@ export default function CompactCommunication({
               </select>
             )}
           </div>
-          <p className="proposed-phrase" tabIndex={0}>
+          <p
+            className="proposed-phrase"
+            tabIndex={0}
+            aria-live="polite"
+            aria-atomic="true"
+          >
             {text || literal || "Votre message apparaîtra ici."}
           </p>
           <p className="compact-status" role="status">
@@ -278,7 +288,8 @@ export default function CompactCommunication({
               Pas ça
             </button>
           )}
-          {(!decision || generation.error || (decision && !accepted)) &&
+          {canFormulate &&
+            (!decision || generation.error || (decision && !accepted)) &&
             words.length > 0 && (
               <button
                 className="secondary"

@@ -235,6 +235,20 @@ try {
     exact: true,
   });
   await edit.getByRole("textbox").fill("J’aime boire de l’eau.");
+  const feedbackURL = `**/api/pictoflow/${base}/interpretations/*/feedback`;
+  await page.route(feedbackURL, (route) =>
+    route.fulfill({
+      status: 503,
+      json: { detail: "Synthetic feedback outage" },
+    }),
+  );
+  await edit
+    .getByRole("button", { name: "Valider ma correction", exact: true })
+    .click();
+  await expect(edit.getByRole("alert")).toBeVisible();
+  await expect(edit.getByRole("textbox")).toHaveValue("J’aime boire de l’eau.");
+  assert.equal((await call(base + "/memory")).interpretations.length, 1);
+  await page.unroute(feedbackURL);
   await edit
     .getByRole("button", { name: "Valider ma correction", exact: true })
     .click();
@@ -248,6 +262,20 @@ try {
     path: ".local/compact-communication/desktop.png",
     fullPage: true,
   });
+  await page.emulateMedia({ forcedColors: "active" });
+  const stop = stable.getByRole("button", { name: "Stop", exact: true });
+  await stop.focus();
+  await expect(stop).toBeFocused();
+  assert(
+    await stop.evaluate(
+      (n) => parseFloat(getComputedStyle(n).outlineWidth) >= 2,
+    ),
+  );
+  await page.screenshot({
+    path: ".local/compact-communication/forced-colors.png",
+    fullPage: true,
+  });
+  await page.emulateMedia({ forcedColors: "none" });
   await surface.getByRole("button", { name: "Options", exact: true }).click();
   await page
     .getByRole("button", { name: "Revenir à la communication", exact: true })
@@ -262,10 +290,41 @@ try {
   const count = (await automaticRequests()).length;
   await page.waitForTimeout(1700);
   assert.equal((await automaticRequests()).length, count);
+  await surface.getByRole("button", { name: "Formuler", exact: true }).click();
+  await expect(phrase).toHaveText("Boire.", { timeout: 20000 });
+  await surface.getByRole("button", { name: "Pas ça", exact: true }).click();
+  await expect(phrase).toHaveText("Boire");
+  assert.equal((await call(base + "/memory")).interpretations.length, 2);
   await page.context().setOffline(true);
   await surface.getByRole("button", { name: "Parler", exact: true }).click();
   assert((await page.evaluate(() => window.__spoken)).at(-1).includes("Boire"));
   await page.context().setOffline(false);
+  await surface.getByRole("button", { name: "Options", exact: true }).click();
+  await page
+    .getByLabel("Proposer une phrase automatiquement après une pause")
+    .check();
+  await page.getByRole("link", { name: /Suggestions :/ }).click();
+  const memoryTools = page.getByRole("region", {
+    name: "Suggestions de ma mémoire",
+    exact: true,
+  });
+  await memoryTools.getByRole("button", { name: "Mots", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Revenir à la communication", exact: true })
+    .click();
+  await surface.getByRole("button", { name: "Annuler", exact: true }).click();
+  await expect(phrase).toHaveText("Votre message apparaîtra ici.");
+  await surface
+    .locator(".compact-browse")
+    .getByRole("button", { name: "Eau", exact: true })
+    .click();
+  await expect(phrase).toHaveText("Eau");
+  const memoryModeCalls = (await automaticRequests()).length;
+  await page.waitForTimeout(1700);
+  assert.equal((await automaticRequests()).length, memoryModeCalls);
+  await expect(
+    surface.getByRole("button", { name: "Formuler", exact: true }),
+  ).toHaveCount(0);
   assert.deepEqual(errors, []);
   await fs.writeFile(
     ".local/compact-communication/report.json",
