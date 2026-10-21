@@ -77,13 +77,20 @@ class ConfigurationTests(unittest.TestCase):
             self.assertEqual(path.read_bytes(), first)
 
     def test_backup_selects_the_public_overlay_and_tls(self):
+        self.check_backup_mode("vps")
+
+    def test_external_proxy_backup_does_not_require_a_caddy_container(self):
+        self.check_backup_mode("proxy")
+
+    def check_backup_mode(self, mode):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             release = root / "releases/test"
             release.mkdir(parents=True)
             env = root / ".env.server"
             env.write_text(
-                "PICTOFLOW_DEPLOYMENT_MODE=vps\nPICTOFLOW_AUTH_ENABLED=true\n"
+                f"PICTOFLOW_DEPLOYMENT_MODE={mode}\nPICTOFLOW_AUTH_ENABLED=true\n"
+                "PICTOFLOW_AUTH_ORIGIN=https://testers.example.org\n"
             )
             # Only path resolution is substituted on Windows, which cannot create
             # directory symlinks without privileges. Container ownership is still checked.
@@ -123,12 +130,34 @@ class ConfigurationTests(unittest.TestCase):
 
                 with patch.object(server_backup, "run", side_effect=docker):
                     server = server_backup.Server(root, "pictoflow-vps")
-            self.assertTrue(server.tls)
-            self.assertEqual(server.tls_mode, "public")
+            self.assertEqual(server.tls, mode == "vps")
+            self.assertEqual(server.tls_mode, "public" if mode == "vps" else "external")
             self.assertEqual(
                 server.command[-2:],
-                ["-f", str(release / "deploy/docker-compose.vps.yml")],
+                ["-f", str(release / f"deploy/docker-compose.{mode}.yml")],
             )
+
+    def test_external_proxy_generator_and_port_validation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "server.env"
+            command = [
+                sys.executable,
+                str(ROOT / "deploy/init_vps_env.py"),
+                str(path),
+                "--domain",
+                "testers.example.org",
+                "--release",
+                "proxy-test",
+                "--proxy-port",
+            ]
+            invalid = subprocess.run([*command, "80"], check=False, capture_output=True)
+            self.assertNotEqual(invalid.returncode, 0)
+            self.assertFalse(path.exists())
+            subprocess.run([*command, "3001"], check=True, capture_output=True)
+            config = server_backup.environment(path)
+            self.assertEqual(config["PICTOFLOW_DEPLOYMENT_MODE"], "proxy")
+            self.assertEqual(config["PICTOFLOW_PROXY_PORT"], "3001")
+            self.assertEqual(config["PICTOFLOW_AUTH_ENABLED"], "true")
 
     @unittest.skipUnless(
         shutil.which("openssl"),
@@ -216,6 +245,52 @@ class ConfigurationTests(unittest.TestCase):
 
 @unittest.skipUnless(DOCKER, "Run with --docker in Linux CI")
 class PublicComposeTests(unittest.TestCase):
+    def test_existing_proxy_never_exposes_application_ports_publicly(self):
+        env = dict(
+            os.environ,
+            POSTGRES_PASSWORD="synthetic-only",
+            PICTOFLOW_PUBLIC_DOMAIN="testers.example.org",
+            PICTOFLOW_PROXY_PORT="3001",
+            PICTOFLOW_AUTH_ENABLED="false",
+            PICTOFLOW_BIND_ADDRESS="0.0.0.0",
+            COMPOSE_PROFILES="standalone-tls",
+        )
+        resolved = json.loads(
+            subprocess.check_output(
+                [
+                    "docker",
+                    "compose",
+                    "-f",
+                    str(ROOT / "deploy/docker-compose.server.yml"),
+                    "-f",
+                    str(ROOT / "deploy/docker-compose.proxy.yml"),
+                    "config",
+                    "--format",
+                    "json",
+                ],
+                env=env,
+                text=True,
+            )
+        )
+        self.assertEqual(resolved["name"], "pictoflow-vps")
+        services = resolved["services"]
+        for name, service in services.items():
+            if name != "admin":
+                self.assertFalse(service.get("ports"), name)
+        ports = services["admin"]["ports"]
+        self.assertEqual(len(ports), 1)
+        self.assertEqual(
+            (ports[0]["host_ip"], int(ports[0]["published"]), ports[0]["target"]),
+            ("127.0.0.1", 3001, 3000),
+        )
+        self.assertEqual(
+            services["backend"]["environment"]["PICTOFLOW_AUTH_ENABLED"], "true"
+        )
+        self.assertEqual(
+            services["backend"]["environment"]["PICTOFLOW_AUTH_ORIGIN"],
+            "https://testers.example.org",
+        )
+
     def test_public_ports_authentication_and_certificate_policy(self):
         # Hostile legacy values must not expose another service or disable login.
         env = dict(
