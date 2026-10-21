@@ -2,7 +2,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api, type Profile } from "@/lib/api";
-import { canProfile, canSupport, isAdministrator } from "@/lib/access";
+import {
+  canManageAccounts,
+  canProfile,
+  canSupport,
+  isAdministrator,
+} from "@/lib/access";
 import { useAuthentication } from "./authentication";
 export default function SpaceProfiles({
   mode,
@@ -58,6 +63,20 @@ export default function SpaceProfiles({
           ? "Retrouvez les personnes qui vous sont confiées et préparez leur communication."
           : "Choisissez votre prénom pour retrouver vos touches."}
       </p>
+      {mode === "support" && canManageAccounts(session) && (
+        <p>
+          <Link
+            className="button-link"
+            href={
+              session?.account?.is_admin
+                ? "/admin/access"
+                : "/accompagnement/comptes"
+            }
+          >
+            Gérer les comptes et rattachements
+          </Link>
+        </p>
+      )}
       {loading ? (
         <p role="status">Chargement…</p>
       ) : error ? (

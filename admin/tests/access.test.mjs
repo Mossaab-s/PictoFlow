@@ -10,6 +10,8 @@ import {
   entryRedirect,
   landingPath,
   profileToolPath,
+  canManageAccounts,
+  creatableAccountTypes,
 } from "../src/lib/access.ts";
 import { api, APIError, setCSRFToken } from "../src/lib/api.ts";
 import {
@@ -32,6 +34,43 @@ const session = {
     profile_access: { [p]: "communicator" },
   },
 };
+
+test("account management and landing paths follow adult roles without elevating patients", () => {
+  for (const [kind, types] of [
+    ["administrator", ["practitioner", "parent", "patient"]],
+    ["practitioner", ["parent", "patient"]],
+    ["parent", ["patient"]],
+    ["patient", []],
+    [null, []],
+  ]) {
+    const current = {
+      ...session,
+      account: {
+        ...session.account,
+        is_admin: kind === "administrator",
+        account_type: kind,
+        profile_access: {},
+        profile_capabilities: {},
+      },
+    };
+    assert.deepEqual(creatableAccountTypes(current.account), types);
+    assert.equal(canManageAccounts(current), types.length > 0);
+    assert.equal(
+      pathPermitted(current, "/accompagnement/comptes"),
+      types.length > 0,
+    );
+    if (["practitioner", "parent"].includes(kind))
+      assert.equal(landingPath(current), "/accompagnement");
+    const assisted = {
+      ...current,
+      account: { ...current.account, assisted_profile_id: p },
+    };
+    assert.equal(canManageAccounts(assisted), false);
+    assert.deepEqual(creatableAccountTypes(assisted.account), []);
+    assert.equal(pathPermitted(assisted, "/accompagnement/comptes"), false);
+  }
+  assert.equal(canManageAccounts({ ...session, enabled: false }), false);
+});
 
 test("accompanied sessions stay on one keyboard even through legacy and support URLs", () => {
   const assisted = {
