@@ -2,7 +2,7 @@
 
 import hmac
 import re
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
@@ -13,6 +13,7 @@ from app.application.access import (
     ProfileCapability,
     ProfileRole,
     csrf_token,
+    manages_accounts,
     normalized_capabilities,
     permits,
     username,
@@ -111,6 +112,15 @@ def administrator(request: Request):
     return account
 
 
+def account_manager(request: Request):
+    if not request.app.state.settings.auth_enabled:
+        raise HTTPException(404, "Account management is not enabled")
+    account = authenticated(request)
+    if not manages_accounts(account):
+        raise HTTPException(403, "Account management permission required")
+    return account
+
+
 class Body(BaseModel):
     model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
 
@@ -128,6 +138,8 @@ class AccountBody(LoginBody):
         str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)
     ]
     password: SecretStr = Field(min_length=15, max_length=256)
+    account_type: Literal["practitioner", "parent", "patient"] | None = None
+    profile_id: UUID | None = None
 
 
 class ActiveBody(Body):
@@ -154,6 +166,19 @@ CapabilitySelection = Annotated[
 class CapabilityBody(Body):
     capabilities: CapabilitySelection | None
     expected_capabilities: CapabilitySelection | None
+
+
+class LinkBody(Body):
+    linked: bool = Field(strict=True)
+    expected_linked: bool = Field(strict=True)
+    capabilities: CapabilitySelection | None
+    expected_capabilities: CapabilitySelection | None
+
+
+class LinkView(Body):
+    manager_id: UUID
+    dependent_id: UUID
+    capabilities: tuple[ProfileCapability, ...] | None
 
 
 class AccompaniedBody(Body):
@@ -246,13 +271,15 @@ def logout(request: Request, response: Response):
     )
 
 
-@router.get("/users", response_model=tuple[AccountView, ...], dependencies=[Depends(administrator)])
+@router.get(
+    "/users", response_model=tuple[AccountView, ...], dependencies=[Depends(account_manager)]
+)
 def users(request: Request):
-    return accounts(request).users()
+    return accounts(request).users(actor_id=request.state.account.id)
 
 
 @router.post(
-    "/users", response_model=AccountView, status_code=201, dependencies=[Depends(administrator)]
+    "/users", response_model=AccountView, status_code=201, dependencies=[Depends(account_manager)]
 )
 def create_user(request: Request, body: AccountBody):
     try:
@@ -261,15 +288,17 @@ def create_user(request: Request, body: AccountBody):
             body.display_name,
             body.password.get_secret_value(),
             actor_id=request.state.account.id,
+            account_type=body.account_type,
+            profile_id=body.profile_id,
         )
     except AccessConflict:
         raise
     except ValueError:
-        raise HTTPException(422, "Use a nonblank passphrase of 15 to 256 characters") from None
+        raise HTTPException(422, "Invalid account type, profile or passphrase") from None
 
 
 @router.patch(
-    "/users/{user_id}/active", response_model=AccountView, dependencies=[Depends(administrator)]
+    "/users/{user_id}/active", response_model=AccountView, dependencies=[Depends(account_manager)]
 )
 def active_user(request: Request, user_id: UUID, body: ActiveBody):
     return accounts(request).change(
@@ -281,7 +310,7 @@ def active_user(request: Request, user_id: UUID, body: ActiveBody):
 
 
 @router.post(
-    "/users/{user_id}/password", response_model=AccountView, dependencies=[Depends(administrator)]
+    "/users/{user_id}/password", response_model=AccountView, dependencies=[Depends(account_manager)]
 )
 def reset_password(request: Request, user_id: UUID, body: PasswordBody):
     try:
@@ -316,3 +345,36 @@ def profile_capabilities(request: Request, user_id: UUID, profile_id: UUID, body
         body.expected_capabilities,
         actor_id=request.state.account.id,
     )
+
+
+@router.get(
+    "/management-links",
+    response_model=tuple[LinkView, ...],
+    dependencies=[Depends(account_manager)],
+)
+def management_links(request: Request):
+    return accounts(request).links(actor_id=request.state.account.id)
+
+
+@router.put(
+    "/users/{manager_id}/links/{dependent_id}",
+    status_code=204,
+    dependencies=[Depends(account_manager)],
+)
+def management_link(request: Request, manager_id: UUID, dependent_id: UUID, body: LinkBody):
+    try:
+        accounts(request).link(
+            manager_id,
+            dependent_id,
+            body.linked,
+            body.expected_linked,
+            body.capabilities,
+            body.expected_capabilities,
+            actor_id=request.state.account.id,
+        )
+    except AccessConflict:
+        raise
+    except ValueError:
+        raise HTTPException(
+            422, "Choose explicit permissions for the patient relationship"
+        ) from None
