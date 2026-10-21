@@ -1,0 +1,18 @@
+# Enable only after this domain's public certificate has been issued.
+# Required Apache modules: ssl, headers, proxy, proxy_http.
+Define PictoFlowDomain testers.example.org
+Define PictoFlowPort 3001
+
+<VirtualHost *:443>
+    ServerName ${PictoFlowDomain}
+    SSLEngine On
+    SSLCertificateFile /etc/letsencrypt/live/${PictoFlowDomain}/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/${PictoFlowDomain}/privkey.pem
+    ProxyRequests Off
+    ProxyPreserveHost On
+    RequestHeader set X-Forwarded-Proto "https"
+    Header always set Strict-Transport-Security "max-age=86400"
+    Header always set X-Content-Type-Options "nosniff"
+    ProxyPass / http://127.0.0.1:${PictoFlowPort}/ connectiontimeout=5 timeout=150
+    ProxyPassReverse / http://127.0.0.1:${PictoFlowPort}/
+</VirtualHost>

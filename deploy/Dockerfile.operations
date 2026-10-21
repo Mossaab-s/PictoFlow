@@ -1,0 +1,7 @@
+# Optional operator utility for hosts without Python 3.11+, age and OpenSSL.
+# Mount only the PictoFlow root and the operator's Docker socket/runtime.
+FROM python:3.13-slim-bookworm
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends age openssl \
+    && rm -rf /var/lib/apt/lists/*
+ENTRYPOINT ["python"]

@@ -35,7 +35,14 @@ def main() -> None:
     parser.add_argument("path", type=Path)
     parser.add_argument("--domain", type=public_domain, required=True)
     parser.add_argument("--release", required=True)
+    parser.add_argument(
+        "--proxy-port",
+        type=int,
+        help="Use an existing HTTPS proxy with a private localhost upstream",
+    )
     args = parser.parse_args()
+    if args.proxy_port is not None and not 1024 <= args.proxy_port <= 65535:
+        parser.error("The private upstream port must be between 1024 and 65535")
     if not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9_.-]{0,79}", args.release):
         parser.error(
             "Use a release identifier containing letters, digits, dots, underscores or hyphens"
@@ -48,13 +55,15 @@ def main() -> None:
     with os.fdopen(descriptor, "w", encoding="utf-8") as target:
         target.write(
             f"POSTGRES_PASSWORD={secrets.token_urlsafe(48)}\n"
-            "PICTOFLOW_DEPLOYMENT_MODE=vps\n"
+            f"PICTOFLOW_DEPLOYMENT_MODE={'proxy' if args.proxy_port else 'vps'}\n"
             f"PICTOFLOW_PUBLIC_DOMAIN={args.domain}\n"
             f"PICTOFLOW_RELEASE={args.release}\n"
             "PICTOFLOW_AUTH_ENABLED=true\n"
             f"PICTOFLOW_AUTH_ORIGIN=https://{args.domain}\n"
             "PICTOFLOW_AI_PROVIDER=disabled\n"
         )
+        if args.proxy_port:
+            target.write(f"PICTOFLOW_PROXY_PORT={args.proxy_port}\n")
     print("Created private VPS configuration; credentials are not printed.")
 
 

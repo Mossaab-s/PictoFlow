@@ -1,0 +1,11 @@
+# Replace the example domain before enabling this dedicated virtual host.
+Define PictoFlowDomain testers.example.org
+
+<VirtualHost *:80>
+    ServerName ${PictoFlowDomain}
+    Alias /.well-known/acme-challenge/ /var/lib/pictoflow-acme/.well-known/acme-challenge/
+    <Directory /var/lib/pictoflow-acme/.well-known/acme-challenge/>
+        Require all granted
+    </Directory>
+    RedirectMatch 308 ^/(?!\.well-known/acme-challenge/)(.*)$ https://${PictoFlowDomain}/$1
+</VirtualHost>
