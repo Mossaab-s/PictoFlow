@@ -182,18 +182,22 @@ class Server:
             str(self.release / "deploy/docker-compose.server.yml"),
         ]
         mode = self.settings.get("PICTOFLOW_DEPLOYMENT_MODE", "lan")
-        if mode not in {"lan", "vps"}:
+        if mode not in {"lan", "vps", "proxy"}:
             raise BackupError("Unsupported deployment mode")
         if mode == "vps":
             self.command.extend(["-f", str(self.release / "deploy/docker-compose.vps.yml")])
-        self.tls_mode = "public" if mode == "vps" else "local"
+        if mode == "proxy":
+            self.command.extend(["-f", str(self.release / "deploy/docker-compose.proxy.yml")])
+            if not self.settings.get("PICTOFLOW_AUTH_ORIGIN", "").startswith("https://"):
+                raise BackupError("External proxy deployments require an HTTPS origin")
+        self.tls_mode = {"vps": "public", "proxy": "external", "lan": "local"}[mode]
         self.ids = {}
         self.images = {}
         services = ["postgres", "backend", "admin"]
-        self.tls = mode == "vps" or "https" in self.settings.get("COMPOSE_PROFILES", "").split(",")
+        self.tls = mode == "vps" or (mode == "lan" and "https" in self.settings.get("COMPOSE_PROFILES", "").split(","))
         if self.tls:
             services.append("https")
-        if self.settings.get("PICTOFLOW_AUTH_ENABLED") == "true" and not self.tls:
+        if self.settings.get("PICTOFLOW_AUTH_ENABLED") == "true" and not self.tls and mode != "proxy":
             raise BackupError("Authenticated server must include the HTTPS backup")
         for service in services:
             identifier = run([*self.command, "ps", "-q", service], text=True).strip()

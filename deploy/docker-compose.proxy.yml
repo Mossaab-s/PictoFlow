@@ -1,0 +1,16 @@
+# Existing web server terminates HTTPS. Use after docker-compose.server.yml.
+name: pictoflow-vps
+
+services:
+  https:
+    profiles: !override ["standalone-tls"]
+    ports: !reset []
+
+  backend:
+    environment:
+      PICTOFLOW_AUTH_ENABLED: "true"
+      PICTOFLOW_AUTH_ORIGIN: https://${PICTOFLOW_PUBLIC_DOMAIN:?Set the public DNS name first}
+
+  admin:
+    ports: !override
+      - "127.0.0.1:${PICTOFLOW_PROXY_PORT:?Set the private upstream port first}:3000"
