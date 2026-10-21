@@ -159,6 +159,12 @@ try {
   page = await browser.newPage({
     viewport: { width: 1280, height: 900 },
   });
+  // Exercise the detailed tools available from Options.
+  await page.addInitScript(() => {
+    try {
+      sessionStorage.setItem("pictoflow:communication-view", "tools");
+    } catch {}
+  });
   page.setDefaultTimeout(15000);
   const errors = [],
     writes = [];

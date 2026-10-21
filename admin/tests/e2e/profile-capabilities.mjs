@@ -59,6 +59,14 @@ await call(base + `/keyboard/${block.id}`, "PUT", {
 });
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+// This scenario exercises the detailed tools available from Options.
+await page.addInitScript(() => {
+  try {
+    sessionStorage.setItem("pictoflow:communication-view", "tools");
+  } catch {
+    /* Optional UI preference. */
+  }
+});
 const errors = [];
 page.on("pageerror", (error) => errors.push(error.message));
 await fs.mkdir(".local/profile-capabilities", { recursive: true });

@@ -9,6 +9,328 @@
   color: var(--ink);
   background: var(--bg);
 }
+/* The communication surface owns its viewport; only the pictogram browser
+   scrolls at supported sizes. Short/zoomed viewports fall back to page flow. */
+body:has(.compact-communication) {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+body:has(.compact-communication) > main {
+  flex: 1;
+  min-height: 0;
+}
+body:has(.compact-communication) > .account-bar {
+  flex-shrink: 0;
+  margin: 0;
+}
+.compact-communication {
+  height: 100%;
+  box-sizing: border-box;
+  max-width: 1400px;
+  margin: auto;
+  padding: 10px max(10px, env(safe-area-inset-right))
+    max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  display: grid;
+  grid-template-rows: auto 248px minmax(0, 1fr) auto;
+  gap: 10px;
+  color: var(--ink);
+}
+.compact-communication * {
+  box-sizing: border-box;
+}
+.compact-communication :focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (forced-colors: active) {
+  .compact-communication :focus-visible {
+    outline-color: Highlight;
+  }
+}
+.compact-heading,
+.compact-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.compact-heading h1 {
+  font-size: 20px;
+  margin: 0;
+}
+.compact-heading .profile-identity {
+  font-size: 13px;
+}
+.compact-heading > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.compact-browse .grid-columns-3 .pictogram,
+.compact-browse .grid-columns-3 .touch-photo {
+  width: 112px;
+  height: 112px;
+}
+.compact-browse .grid-columns-2 .pictogram,
+.compact-browse .grid-columns-2 .touch-photo {
+  width: 148px;
+  height: 148px;
+}
+.compact-communication button {
+  min-height: 44px;
+}
+.compact-message {
+  min-width: 0;
+  border: 2px solid var(--accent);
+  border-radius: 14px;
+  padding: 10px;
+  background: var(--soft);
+  display: grid;
+  grid-template-rows: 70px minmax(0, 1fr) auto;
+  gap: 8px;
+}
+.compact-words {
+  display: flex;
+  gap: 12px;
+  min-width: 0;
+}
+.compact-words h2 {
+  font-size: 14px;
+  margin: 0;
+  align-self: center;
+}
+.compact-word-strip {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  overflow: auto;
+  flex: 1;
+}
+.compact-word {
+  display: grid;
+  flex: 0 0 75px;
+  padding: 3px !important;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 2px;
+  background: white !important;
+}
+.compact-word svg,
+.compact-word img {
+  width: 38px;
+  height: 38px;
+  justify-self: center;
+  object-fit: contain;
+}
+.compact-word .touch-word {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.compact-formulation {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) 30px;
+}
+.compact-phrase-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.compact-phrase-heading select {
+  max-width: 65%;
+  min-width: 0;
+  padding: 4px;
+}
+.compact-formulation .proposed-phrase {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 2px 0;
+  overflow: auto;
+}
+.compact-status {
+  font-size: 12px;
+  margin: 2px 0;
+  overflow: auto;
+}
+.compact-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.compact-actions button {
+  padding: 8px 12px;
+  font-size: 14px;
+}
+.compact-actions .speak-message {
+  min-width: 110px;
+}
+.compact-keyboard {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  gap: 8px;
+}
+.compact-stable {
+  min-height: 60px;
+}
+.compact-stable .keyboard-zones {
+  display: block;
+  margin: 0;
+}
+.compact-stable .keyboard-zone {
+  margin: 0;
+  padding: 0;
+}
+.compact-stable .zone-heading {
+  display: none;
+}
+.compact-stable .keyboard-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+.compact-stable .communication-tile {
+  min-height: 86px;
+  padding: 4px;
+}
+.compact-stable .tile-position {
+  display: none;
+}
+.compact-stable .communication-tile svg,
+.compact-stable .communication-tile img {
+  width: 45px;
+  height: 45px;
+  object-fit: contain;
+}
+.compact-stable .touch-word {
+  font-size: 14px;
+}
+.compact-browse {
+  overflow: auto;
+  min-height: 0;
+  overscroll-behavior: contain;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  background: #fff;
+}
+.compact-browse .keyboard-zone {
+  margin-top: 0;
+  padding: 12px;
+}
+.compact-browse .keyboard-zones {
+  margin: 8px 0;
+  gap: 10px;
+}
+.compact-browse .zone-heading {
+  margin-bottom: 8px;
+}
+.compact-browse .communication-tile {
+  min-height: 125px;
+}
+.compact-browse .communication-tile svg,
+.compact-browse .communication-tile img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+}
+.compact-browse .tile-position {
+  display: none;
+}
+.compact-browse .zone-heading h2 {
+  font-size: 16px;
+}
+.compact-browse .touch-word {
+  font-size: 18px;
+}
+.compact-communication .message-reset-dialog label {
+  display: grid;
+  gap: 8px;
+}
+.compact-communication .message-reset-dialog > svg {
+  width: 90px;
+  height: 90px;
+}
+.compact-communication .message-reset-dialog textarea {
+  width: 100%;
+}
+.compact-error {
+  position: fixed;
+  bottom: 65px;
+  right: 10px;
+  max-width: min(360px, 90vw);
+  background: white;
+  padding: 10px;
+}
+.compact-tools-return {
+  padding: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.compact-tools-return label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+@media (max-width: 620px) {
+  .compact-communication {
+    grid-template-rows: auto 290px minmax(0, 1fr) auto;
+    gap: 6px;
+    padding: 6px;
+  }
+  .compact-message {
+    padding: 8px;
+    grid-template-rows: 66px minmax(0, 1fr) auto;
+  }
+  .compact-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .compact-actions button {
+    font-size: 13px;
+    padding: 6px 4px;
+  }
+  .compact-actions .speak-message {
+    min-width: 0;
+  }
+  .compact-formulation .proposed-phrase {
+    font-size: 19px;
+  }
+  .compact-stable .keyboard-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .compact-stable .communication-tile {
+    min-height: 70px;
+  }
+  .compact-stable .communication-tile svg,
+  .compact-stable .communication-tile img {
+    height: 34px;
+    width: 34px;
+  }
+}
+@media (max-height: 600px) {
+  body:has(.compact-communication) {
+    height: auto;
+    min-height: 100dvh;
+    overflow: auto;
+  }
+  .compact-communication {
+    height: auto;
+    min-height: 100dvh;
+    grid-template-rows: auto 290px minmax(300px, 1fr) auto;
+  }
+  .compact-message {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+}
 .profile-capabilities {
   border: 1px solid var(--line);
   border-radius: 9px;
@@ -2281,7 +2603,8 @@ pre {
   color: var(--muted);
   line-height: 1.5;
 }
-.communication-page.contrast-enhanced {
+.communication-page.contrast-enhanced,
+.compact-communication.contrast-enhanced {
   --ink: #142b24;
   --muted: #394d44;
   --accent: #1d513e;

@@ -28,6 +28,14 @@ try {
     confirm_representation: true,
   });
   const page = await browser.newPage();
+  // This scenario exercises the detailed tools available from Options.
+  await page.addInitScript(() => {
+    try {
+      sessionStorage.setItem("pictoflow:communication-view", "tools");
+    } catch {
+      /* Optional UI preference. */
+    }
+  });
   page.setDefaultTimeout(15000);
   let ai = 0;
   page.on("request", (r) => {

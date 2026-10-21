@@ -43,6 +43,14 @@ try {
   }
   const before = await call(base + "/keyboard");
   const page = await browser.newPage();
+  // This scenario exercises the detailed tools available from Options.
+  await page.addInitScript(() => {
+    try {
+      sessionStorage.setItem("pictoflow:communication-view", "tools");
+    } catch {
+      /* Optional UI preference. */
+    }
+  });
   await page.addInitScript(() => {
     window.__spoken = [];
     Object.defineProperty(window, "SpeechSynthesisUtterance", {
@@ -504,14 +512,18 @@ try {
   }, p);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
-  await keyboard.locator(".communication-tile").first().waitFor();
+  await page
+    .getByRole("button", { name: "Revenir à la communication", exact: true })
+    .click();
+  const compactKeyboard = page.locator(".compact-keyboard");
+  await compactKeyboard.locator(".communication-tile").first().waitFor();
   assert.equal(
     await page
       .getByRole("link", { name: "Il me manque un mot", exact: true })
       .count(),
     0,
   );
-  const firstRow = await keyboard
+  const firstRow = await compactKeyboard
     .locator(".communication-tile")
     .first()
     .boundingBox();
@@ -530,6 +542,7 @@ try {
     })
     .waitFor();
   await page.getByText("Mon compte", { exact: true }).click();
+  await page.getByRole("button", { name: "Options", exact: true }).click();
   await page.getByRole("button", { name: "Mes phrases", exact: true }).click();
   await page.locator(".phrase-library > details.phrase-picker[open]").waitFor();
   assert.equal(

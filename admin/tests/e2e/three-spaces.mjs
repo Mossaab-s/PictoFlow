@@ -82,6 +82,12 @@ async function connect(username, width = 390) {
     viewport: { width, height: 900 },
   });
   page = await context.newPage();
+  // Exercise the detailed tools available from Options.
+  await page.addInitScript(() => {
+    try {
+      sessionStorage.setItem("pictoflow:communication-view", "tools");
+    } catch {}
+  });
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(origin + "/");
   await page.getByLabel("Identifiant", { exact: true }).fill(username);

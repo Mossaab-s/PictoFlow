@@ -36,6 +36,12 @@ try {
   }
   const positions = await call(base + "/keyboard");
   page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  // Exercise the detailed tools available from Options.
+  await page.addInitScript(() => {
+    try {
+      sessionStorage.setItem("pictoflow:communication-view", "tools");
+    } catch {}
+  });
   const errors = [],
     interpretationRequests = [];
   page.on("pageerror", (error) => errors.push(error.message));

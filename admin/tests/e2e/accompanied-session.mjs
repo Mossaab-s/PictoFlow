@@ -68,7 +68,23 @@ await context.addInitScript(() => {
   window.BroadcastChannel = undefined;
 });
 const page = await context.newPage();
+// This scenario exercises the detailed tools available from Options.
+await page.addInitScript(() => {
+  try {
+    sessionStorage.setItem("pictoflow:communication-view", "tools");
+  } catch {
+    /* Optional UI preference. */
+  }
+});
 const tab = await context.newPage();
+// This scenario exercises the detailed tools available from Options.
+await tab.addInitScript(() => {
+  try {
+    sessionStorage.setItem("pictoflow:communication-view", "tools");
+  } catch {
+    /* Optional UI preference. */
+  }
+});
 const errors = [];
 for (const current of [page, tab])
   current.on("pageerror", (error) => errors.push(error.message));

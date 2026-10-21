@@ -115,6 +115,10 @@ jobs:
         if: ${{ !cancelled() && steps.fake-api.outcome == 'success' }}
         working-directory: admin
         run: node tests/e2e/phrase-hypotheses.mjs
+      - name: Communicate with persistent message and automatic phrase previews
+        if: ${{ !cancelled() && steps.fake-api.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/compact-communication.mjs
       - name: Prepare isolated authenticated capability API
         id: capability-api
         if: ${{ !cancelled() && steps.communication-build.outcome == 'success' }}
@@ -216,6 +220,8 @@ jobs:
             admin/.local/interpretation-reuse/report.json
             admin/.local/phrase-hypotheses/*.png
             admin/.local/phrase-hypotheses/report.json
+            admin/.local/compact-communication/*.png
+            admin/.local/compact-communication/report.json
             admin/.local/memory-suggestions/*.png
             admin/.local/keyboard-usage/*.png
             admin/.local/offline-reopen/*.png

@@ -146,14 +146,20 @@ export default function MemorySuggestions({
       className="panel memory-suggestions"
       aria-label="Suggestions de ma mémoire"
       id="communication-suggestions"
-      onMouseDownCapture={(event) => {
+      onPointerDownCapture={(event) => {
         if (event.button !== 0 || !(event.target instanceof Element)) return;
         const button = event.target.closest("button");
         // Focus a visible pointer target without scrolling it away before mouseup/click.
         if (button && !button.disabled) {
           // Suppress the subsequent native focus step; it can scroll even after focus() above.
           event.preventDefault();
+          const left = window.scrollX,
+            top = window.scrollY;
           button.focus({ preventScroll: true });
+          // Blurring a text input can still reposition the viewport in Chromium.
+          // Keep the already-visible pressed target under the pointer.
+          if (window.scrollX !== left || window.scrollY !== top)
+            window.scrollTo({ left, top, behavior: "instant" });
         }
       }}
     >
