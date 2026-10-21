@@ -11,7 +11,7 @@ from app.application.memory_vocabulary import revision
 from app.application.pcl_repository import PCLUnits
 from app.application.personal_examples import select_examples
 from app.application.personal_hypotheses import grounding
-from app.application.phrase_fidelity import faithful_words
+from app.application.phrase_fidelity import faithful_words, inferred_linking
 from app.application.proposal_variants import surface_key
 from app.domain.pcl.entities import (
     CommunicationBlock,
@@ -196,12 +196,13 @@ class InterpretationService:
                 support = grounding(request, item.text)
                 if support is None:
                     continue
+                linking = inferred_linking(request, item.text)
                 candidate = Interpretation(
                     profile_id=profile_id,
                     sequence_id=sequence_id,
                     text=item.text,
                     confidence=min(item.confidence, self.communication.policy.confirmation)
-                    if support
+                    if support or linking
                     else item.confidence,
                     source=source,
                 )
@@ -219,6 +220,7 @@ class InterpretationService:
                     "personal_hypothesis": bool(support),
                     "memory_examples_selected": memory,
                     "memory_examples_sent": len(request.memory_examples),
+                    **({"inferred_linking": True} if linking else {}),
                     **(
                         {
                             "memory_sources": [

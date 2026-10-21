@@ -63,3 +63,41 @@ def test_unrelated_memory_vocabulary_cannot_be_pooled_into_one_hypothesis():
 def test_small_overlap_cannot_import_a_long_old_message():
     personal = grounded(("Moi", "Manger", "Maison"), "Je voudrais manger du gâteau.", ("Manger",))
     assert grounding(personal, "Je voudrais manger du gâteau.") is None
+
+
+def test_people_only_cannot_import_the_missing_meal_and_place_of_a_longer_source():
+    source = request("Maman", "Papa", "Manger", "Maison")
+    reference = MemoryExample(
+        reference_id=uuid4(),
+        blocks=source.blocks,
+        text="Maman, Papa, je veux manger à la maison.",
+    )
+    people = source.model_copy(
+        update={
+            "blocks": source.blocks[:2],
+            "memory_examples": (reference,),
+        }
+    )
+    assert grounding(people, reference.text) is None
+    assert grounding(people, "Maman, Papa !") == ()
+    # The same implicit wording is allowed if the person explicitly established
+    # that association with these two source touches, rather than four others.
+    exact = reference.model_copy(update={"blocks": people.blocks})
+    personal = people.model_copy(update={"memory_examples": (exact,)})
+    assert grounding(personal, reference.text) == (exact,)
+
+
+def test_memory_cannot_erase_repeated_actions_or_repeated_source_touches():
+    once = request("Boire")
+    current = once.model_copy(update={"blocks": (once.blocks[0], once.blocks[0])})
+    reference = MemoryExample(
+        reference_id=uuid4(),
+        blocks=once.blocks,
+        text="Boire, je voudrais mon eau.",
+    )
+    personal = current.model_copy(update={"memory_examples": (reference,)})
+    assert grounding(personal, reference.text) is None
+    assert grounding(personal, "Boire, boire, je voudrais mon eau.") == (reference,)
+    repeated = reference.model_copy(update={"blocks": current.blocks})
+    too_short = once.model_copy(update={"memory_examples": (repeated,)})
+    assert grounding(too_short, reference.text) is None
