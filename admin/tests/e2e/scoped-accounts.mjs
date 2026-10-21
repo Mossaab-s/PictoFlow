@@ -81,10 +81,8 @@ try {
     page.getByRole("heading", { name: "Comptes et accès", exact: true }),
   ).toBeVisible();
   const role = page.getByLabel("Type de compte", { exact: true });
-  assert.deepEqual(await role.locator("option").allTextContents(), [
-    "Parent",
-    "Patient",
-  ]);
+  await expect(role).toBeVisible();
+  await expect(role.locator("option")).toHaveText(["Parent", "Patient"]);
   await expect(
     page.getByRole("article", { name: parent.display_name, exact: true }),
   ).toContainText("hors de votre périmètre");
@@ -162,13 +160,9 @@ try {
   await expect(
     parentPage.getByRole("article", { name: createdName, exact: true }),
   ).toBeVisible();
-  assert.deepEqual(
-    await parentPage
-      .getByLabel("Type de compte", { exact: true })
-      .locator("option")
-      .allTextContents(),
-    ["Patient"],
-  );
+  await expect(
+    parentPage.getByLabel("Type de compte", { exact: true }).locator("option"),
+  ).toHaveText(["Patient"]);
   await expect(
     parentPage.getByRole("article", {
       name: practitioner.display_name,
@@ -270,6 +264,19 @@ try {
   console.log(
     "Scoped roles: creation, shared-parent isolation, permissions, patient choice and live revocation passed.",
   );
+} catch (failure) {
+  await fs.mkdir(".local/scoped-accounts", { recursive: true });
+  let index = 0;
+  for (const context of contexts)
+    for (const page of context.pages()) {
+      await page
+        .screenshot({
+          path: `.local/scoped-accounts/failure-${index++}.png`,
+          fullPage: true,
+        })
+        .catch(() => {});
+    }
+  throw failure;
 } finally {
   for (const context of contexts) await context.close();
   await browser.close();
