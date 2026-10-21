@@ -228,7 +228,7 @@ export default function AccountLinks({
         </button>
         {current && (
           <>
-            <label>
+            <label className="account-link-removal">
               <input
                 type="checkbox"
                 checked={confirm}

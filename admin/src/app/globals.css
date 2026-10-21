@@ -722,6 +722,18 @@ body {
   width: 100%;
   min-width: 0;
 }
+.account-form .account-link-removal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+}
+.account-form .account-link-removal input {
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
+  flex: 0 0 22px;
+}
 .access-accounts {
   display: grid;
   gap: 24px;
