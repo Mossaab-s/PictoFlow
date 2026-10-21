@@ -30,6 +30,7 @@ try {
     ["Eau", "water"],
     ["Pain", "bread"],
   ];
+  const initialBlockIds = [];
   for (const [index, [label, key]] of entries.entries()) {
     const block = await call(base + "/blocks/personal", "post", {
       request_id: crypto.randomUUID(),
@@ -37,6 +38,7 @@ try {
       pictogram_key: key,
       actor_role: "user",
     });
+    initialBlockIds.push(block.id);
     await call(base + `/blocks/${block.id}/feedback`, "post", {
       action: "confirm",
       confirm_representation: true,
@@ -326,6 +328,122 @@ try {
     surface.getByRole("button", { name: "Formuler", exact: true }),
   ).toHaveCount(0);
   assert.deepEqual(errors, []);
+  // Recover a longer selection with multiple long hypotheses. Percentage sizing
+  // on the native selector must not enlarge either nested message grid.
+  const longSequence = await call(base + "/sequences", "post", {
+    session_id: crypto.randomUUID(),
+  });
+  for (const block_id of initialBlockIds)
+    await call(base + `/sequences/${longSequence.id}/selection`, "post", {
+      action: "append",
+      block_id,
+    });
+  await call(base + `/sequences/${longSequence.id}/selection`, "post", {
+    action: "complete",
+  });
+  assert(
+    (
+      await api.post("http://127.0.0.1:8001/_synthetic/fixture", {
+        data: {
+          profile_id: p,
+          sequence_id: longSequence.id,
+          mode: "long_alternatives",
+        },
+      })
+    ).ok(),
+  );
+  const longDecision = await call(
+    base + `/sequences/${longSequence.id}/interpret`,
+    "post",
+    {},
+  );
+  assert.equal(longDecision.candidates.length, 2);
+  assert(longDecision.candidates.every((item) => item.text.length > 150));
+  const memoryBefore = await call(base + "/memory");
+  const originalSequence = await call(base + `/sequences/${longSequence.id}`);
+  page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.addInitScript(
+    ({ profile, sequence, decision }) => {
+      sessionStorage.setItem(
+        `pictoflow:sequence:${profile}`,
+        JSON.stringify({
+          sequence_id: sequence,
+          decision: {
+            state: decision.state,
+            candidate_ids: decision.candidates.map((item) => item.id),
+          },
+        }),
+      );
+    },
+    { profile: p, sequence: longSequence.id, decision: longDecision },
+  );
+  await page.goto(`${origin}/communication/${p}`);
+  const longSurface = page.locator(".compact-communication");
+  const longPhrase = longSurface.locator(".proposed-phrase");
+  const picker = longSurface.getByRole("combobox", {
+    name: "Choisir une proposition",
+    exact: true,
+  });
+  await expect(longPhrase).toHaveText(longDecision.candidates[0].text);
+  await expect(longSurface.locator(".compact-word-strip button")).toHaveCount(
+    8,
+  );
+  for (const viewport of [
+    { width: 1280, height: 900 },
+    { width: 1024, height: 768 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await picker.selectOption(longDecision.candidates[1].id);
+    await expect(longPhrase).toHaveText(longDecision.candidates[1].text);
+    assert(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth <= innerWidth + 1 &&
+          document.documentElement.scrollHeight <= innerHeight + 1,
+      ),
+    );
+    for (const name of ["Parler", "C’est ça", "Changer"]) {
+      const bounds = await longSurface
+        .getByRole("button", { name, exact: true })
+        .boundingBox();
+      assert(
+        bounds &&
+          bounds.x >= 0 &&
+          bounds.y >= 0 &&
+          bounds.x + bounds.width <= viewport.width &&
+          bounds.y + bounds.height <= viewport.height,
+        `${name} remains fully visible at ${viewport.width}x${viewport.height}`,
+      );
+    }
+    assert(
+      await longSurface
+        .locator(".compact-message,.compact-formulation")
+        .evaluateAll((nodes) =>
+          nodes.every((node) => node.scrollWidth <= node.clientWidth + 1),
+        ),
+    );
+  }
+  const strip = longSurface.locator(".compact-word-strip");
+  assert(await strip.evaluate((node) => node.scrollWidth > node.clientWidth));
+  await strip.evaluate((node) => (node.scrollLeft = node.scrollWidth));
+  await page.screenshot({
+    path: ".local/compact-communication/long-hypotheses-mobile.png",
+    fullPage: true,
+  });
+  assert.deepEqual(await call(base + "/memory"), memoryBefore);
+  assert.deepEqual(
+    await call(base + `/sequences/${longSequence.id}`),
+    originalSequence,
+  );
+  assert.deepEqual(await call(base + "/keyboard"), positions);
+  assert.equal(
+    (await (await api.get("http://127.0.0.1:8001/_synthetic/calls")).json())
+      .calls,
+    1,
+  );
+  assert.deepEqual(errors, []);
   await fs.writeFile(
     ".local/compact-communication/report.json",
     JSON.stringify(
@@ -344,6 +462,7 @@ try {
         failed_correction_preserves_draft: true,
         keyboard_focus_and_forced_colors: true,
         refusal_returns_to_literal: true,
+        multiple_long_hypotheses_fit_mobile_with_eight_pictograms: true,
       },
       null,
       2,

@@ -81,6 +81,7 @@ class FixtureSelection(BaseModel):
     mode: Literal[
         "proposal",
         "alternatives",
+        "long_alternatives",
         "disabled",
         "refusal",
         "unfaithful",
@@ -128,6 +129,26 @@ async def configure_fixture(body: FixtureSelection):
                     {"intent": "question", "text": "Boire de l’eau ?", "confidence": 0.8},
                 ]
             )
+        if body.mode == "long_alternatives":
+            words = " ".join(block.label for block in request.blocks)
+            candidates = [
+                {
+                    "intent": "request",
+                    "text": (
+                        f"Je voudrais parler de {words}, prendre le temps de choisir "
+                        "et expliquer ce que je souhaite pour la suite de ma journée."
+                    ),
+                    "confidence": 0.92,
+                },
+                {
+                    "intent": "preference",
+                    "text": (
+                        f"J’aime retrouver {words}, raconter ce qui me plaît et partager "
+                        "ces moments avec les personnes qui m’accompagnent au quotidien."
+                    ),
+                    "confidence": 0.86,
+                },
+            ]
         provider = CountingFakeProvider(
             {
                 "interpretations": [
@@ -150,6 +171,7 @@ async def configure_fixture(body: FixtureSelection):
     return {
         "provider": provider.provider_id,
         "synthetic_fixture_count": 1
-        if body.mode in ("proposal", "alternatives", "refusal", "unfaithful", "low")
+        if body.mode
+        in ("proposal", "alternatives", "long_alternatives", "refusal", "unfaithful", "low")
         else 0,
     }
