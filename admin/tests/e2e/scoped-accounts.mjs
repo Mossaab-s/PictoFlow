@@ -80,7 +80,10 @@ try {
   await expect(
     page.getByRole("heading", { name: "Comptes et accès", exact: true }),
   ).toBeVisible();
-  const role = page.getByLabel("Type de compte", { exact: true });
+  const role = page.getByRole("combobox", {
+    name: "Type de compte",
+    exact: true,
+  });
   await expect(role).toBeVisible();
   await expect(role.locator("option")).toHaveText(["Parent", "Patient"]);
   await expect(
@@ -118,10 +121,10 @@ try {
     exact: true,
   });
   await links
-    .getByLabel("Compte qui gère", { exact: true })
+    .getByRole("combobox", { name: "Compte qui gère", exact: true })
     .selectOption(parent.id);
   await links
-    .getByLabel("Personne rattachée", { exact: true })
+    .getByRole("combobox", { name: "Personne rattachée", exact: true })
     .selectOption(created.id);
   await links
     .getByLabel("Exporter une sauvegarde du profil", { exact: true })
@@ -161,7 +164,9 @@ try {
     parentPage.getByRole("article", { name: createdName, exact: true }),
   ).toBeVisible();
   await expect(
-    parentPage.getByLabel("Type de compte", { exact: true }).locator("option"),
+    parentPage
+      .getByRole("combobox", { name: "Type de compte", exact: true })
+      .locator("option"),
   ).toHaveText(["Patient"]);
   await expect(
     parentPage.getByRole("article", {
