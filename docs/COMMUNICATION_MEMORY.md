@@ -77,6 +77,22 @@ The service records state, human facts and audit together. PostgreSQL profile
 locks serialize communication operations within one profile, including erasure;
 object lookups and foreign keys retain explicit profile scope.
 
+## Visual revisions and accepted associations
+
+Replacing a photo, selecting a pictogram or changing a visual reference preserves
+an accepted association when the audit snapshots prove that the change was purely
+visual. This applies to personal examples, exact memory reuse and confirmation of
+an existing memory proposal. Known visual events must contain complete snapshots
+of the same validated touch and profile; only `representation_id`,
+`visual_reference` and `updated_at` may differ.
+
+Changes to labels, spoken text, concepts, intent or status still invalidate the
+old association, including a change subsequently reverted. Unknown events and
+incomplete snapshots remain invalidating. Existing complete visual histories
+benefit without rewriting historical facts or migrating data. Images themselves
+are not evidence of meaning. Profile isolation and explicit acceptance remain
+required.
+
 ## Transient state and erasure
 
 `InteractionMemory` handles explicitly supplied session/context values with a

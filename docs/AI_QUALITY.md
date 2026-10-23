@@ -54,9 +54,9 @@ transmis comme `request.correction_examples`, et seulement si :
   supplémentaire n’a été déclaré pour l’appel courant ;
 - l’interprétation est toujours `corrected`, sa dernière décision typée est
   une correction humaine, et son texte correspond à cette décision ;
-- aucun audit des touches ou concepts sélectionnés n’est postérieur à cette
-  correction ; ce choix conservateur peut aussi écarter un exemple après une
-  modification de présentation ;
+- no later semantic or unrecognised audit affects the selected touches or
+  concepts. A known visual edit is allowed only when complete snapshots prove
+  every field except representation, visual reference and update time is unchanged;
 - le texte satisfait le contrôle lexical des mots **actuellement** sélectionnés.
 
 Les textes sont dédupliqués, du plus récent au plus ancien. Une simple
