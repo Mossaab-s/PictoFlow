@@ -75,7 +75,7 @@ async function phrase(p, b, count, text, status = "correct", shortcut = false) {
   if (status)
     item = await call(base + `/interpretations/${item.id}/feedback`, "POST", {
       action: status,
-      ...(status === "correct" ? { corrected_text: text } : {}),
+      ...(status === "correct" ? { corrected_value: text } : {}),
       actor_role: "user",
     });
   if (shortcut)
@@ -278,7 +278,7 @@ try {
     "POST",
     {
       action: "correct",
-      corrected_text: "Je préfère lire avec Papa.",
+      corrected_value: "Je préfère lire avec Papa.",
       actor_role: "user",
     },
   );
@@ -455,6 +455,15 @@ try {
     }),
   ).toBeVisible();
   await expect(dialog.getByLabel("Rechercher une phrase")).toHaveValue("");
+  await back.click();
+  await surface.getByRole("button", { name: "Options", exact: true }).click();
+  await page.getByRole("button", { name: "Mes phrases", exact: true }).click();
+  await expect(page.locator(".phrase-picker")).toHaveAttribute("open", "");
+  await page
+    .getByRole("button", { name: "Revenir à la communication", exact: true })
+    .click();
+  await expect(dialog).not.toBeVisible();
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
   assert.deepEqual(errors, []);
   report.status = "passed";
   console.log(

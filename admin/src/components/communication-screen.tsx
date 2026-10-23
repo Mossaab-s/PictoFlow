@@ -84,6 +84,7 @@ export default function CommunicationScreen({
     }
   }, [profileId]);
   function changeView(tools: boolean) {
+    setPhrasesOpen(false);
     setDetailed(tools);
     try {
       sessionStorage.setItem(
