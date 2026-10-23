@@ -33,6 +33,7 @@ import MemorySuggestions from "./memory-suggestions";
 import AIContext from "./ai-context";
 import PhraseHypotheses from "./phrase-hypotheses";
 import CompactCommunication from "./compact-communication";
+import CompactPhraseLibrary from "./compact-phrase-library";
 import { useAutomaticFormulation } from "./use-automatic-formulation";
 import LiteralExplanation from "./literal-explanation";
 import MessageResetDialog from "./message-reset-dialog";
@@ -853,6 +854,7 @@ export default function CommunicationScreen({
       !restoring &&
       !restoreFailed &&
       !data.loading &&
+      !phrasesOpen &&
       suggestions.ready &&
       display.ready,
     gate,
@@ -912,6 +914,19 @@ export default function CommunicationScreen({
           canFormulate={suggestions.mode === "off"}
           speech={speech}
           heading={messageHeading}
+          phrases={
+            <CompactPhraseLibrary
+              profileId={profileId}
+              blocks={data.blocks}
+              visuals={data.representations}
+              open={phrasesOpen}
+              onOpenChange={setPhrasesOpen}
+              disabled={busy || restoring || data.loading || restoreFailed}
+              online={online}
+              speech={speech}
+              heading={messageHeading}
+            />
+          }
           select={(tile) => perform(() => select(tile), false)}
           remove={(choice) => perform(() => editTouch(choice, "remove"), false)}
           undo={() => void perform(() => selection("undo"), false)}

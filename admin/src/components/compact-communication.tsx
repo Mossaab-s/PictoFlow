@@ -1,5 +1,12 @@
 "use client";
-import { useId, useRef, useState, useEffect, type RefObject } from "react";
+import {
+  useId,
+  useRef,
+  useState,
+  useEffect,
+  type RefObject,
+  type ReactNode,
+} from "react";
 import type {
   Decision,
   Interpretation,
@@ -40,6 +47,7 @@ export default function CompactCommunication({
   reset,
   review,
   options,
+  phrases,
   refresh,
 }: {
   profileId: string;
@@ -81,6 +89,7 @@ export default function CompactCommunication({
     text?: string,
   ) => Promise<boolean>;
   options: () => void;
+  phrases: ReactNode;
   refresh: () => void;
 }) {
   const candidates = decision?.candidates ?? [];
@@ -144,9 +153,12 @@ export default function CompactCommunication({
           <h1>Je communique</h1>
           <ProfileIdentity profileId={profileId} />
         </div>
-        <button className="secondary" onClick={options}>
-          Options
-        </button>
+        <div className="compact-heading-actions">
+          {phrases}
+          <button className="secondary" onClick={options}>
+            Options
+          </button>
+        </div>
       </header>
       <section className="compact-message" aria-label="Message en cours">
         <div className="compact-words">

@@ -35,6 +35,8 @@ export default function PhraseLibrary({
   choiceRevision = 0,
   revision,
   onPickerToggle,
+  allowShortcutChanges = true,
+  pickerInitiallyOpen = false,
 }: {
   profileId: string;
   blocks: Block[];
@@ -45,6 +47,8 @@ export default function PhraseLibrary({
   choiceRevision?: number;
   revision: unknown;
   onPickerToggle?: (open: boolean) => void;
+  allowShortcutChanges?: boolean;
+  pickerInitiallyOpen?: boolean;
 }) {
   const [memory, setMemory] = useState<Memory | null>(null);
   const [loading, setLoading] = useState(true);
@@ -272,7 +276,7 @@ export default function PhraseLibrary({
       {busy && <p role="status">Chargement de la phrase…</p>}
       <details
         className="panel phrase-picker"
-        open={initialPhraseId ? true : undefined}
+        open={pickerInitiallyOpen || initialPhraseId ? true : undefined}
         onToggle={(event) => onPickerToggle?.(event.currentTarget.open)}
       >
         <summary>Mes phrases habituelles et raccourcis</summary>
@@ -334,12 +338,14 @@ export default function PhraseLibrary({
             Actualiser les phrases
           </button>
         </div>
-        <HumanRoleSelector
-          value={role}
-          onChange={setRole}
-          disabled={pending}
-          label="Je choisis mes raccourcis en tant que"
-        />
+        {allowShortcutChanges && (
+          <HumanRoleSelector
+            value={role}
+            onChange={setRole}
+            disabled={pending}
+            label="Je choisis mes raccourcis en tant que"
+          />
+        )}
         {loading ? (
           <p role="status">Chargement des phrases…</p>
         ) : (
@@ -364,13 +370,15 @@ export default function PhraseLibrary({
                       >
                         Utiliser cette phrase
                       </button>
-                      <PhraseShortcut
-                        profileId={profileId}
-                        item={item}
-                        role={role}
-                        disabled={pending}
-                        onChange={changed}
-                      />
+                      {allowShortcutChanges && (
+                        <PhraseShortcut
+                          profileId={profileId}
+                          item={item}
+                          role={role}
+                          disabled={pending}
+                          onChange={changed}
+                        />
+                      )}
                     </div>
                   </article>
                 ))}
@@ -380,7 +388,9 @@ export default function PhraseLibrary({
                 {query
                   ? "Aucune phrase ne correspond à cette recherche."
                   : shortcuts
-                    ? "Aucun raccourci choisi. Ouvrez toutes vos phrases acceptées pour en ajouter."
+                    ? allowShortcutChanges
+                      ? "Aucun raccourci choisi. Ouvrez toutes vos phrases acceptées pour en ajouter."
+                      : "Aucun raccourci choisi. Ouvrez toutes vos phrases acceptées pour en retrouver une."
                     : "Aucune phrase acceptée pour le moment. Confirmez ou corrigez un message pour le retrouver ici."}
               </p>
             )}
