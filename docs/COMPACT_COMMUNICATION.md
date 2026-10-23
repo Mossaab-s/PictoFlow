@@ -5,6 +5,10 @@ maintainer chose automatic formulation after a pause. The original detailed
 workflow remains behind **Options**, with existing profile/capability checks.
 The tab remembers this view preference; it contains no communication text.
 
+**Mes phrases** in the compact header opens accepted personal phrases directly,
+with a separate review and deliberate reading while the current composition is
+kept. See [COMPACT_PERSONAL_PHRASES.md](COMPACT_PERSONAL_PHRASES.md).
+
 ```text
 Choose pictograms -> original drawings/words update immediately
            |

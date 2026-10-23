@@ -45,6 +45,11 @@ jobs:
           python -m pip install .
           python -m alembic upgrade head
           python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --no-access-log > /tmp/pictoflow-poc-api.log 2>&1 &
+      - name: Use the Ubuntu archive for browser dependencies
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          fi
       - name: Build the communication interface
         id: communication-build
         working-directory: admin
@@ -190,6 +195,10 @@ jobs:
         if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
         working-directory: admin
         run: node tests/e2e/communication-search.mjs
+      - name: Reuse accepted phrases directly from compact communication
+        if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/compact-personal-phrases.mjs
       - name: Correct one chosen message touch
         if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
         working-directory: admin
@@ -243,6 +252,8 @@ jobs:
             admin/.local/visual-placement/*.png
             admin/.local/communication-search/*.png
             admin/.local/selection-focus/report.json
+            admin/.local/compact-personal-phrases/*.png
+            admin/.local/compact-personal-phrases/report.json
             admin/.local/message-correction/*.png
             admin/.local/message-order/*.png
             admin/.local/message-replacement/*.png

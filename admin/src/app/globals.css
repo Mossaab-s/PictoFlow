@@ -67,6 +67,47 @@ body:has(.compact-communication) > .account-bar {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+.compact-heading-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.compact-communication .compact-phrase-library {
+  width: min(680px, calc(100vw - 24px));
+  max-width: min(680px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  padding: 16px;
+  overflow-wrap: anywhere;
+}
+.compact-phrase-library:focus-visible {
+  outline-offset: -5px;
+}
+.compact-phrase-library .phrase-library {
+  margin-block: 12px 0;
+}
+.compact-phrase-library .memory-touches {
+  max-height: 180px;
+  overflow: auto;
+}
+.compact-library-controls {
+  position: sticky;
+  top: -16px;
+  z-index: 1;
+  background: var(--bg);
+  padding-block: 12px;
+}
+.compact-library-controls h2 {
+  margin-top: 0;
+}
+@media (max-width: 480px) {
+  .compact-heading {
+    flex-wrap: wrap;
+  }
+  .compact-heading-actions {
+    margin-left: auto;
+  }
+}
 .compact-browse .grid-columns-3 .pictogram,
 .compact-browse .grid-columns-3 .touch-photo {
   width: 112px;
