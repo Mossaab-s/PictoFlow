@@ -247,9 +247,9 @@ try {
   await expect(chosen.locator(".touch-word")).toHaveText(["Livre", "Livre"]);
   await expect(chosen.locator("svg")).toHaveCount(2);
   await read.click();
-  assert.deepEqual(await page.evaluate(() => window.__spoken), [
-    second.corrected_text,
-  ]);
+  await expect
+    .poll(() => page.evaluate(() => window.__spoken))
+    .toEqual([second.corrected_text]);
   await page.keyboard.press("Escape");
   await expect(dialog).toBeVisible();
   await expect(
@@ -292,10 +292,9 @@ try {
   );
   assert.equal((await page.evaluate(() => window.__spoken)).length, spoken);
   await read.click();
-  assert.equal(
-    (await page.evaluate(() => window.__spoken)).at(-1),
-    "Je préfère lire avec Papa.",
-  );
+  await expect
+    .poll(() => page.evaluate(() => window.__spoken.at(-1)))
+    .toBe("Je préfère lire avec Papa.");
   await call(
     `profiles/${profile}/interpretations/${first.id}/feedback`,
     "POST",
@@ -358,13 +357,10 @@ try {
   const held = new Promise((resolve) => {
     release = resolve;
   });
-  let requested;
-  const started = new Promise((resolve) => {
-    requested = resolve;
-  });
+  let requested = false;
   await page.route(readRoute, async (route) => {
     const response = await route.fetch();
-    requested();
+    requested = true;
     await held;
     await route.fulfill({ response }).catch(() => {});
   });
@@ -372,7 +368,7 @@ try {
     .filter({ hasText: second.corrected_text })
     .getByRole("button", { name: "Utiliser cette phrase" })
     .click();
-  await started;
+  await expect.poll(() => requested).toBe(true);
   await back.click();
   await expect(trigger).toBeFocused();
   release();
