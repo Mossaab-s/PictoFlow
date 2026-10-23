@@ -29,6 +29,8 @@ FORMS = (
     ("rentrer", "rentre", "rentres", "rentrons", "rentrez", "rentrent"),
     ("retourner", "retourne", "retournes", "retournons", "retournez", "retournent"),
     ("toilettes", "toilette", "wc"),
+    ("regarder", "regarde", "regardes", "regardons", "regardez", "regardent"),
+    ("couche", "couches"),
 )
 CANONICAL = {word: forms[0] for forms in FORMS for word in forms}
 GRAMMAR = frozenset(
@@ -68,18 +70,95 @@ def content(text: str) -> Counter[str]:
 
 
 def contextual_actions(request: InterpretationRequest) -> set[str]:
-    """Link a selected transport and place using this profile's validated meanings.
+    """Allow bounded everyday links using this profile's validated meanings.
 
     These verbs add no object, destination or person. They are still inferred
     actions, so the interpreter caps their score and requires human review.
-    A transport/place label with another personal meaning does not grant this link.
+    A transport/place or television label with another meaning grants no link.
     """
     meanings = set(content(" ".join(block.meaning for block in request.blocks)))
     transport = {"voiture", "velo", "bus", "train"}
     places = {"maison", "ecole", "parc", "magasin", "dehors", "hopital"}
+    actions = set()
     if meanings & transport and meanings & places:
-        return {"aller", "venir", "rentrer", "retourner"}
-    return set()
+        actions.update({"aller", "venir", "rentrer", "retourner"})
+    if meanings & {"television", "tele"}:
+        actions.add("regarder")
+    return actions
+
+
+def couche_sense(block) -> str | None:
+    """Recognize a small declared distinction, never infer a sense from a photo."""
+    if words(block.label) not in (("couche",), ("couches",)):
+        return None
+    meaning = set(words(block.meaning))
+    if meaning & {"protection", "culotte", "hygiene", "incontinence", "jetable", "diaper"} or (
+        "bebe" in meaning and bool(meaning & {"couche", "couches"})
+    ):
+        return "object"
+    if "coucher" in meaning:
+        return "action"
+    return "unknown"
+
+
+def ambiguous_meaning(request: InterpretationRequest) -> bool:
+    return any(couche_sense(block) == "unknown" for block in request.blocks)
+
+
+def conflicts_with_meaning(request: InterpretationRequest, text: str) -> bool:
+    """Reject the known noun/verb collision, not claim general word-sense analysis.
+
+    A declared diaper must remain a noun. Bare literal selections stay usable;
+    complete phrases need a determiner for couche(s). Other selected actions
+    do not authorize turning the selected object itself into a verb.
+    """
+    if not any(couche_sense(block) == "object" for block in request.blocks):
+        return False
+    if text == " → ".join(block.label for block in request.blocks):
+        return False
+    tokens = words(text)
+    determiners = {
+        "une",
+        "la",
+        "les",
+        "des",
+        "cette",
+        "ces",
+        "ma",
+        "mes",
+        "ta",
+        "tes",
+        "sa",
+        "ses",
+        "notre",
+        "nos",
+        "votre",
+        "vos",
+        "leur",
+        "leurs",
+        "de",
+        "d",
+    }
+    verb_reading = any(
+        token in {"coucher", "couchons", "couchez", "couchent", "couchee", "couchees"}
+        or (token in {"couche", "couches"} and (index == 0 or tokens[index - 1] not in determiners))
+        for index, token in enumerate(tokens)
+    )
+    if not verb_reading:
+        return False
+    # An independently selected coucher action can coexist with the object.
+    # It still needs a separate noun occurrence for each selected diaper.
+    selected_action = any(
+        "coucher" in content(f"{block.label} {block.meaning}") and couche_sense(block) != "object"
+        for block in request.blocks
+    )
+    nouns = sum(
+        token in {"couche", "couches"} and index > 0 and tokens[index - 1] in determiners
+        for index, token in enumerate(tokens)
+    )
+    return not selected_action or nouns < sum(
+        couche_sense(block) == "object" for block in request.blocks
+    )
 
 
 def inferred_linking(request: InterpretationRequest, text: str) -> bool:
@@ -90,6 +169,8 @@ def inferred_linking(request: InterpretationRequest, text: str) -> bool:
 def faithful_words(request: InterpretationRequest, text: str) -> bool:
     """Accept only covered selections and grounded vocabulary in French output."""
     if request.language.split("-")[0].casefold() != "fr":
+        return False
+    if conflicts_with_meaning(request, text):
         return False
     required: Counter[str] = Counter()
     required_persons: Counter[str] = Counter()

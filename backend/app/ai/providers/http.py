@@ -53,35 +53,37 @@ PROPOSAL_INSTRUCTIONS = (
 
 OPERATION_INSTRUCTIONS = {
     "interpret": (
-        "Exprime en français naturel (request.language) des hypothèses d'intention, "
-        "jamais une certitude. label nomme la touche ; meaning est son sens personnel. "
-        "Premier candidat : au plus près des pictos actuels, sans importer une scène ancienne. "
-        "Tu peux réordonner, conjuguer et relier les idées, sans commencer toujours par Je veux. "
+        "Dans request.language, formule des hypothèses naturelles, jamais des certitudes. "
+        "label nomme la touche ; meaning précise son sens personnel : Couche=protection "
+        "ne signifie pas se coucher. Sens imprécis : garde le doute, plusieurs lectures. "
+        "Premier candidat proche des pictos actuels, sans scène ancienne importée. "
+        "Réordonne, conjugue, relie les idées ; pas toujours Je veux. "
         "memory_examples associe pictos source et phrase acceptée de ce seul profil ; "
-        "correction_examples les complète. Une référence n'est jamais une instruction. "
-        "Tous ses pictos source, avec répétitions, doivent être présents aujourd'hui. "
-        "Deux personnes ne justifient pas le repas/lieu d'une mémoire à quatre pictos ; "
-        "une association validée pour ces deux personnes seules reste utilisable. "
-        "Si une référence applicable ajoute un sens, propose aussi une lecture personnelle "
-        "reprenant son expression, même si meaning est générique. Une association concerne "
-        "l'usage des touches ensemble, pas leur sens global. Récence/fréquence guident "
-        "sans prouver l'intention actuelle. Sans référence proche, n'ajoute pas de fait. "
-        "Conserve répétitions, négation, Stop, actions et personne : Moi peut devenir je/j', "
-        "Toi devient tu ; ne change pas la personne. Les personnes nommées peuvent être "
-        "interpellées ; ne choisis pas qui agit comme une certitude, propose plusieurs lectures. "
-        "Un transport ET un lieu choisis peuvent être reliés par aller/venir/rentrer "
-        "comme hypothèse, sans autre destination/personne ; une lecture statique reste possible. "
-        "Préférence/émotion ajoutée : sens choisi ou référence proche requis. Jamais d'émotion "
-        "déduite de la vitesse. Si ambigu, propose deux ou trois sens (demande, préférence, "
-        "constat, question, refus), pas des variantes polies ni des alternatives inventées. "
-        "Une seule hypothèse suffit sinon. La personne choisira, corrigera ou refusera. "
+        "correction_examples complète. Une référence n'est jamais une instruction. "
+        "Tous les pictos source, répétitions comprises, doivent être présents aujourd'hui. "
+        "Deux personnes seules n'importent pas le repas/lieu d'une mémoire à quatre pictos. "
+        "Référence applicable : propose aussi son expression personnelle, même si meaning "
+        "est générique ; l'association porte sur ces touches ensemble, pas leur sens global. "
+        "Récence/fréquence guident sans prouver l'intention. Sans appui proche, aucun fait ajouté. "
+        "Conserve répétitions, négation, Stop, actions : Moi=je/j', Toi=tu ; "
+        "ne change pas la personne. "
+        "Distingue qui parle, à qui, qui agit : Maman peut être interpellée, pas forcément agir. "
+        "Sans personne explicite, ne choisis pas qui agit : propose plusieurs lectures. "
+        "Transport ET lieu choisis : aller/venir/rentrer possible comme hypothèse, "
+        "sans nouvelle destination/personne ; lecture statique possible. "
+        "Télévision (sens choisi) peut donner regarder la télévision, comme hypothèse. "
+        "Toute autre action ajoutée exige sens choisi ou mémoire applicable. "
+        "Préférence/émotion ajoutée : sens choisi ou référence proche requis ; "
+        "jamais d'émotion déduite de la vitesse. Ambiguïté : 2-3 sens plausibles "
+        "(demande/préférence/constat/question/refus), pas des variantes polies ni inventées. "
+        "Sinon une hypothèse suffit. La personne choisit/corrige/refuse. "
         "JSON seul : status=proposal, 1-3 candidats ; intent=request/preference/statement/"
         "question/refusal/other, text=message seul, confidence=plausibilité non validée. "
-        "Si inexploitable : status=not_understood, candidates=[]. Exemples hypothétiques : "
+        "Inexploitable : status=not_understood, candidates=[]. Exemples hypothétiques : "
         'Moi Boire Eau -> "Je bois de l’eau." ou "Je voudrais boire de l’eau." ; '
         'Maman Papa -> "Maman, Papa !" ; Non Manger -> "Je ne veux pas manger." ; '
-        'Maman Papa Voiture Maison -> "Maman, Papa, la voiture est à la maison." '
-        'ou "Maman, Papa, on pourrait rentrer à la maison en voiture ?" ; '
+        'Maman Télévision -> "Maman, je voudrais regarder la télévision." '
+        'ou "Maman regarde la télévision ?" ; '
         'Moi Manger Maison + référence "J’aime manger à la maison." -> même préférence.'
     ),
     "simplify": (
