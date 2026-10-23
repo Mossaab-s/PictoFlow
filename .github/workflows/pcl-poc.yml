@@ -45,6 +45,11 @@ jobs:
           python -m pip install .
           python -m alembic upgrade head
           python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --no-access-log > /tmp/pictoflow-poc-api.log 2>&1 &
+      - name: Use the Ubuntu archive for browser dependencies
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          fi
       - name: Build the communication interface
         id: communication-build
         working-directory: admin
