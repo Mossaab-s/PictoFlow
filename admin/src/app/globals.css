@@ -141,10 +141,32 @@ body:has(.compact-communication) > .account-bar {
   gap: 8px;
   font-size: 12px;
 }
-.compact-phrase-heading select {
-  max-width: 65%;
-  min-width: 0;
-  padding: 4px;
+.compact-compare-trigger {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.compact-communication .compact-phrase-comparison {
+  width: min(680px, calc(100vw - 24px));
+  max-width: min(680px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  padding: 16px;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+.compact-communication .compact-phrase-comparison .hypothesis-choice {
+  display: flex;
+  min-height: 48px;
+}
+.compact-phrase-comparison .hypothesis-choices {
+  padding: 8px;
+}
+.compact-comparison-actions {
+  flex-wrap: wrap;
+}
+.compact-communication .compact-phrase-comparison:focus-visible {
+  outline-offset: -5px;
 }
 .compact-formulation .proposed-phrase {
   font-size: 22px;

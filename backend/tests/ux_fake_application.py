@@ -143,6 +143,11 @@ async def configure_fixture(body: FixtureSelection):
                     "text": f"Pour moi, {words}; {words}; {words}, s’il te plaît.",
                     "confidence": 0.86,
                 },
+                {
+                    "intent": "question",
+                    "text": f"{words}, avec {words}, et {words}, s’il te plaît ?",
+                    "confidence": 0.8,
+                },
             ]
         provider = CountingFakeProvider(
             {

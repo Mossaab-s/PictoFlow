@@ -3,6 +3,41 @@ import fs from "node:fs/promises";
 import { chromium, expect, request } from "@playwright/test";
 
 const origin = "http://127.0.0.1:3131";
+function installSpeech() {
+  window.__spoken = [];
+  window.__canceled = 0;
+  Object.defineProperty(window, "SpeechSynthesisUtterance", {
+    configurable: true,
+    value: class {
+      constructor(text) {
+        this.text = text;
+      }
+    },
+  });
+  Object.defineProperty(window, "speechSynthesis", {
+    configurable: true,
+    value: {
+      getVoices: () => [
+        {
+          voiceURI: "fake-fr",
+          name: "Synthetic voice",
+          lang: "fr-FR",
+          localService: true,
+          default: true,
+        },
+      ],
+      speak(u) {
+        window.__spoken.push(u.text);
+        u.onstart?.();
+      },
+      cancel() {
+        window.__canceled++;
+      },
+      addEventListener() {},
+      removeEventListener() {},
+    },
+  });
+}
 const api = await request.newContext({ baseURL: origin });
 async function call(path, method = "get", data) {
   const r = await api[method]("/api/pictoflow/" + path, {
@@ -68,38 +103,7 @@ try {
   page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.addInitScript(() => {
-    window.__spoken = [];
-    Object.defineProperty(window, "SpeechSynthesisUtterance", {
-      configurable: true,
-      value: class {
-        constructor(text) {
-          this.text = text;
-        }
-      },
-    });
-    Object.defineProperty(window, "speechSynthesis", {
-      configurable: true,
-      value: {
-        getVoices: () => [
-          {
-            voiceURI: "fake-fr",
-            name: "Synthetic voice",
-            lang: "fr-FR",
-            localService: true,
-            default: true,
-          },
-        ],
-        speak(u) {
-          window.__spoken.push(u.text);
-          u.onstart?.();
-        },
-        cancel() {},
-        addEventListener() {},
-        removeEventListener() {},
-      },
-    });
-  });
+  await page.addInitScript(installSpeech);
   await page.goto(`${origin}/communication/${p}`);
   const surface = page.locator(".compact-communication");
   await surface.waitFor();
@@ -328,8 +332,7 @@ try {
     surface.getByRole("button", { name: "Formuler", exact: true }),
   ).toHaveCount(0);
   assert.deepEqual(errors, []);
-  // Recover a longer selection with multiple long hypotheses. Percentage sizing
-  // on the native selector must not enlarge either nested message grid.
+  // Recover long hypotheses to compare without widening the compact message.
   const longSequence = await call(base + "/sequences", "post", {
     session_id: crypto.randomUUID(),
   });
@@ -357,12 +360,21 @@ try {
     "post",
     {},
   );
-  assert.equal(longDecision.candidates.length, 2);
+  assert.equal(longDecision.candidates.length, 3);
   assert(longDecision.candidates.every((item) => item.text.length > 150));
   const memoryBefore = await call(base + "/memory");
   const originalSequence = await call(base + `/sequences/${longSequence.id}`);
   page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   page.on("pageerror", (e) => errors.push(e.message));
+  await page.addInitScript(installSpeech);
+  const comparisonWrites = [];
+  page.on("request", (r) => {
+    if (
+      ["POST", "PUT", "PATCH", "DELETE"].includes(r.method()) &&
+      r.url().includes("/api/pictoflow/")
+    )
+      comparisonWrites.push(r.url());
+  });
   await page.addInitScript(
     ({ profile, sequence, decision }) => {
       sessionStorage.setItem(
@@ -381,10 +393,15 @@ try {
   await page.goto(`${origin}/communication/${p}`);
   const longSurface = page.locator(".compact-communication");
   const longPhrase = longSurface.locator(".proposed-phrase");
-  const picker = longSurface.getByRole("combobox", {
-    name: "Choisir une proposition",
+  const picker = longSurface.getByRole("button", {
+    name: "Comparer les 3 phrases",
     exact: true,
   });
+  const comparison = page.getByRole("dialog", {
+    name: "Plusieurs sens sont possibles",
+    exact: true,
+  });
+  const radios = comparison.getByRole("radio");
   await expect(longPhrase).toHaveText(longDecision.candidates[0].text);
   await expect(longSurface.locator(".compact-word-strip button")).toHaveCount(
     8,
@@ -393,10 +410,60 @@ try {
     { width: 1280, height: 900 },
     { width: 1024, height: 768 },
     { width: 390, height: 844 },
+    { width: 320, height: 844 },
   ]) {
     await page.setViewportSize(viewport);
-    await picker.selectOption(longDecision.candidates[1].id);
-    await expect(longPhrase).toHaveText(longDecision.candidates[1].text);
+    const spokenBefore = await page.evaluate(() => window.__spoken.length);
+    await picker.click();
+    await expect(comparison).toBeVisible();
+    await expect(radios).toHaveCount(3);
+    for (const item of longDecision.candidates)
+      await expect(
+        comparison.getByText(item.text, { exact: true }),
+      ).toBeVisible();
+    await radios.first().check();
+    await radios.first().focus();
+    await page.keyboard.press("ArrowDown");
+    await expect(radios.nth(1)).toBeChecked();
+    await page.keyboard.press("ArrowDown");
+    await expect(radios.nth(2)).toBeChecked();
+    await expect(longPhrase).toHaveText(longDecision.candidates[2].text);
+    assert.equal(
+      await page.evaluate(() => window.__spoken.length),
+      spokenBefore,
+    );
+    assert(
+      await comparison.evaluate(
+        (node) => node.scrollWidth <= node.clientWidth + 1,
+      ),
+    );
+    await page.screenshot({
+      path: `.local/compact-communication/compare-${viewport.width}.png`,
+      fullPage: true,
+    });
+    if (viewport.width === 390) {
+      await comparison
+        .getByRole("button", { name: "Écouter cette phrase", exact: true })
+        .click();
+      assert.equal(
+        await page.evaluate(() => window.__spoken.at(-1)),
+        longDecision.candidates[2].text,
+      );
+      await page.keyboard.press("Escape");
+      await expect(comparison).toBeVisible();
+      await expect(
+        comparison.getByRole("button", {
+          name: "Arrêter la lecture",
+          exact: true,
+        }),
+      ).toHaveCount(0);
+      await page.keyboard.press("Escape");
+    } else
+      await comparison
+        .getByRole("button", { name: "Revenir au message", exact: true })
+        .click();
+    await expect(comparison).not.toBeVisible();
+    await expect(picker).toBeFocused();
     assert(
       await page.evaluate(
         () =>
@@ -438,11 +505,52 @@ try {
     originalSequence,
   );
   assert.deepEqual(await call(base + "/keyboard"), positions);
+  assert.deepEqual(comparisonWrites, []);
   assert.equal(
     (await (await api.get("http://127.0.0.1:8001/_synthetic/calls")).json())
       .calls,
     1,
   );
+  // Refusal affects only the chosen candidate; acceptance is a separate action.
+  await longSurface
+    .getByRole("button", { name: "Pas ça", exact: true })
+    .click();
+  await expect(longPhrase).toHaveText(
+    entries.map(([label]) => label).join(" "),
+  );
+  await picker.click();
+  await expect(
+    comparison.getByText("Proposition écartée", { exact: true }),
+  ).toHaveCount(1);
+  await radios.first().check();
+  await comparison
+    .getByRole("button", { name: "Revenir au message", exact: true })
+    .click();
+  await expect(longPhrase).toHaveText(longDecision.candidates[0].text);
+  assert.deepEqual(await call(base + "/memory"), memoryBefore);
+  await longSurface
+    .getByRole("button", { name: "C’est ça", exact: true })
+    .click();
+  await expect(picker).toBeDisabled();
+  assert.equal(
+    (await call(base + `/interpretations/${longDecision.candidates[0].id}`))
+      .status,
+    "confirmed",
+  );
+  assert.equal(
+    (await call(base + `/interpretations/${longDecision.candidates[1].id}`))
+      .status,
+    "proposed",
+  );
+  assert.equal(
+    (await call(base + `/interpretations/${longDecision.candidates[2].id}`))
+      .status,
+    "rejected",
+  );
+  await page.reload();
+  await expect(longPhrase).toHaveText(longDecision.candidates[0].text);
+  await expect(picker).toBeDisabled();
+  assert.deepEqual(await call(base + "/keyboard"), positions);
   assert.deepEqual(errors, []);
   await fs.writeFile(
     ".local/compact-communication/report.json",
@@ -463,6 +571,10 @@ try {
         keyboard_focus_and_forced_colors: true,
         refusal_returns_to_literal: true,
         multiple_long_hypotheses_fit_mobile_with_eight_pictograms: true,
+        full_phrase_comparison_mouse_keyboard_and_focus_return: true,
+        comparison_listening_requires_explicit_action: true,
+        comparison_without_model_calls_or_feedback: true,
+        individual_refusal_acceptance_and_reload: true,
       },
       null,
       2,

@@ -10,6 +10,7 @@ import type {
 import type { DisplaySize } from "@/lib/display";
 import KeyboardGrid from "./keyboard-grid";
 import CommunicationTouchSearch from "./communication-touch-search";
+import CompactPhraseComparison from "./compact-phrase-comparison";
 import ProfileIdentity from "./profile-identity";
 import { TouchContent } from "./pictogram";
 import type { Word, TouchRemoval } from "./message-touch-editor";
@@ -195,23 +196,16 @@ export default function CompactCommunication({
                   ? "Phrase à vérifier"
                   : "Mes pictos"}
             </span>
-            {candidates.length > 1 && (
-              <select
-                aria-label="Choisir une proposition"
-                disabled={disabled || Boolean(accepted)}
-                value={candidate?.id}
-                onChange={(event) => {
-                  speech.stop();
-                  setInspectedId(event.target.value);
-                }}
-              >
-                {candidates.map((item, index) => (
-                  <option key={item.id} value={item.id}>
-                    {index + 1}. {item.corrected_text ?? item.text}
-                    {item.status === "rejected" ? " — écartée" : ""}
-                  </option>
-                ))}
-              </select>
+            {candidates.length > 1 && candidate && (
+              <CompactPhraseComparison
+                candidates={candidates}
+                inspected={candidate}
+                disabled={disabled}
+                accepted={Boolean(accepted)}
+                speech={speech}
+                heading={heading}
+                inspect={setInspectedId}
+              />
             )}
           </div>
           <p
