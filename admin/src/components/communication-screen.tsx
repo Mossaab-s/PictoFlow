@@ -1293,7 +1293,8 @@ export default function CommunicationScreen({
                   }
                   onSelect={(tile) => {
                     const clickedAt = performance.now();
-                    return perform(() => select(tile, clickedAt));
+                    // Search owns result focus, including the delayed enabled commit.
+                    return perform(() => select(tile, clickedAt), false);
                   }}
                 />
                 <KeyboardGrid
