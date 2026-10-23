@@ -5,7 +5,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from uuid import UUID, uuid4
 
-from sqlalchemy import any_, delete, func, select, tuple_
+from sqlalchemy import Text, and_, any_, case, cast, delete, func, select, tuple_
 from sqlalchemy.dialects.postgresql import aggregate_order_by, array
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -66,6 +66,41 @@ MAPPINGS = {
 
 def snapshot(entity) -> dict | None:
     return None if entity is None else json.loads(json.dumps(to_values(entity), default=str))
+
+
+def visual_only_block_change():
+    """Prove a known visual edit preserved the complete accepted touch snapshot.
+
+    Unknown/missing fields or an unrecognised event remain semantic invalidations.
+    Comparing every other field also catches a semantic edit later reverted.
+    """
+    before, after = AuditRow.previous_state, AuditRow.new_state
+    required = array(list(BlockRow.__table__.columns.keys()))
+    visual = array(["representation_id", "visual_reference", "updated_at"])
+    return func.coalesce(
+        and_(
+            AuditRow.target_type == "communication_block",
+            AuditRow.event_type.in_(("block_representation_changed", "block_visual_changed")),
+            func.jsonb_typeof(before) == "object",
+            func.jsonb_typeof(after) == "object",
+            before.has_all(required),
+            after.has_all(required),
+            before["id"].astext == cast(AuditRow.target_id, Text),
+            before["profile_id"].astext == cast(AuditRow.profile_id, Text),
+            before["status"].astext == "validated",
+            case(
+                (
+                    and_(
+                        func.jsonb_typeof(before) == "object",
+                        func.jsonb_typeof(after) == "object",
+                    ),
+                    before.op("-")(visual) == after.op("-")(visual),
+                ),
+                else_=False,
+            ),
+        ),
+        False,
+    )
 
 
 class PostgresPCLRepository:
@@ -271,6 +306,7 @@ class PostgresPCLRepository:
                 AuditRow.target_id.in_((*block_ids, *concept_ids)),
                 AuditRow.target_type.in_(("communication_block", "concept")),
                 AuditRow.created_at >= ValidationRow.created_at,
+                ~visual_only_block_change(),
             )
             .correlate(ValidationRow)
             .exists()
@@ -350,6 +386,7 @@ class PostgresPCLRepository:
                 AuditRow.profile_id == profile_id,
                 AuditRow.target_type.in_(("communication_block", "concept")),
                 AuditRow.created_at >= ValidationRow.created_at,
+                ~visual_only_block_change(),
                 (AuditRow.target_id == any_(selections.c.block_ids))
                 | AuditRow.target_id.in_(
                     select(BlockRow.concept_id).where(
