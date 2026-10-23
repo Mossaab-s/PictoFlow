@@ -142,3 +142,10 @@ dans la seconde requête. Le backend en service n’a pas été modifié.
 
 Ces essais servent à diagnostiquer le comportement observé. Ils ne donnent pas
 un taux de qualité général et ne remplacent pas les essais avec la personne.
+
+## Everyday hypotheses and declared meanings
+
+See [Everyday French hypotheses](EVERYDAY_PHRASE_GROUNDING.md) for bounded
+television/watch formulations, the declared Couche noun/verb distinction,
+uncertainty handling and synthetic regression coverage. These checks assess
+eligibility and review requirements, not the person's actual intention.

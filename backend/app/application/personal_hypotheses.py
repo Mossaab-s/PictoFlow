@@ -9,6 +9,7 @@ from collections import Counter
 
 from app.application.phrase_fidelity import (
     SELECTED_PERSON,
+    conflicts_with_meaning,
     content,
     faithful_words,
     words,
@@ -28,6 +29,7 @@ EXPLICIT_ACTIONS = {
     "venir",
     "rentrer",
     "retourner",
+    "regarder",
 }
 
 
@@ -37,6 +39,8 @@ def grounding(request, text):
     This is an eligibility check, not a claim that a sentence means what the
     person intended. Selected negation, Stop, actions and pronouns remain guarded.
     """
+    if conflicts_with_meaning(request, text):
+        return None
     if faithful_words(request, text):
         return ()
     if request.language.split("-")[0].casefold() != "fr":

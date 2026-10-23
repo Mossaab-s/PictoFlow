@@ -16,10 +16,13 @@ from tests.integration.test_interpretation_reuse import Cache
 pytestmark = pytest.mark.postgres
 
 
-def blocks_for(service, profile, labels):
+def blocks_for(service, profile, labels, meanings=None):
     blocks = tuple(
         CommunicationBlock(
-            profile_id=profile, canonical_intent=label, label=label, status="validated"
+            profile_id=profile,
+            canonical_intent=(meanings or {}).get(label, label),
+            label=label,
+            status="validated",
         )
         for label in labels
     )
@@ -84,18 +87,34 @@ def test_missing_scene_touches_are_not_sent_or_imported_but_exact_acceptance_is_
     assert ai.request(foreign, foreign_target.id).memory_examples == ()
 
 
-def test_linking_hypotheses_are_capped_reviewable_and_cached_without_learning(communication):
+@pytest.mark.parametrize(
+    "labels,linked,literal",
+    [
+        (
+            ("Maman", "Papa", "Voiture", "Maison"),
+            "Maman, Papa, on pourrait rentrer à la maison en voiture.",
+            "Maman, Papa, la voiture est à la maison.",
+        ),
+        (
+            ("Maman", "Télévision"),
+            "Maman, je voudrais regarder la télévision.",
+            "Maman, la télévision.",
+        ),
+    ],
+)
+def test_linking_hypotheses_are_capped_reviewable_and_cached_without_learning(
+    communication, labels, linked, literal
+):
     service, profile, _, _ = communication
-    blocks = blocks_for(service, profile, ("Maman", "Papa", "Voiture", "Maison"))
+    blocks = blocks_for(service, profile, labels)
     ai = interpreter(service)
-    linked = "Maman, Papa, on pourrait rentrer à la maison en voiture."
     ai.provider.interpret.return_value = InterpretationProposal.model_validate(
         {
             "candidates": [
                 {"intent": "request", "text": linked, "confidence": 0.99},
                 {
                     "intent": "statement",
-                    "text": "Maman, Papa, la voiture est à la maison.",
+                    "text": literal,
                     "confidence": 0.6,
                 },
             ],
@@ -124,4 +143,37 @@ def test_linking_hypotheses_are_capped_reviewable_and_cached_without_learning(co
     assert context_for(service.units, profile, copied.candidates[0].id).reuse == "cache"
     assert service.memory(profile, validated=True) == before
     service.validate(event(profile, copied.candidates[0], ValidationAction.REJECT))
+    assert service.memory(profile, validated=True) == before
+
+
+@pytest.mark.parametrize("meaning", ["Couche", "Protection hygiénique"])
+def test_couche_ambiguity_or_declared_noun_is_handled_without_automatic_learning(
+    communication, meaning
+):
+    service, profile, _, _ = communication
+    blocks = blocks_for(service, profile, ("Couche", "Maman", "Dormir"), {"Couche": meaning})
+    ai = interpreter(service)
+    before = service.memory(profile, validated=True)
+    verb = "Maman, je me couche pour dormir."
+    noun = "Maman, je voudrais une couche pour dormir."
+    _, result = generate(
+        ai,
+        service,
+        profile,
+        blocks,
+        [
+            {"intent": "statement", "text": verb, "confidence": 0.99},
+            {"intent": "request", "text": noun, "confidence": 0.6},
+        ],
+    )
+    assert ai.provider.interpret.call_args.args[0].blocks[0].meaning == meaning
+    if meaning == "Couche":
+        assert {item.text for item in result.candidates} == {verb, noun}
+        assert max(item.confidence for item in result.candidates) == service.policy.confirmation
+        assert result.state == "confirmation_required"
+    else:
+        assert [item.text for item in result.candidates] == [noun]
+    assert all(
+        item.status == "proposed" and item.validated_text is None for item in result.candidates
+    )
     assert service.memory(profile, validated=True) == before
