@@ -1,6 +1,7 @@
 "use client";
-import { useId, useRef, useState } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 import { findCommunicationTouches } from "@/lib/communication-search";
+import { beginSelectionFocus } from "@/lib/selection-focus";
 import { touchLocation } from "@/lib/keyboard-organization";
 import { displays, type DisplaySize } from "@/lib/display";
 import type { KeyboardGroup, Tile } from "@/lib/keyboard";
@@ -150,6 +151,17 @@ function SearchResults({
   const pages = Math.max(1, Math.ceil(matches.length / display.size));
   const current = Math.min(page, pages - 1);
   const offset = current * display.size;
+  const selectionFocus = useRef<ReturnType<typeof beginSelectionFocus> | null>(
+    null,
+  );
+  const scope = `${profileId}:${purpose ?? "append"}:${displaySize}:${current}:${matches.map((tile) => tile.block_id).join(",")}`;
+  useLayoutEffect(
+    () => () => {
+      selectionFocus.current?.cancel();
+      selectionFocus.current = null;
+    },
+    [scope],
+  );
   function browse(target: number, button: HTMLButtonElement) {
     setPage(target);
     requestAnimationFrame(() => {
@@ -196,17 +208,14 @@ function SearchResults({
                 aria-describedby={`${locationId}-${tile.block_id}`}
                 disabled={disabled}
                 onClick={async (event) => {
-                  const button = event.currentTarget;
-                  await onSelect(tile);
-                  requestAnimationFrame(() => {
-                    if (
-                      button.isConnected &&
-                      !button.disabled &&
-                      (document.activeElement === button ||
-                        document.activeElement === document.body)
-                    )
-                      button.focus();
-                  });
+                  selectionFocus.current?.cancel();
+                  const attempt = beginSelectionFocus(event.currentTarget);
+                  selectionFocus.current = attempt;
+                  try {
+                    await onSelect(tile);
+                  } finally {
+                    attempt.settled();
+                  }
                 }}
               >
                 <TouchContent

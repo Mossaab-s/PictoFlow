@@ -182,6 +182,10 @@ jobs:
         if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
         working-directory: admin
         run: node tests/e2e/visual-placement.mjs
+      - name: Verify delayed selection focus without an API
+        if: ${{ !cancelled() && steps.communication-build.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/selection-focus.mjs
       - name: Find a personal touch while communicating
         if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
         working-directory: admin
@@ -238,6 +242,7 @@ jobs:
             admin/.local/touch-library/*.png
             admin/.local/visual-placement/*.png
             admin/.local/communication-search/*.png
+            admin/.local/selection-focus/report.json
             admin/.local/message-correction/*.png
             admin/.local/message-order/*.png
             admin/.local/message-replacement/*.png

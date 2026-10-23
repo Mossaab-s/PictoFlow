@@ -70,6 +70,41 @@ Standalone protected offline copies remain a separate journey.
 
 ## Validation
 
+### Reliable result focus after async selection
+
+Search owns result focus in both the compact and detailed communication views.
+The detailed screen no longer runs its competing generic message-heading
+fallback for a search selection; the regular keyboard keeps its existing handling.
+
+The old one-frame callback could run while the result button was still disabled
+and never try again after React enabled it. The temporary selection-focus intent
+now waits for both operation settlement and a usable button. It observes only the
+button's `disabled` attribute when the first frame is too early, with no polling,
+selection retry, API call or stored focus state. This reproduces a problematic
+ordering; it does not reconstruct the exact ordering of the historical CI failure.
+
+Restoration is cancelled if focus moves to another control, a pointer is used
+outside the result, Tab/Escape is pressed, or the document/window becomes inactive.
+It stays cancelled even if focus later returns to the document body. A disabled
+button naturally leaving focus on the body alone does not count as navigation.
+New selections supersede old intents. Layout cleanup cancels pending restoration
+when profile, result identities, page, display size or selection purpose changes,
+or when search/results unmount. Detached buttons cannot regain focus. Listeners,
+the observer and any scheduled frame are released on completion or cancellation.
+
+`node tests/e2e/selection-focus.mjs` runs eight deterministic cases in native
+Chromium, transpiling the actual production helper into a routed synthetic page.
+It starts no Next server and calls no API. The first case fails with the extracted
+old single-frame strategy and passes with delayed enabled-state observation.
+The remaining cases cover settlement order, intentional focus/pointer/keyboard
+navigation, cancelled/replaced scopes and superseding selections. Its JSON report
+is uploaded with the existing `synthetic-pcl-learning` CI artifact. The authenticated
+communication-search journey continues to test consecutive Enter selections,
+intentional focus movement during a delayed response, profile changes, unchanged
+memory/keyboard and exact selection writes against the real application.
+
+### Existing lookup coverage
+
 Unit checks cover displayed-word matching, profile/status/page scoping, identity
 deduplication, duplicate labels, accent handling and image ownership. The real
 authenticated browser/API scenario uses communication-only grants and synthetic
