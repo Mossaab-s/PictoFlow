@@ -9,6 +9,11 @@ The tab remembers this view preference; it contains no communication text.
 with a separate review and deliberate reading while the current composition is
 kept. See [COMPACT_PERSONAL_PHRASES.md](COMPACT_PERSONAL_PHRASES.md).
 
+Tapping a current-message pictogram offers Keep, Remove or Replace, with a local
+before/after review and explicit confirmation. Completed snapshots are preserved
+through the existing editable-copy path. See
+[COMPACT_TOUCH_REPLACEMENT.md](COMPACT_TOUCH_REPLACEMENT.md).
+
 ```text
 Choose pictograms -> original drawings/words update immediately
            |

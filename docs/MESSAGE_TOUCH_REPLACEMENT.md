@@ -4,6 +4,11 @@
 chosen occurrence without reconstructing the rest of the message. Removal
 remains the default operation. Replacement works with 1–32 selections.
 
+The compact communication screen also exposes replacement directly by tapping
+the chosen message pictogram. See
+[COMPACT_TOUCH_REPLACEMENT.md](COMPACT_TOUCH_REPLACEMENT.md) for its local choice
+dialog, automatic-preview pause and completed-snapshot copy behavior.
+
 ```text
 Current:  [Mother] [Water] [Book] [Water]
                      |

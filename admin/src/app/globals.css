@@ -2358,6 +2358,14 @@ pre {
 .message-order-touch small {
   font-size: 12px;
 }
+.compact-touch-choice h2 {
+  font-size: 22px;
+  margin-bottom: 16px;
+}
+.compact-touch-choice {
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+}
 .message-replace-dialog {
   width: min(960px, calc(100vw - 24px));
   max-width: calc(100vw - 24px);
