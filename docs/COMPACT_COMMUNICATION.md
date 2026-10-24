@@ -20,6 +20,10 @@ order preview without dragging. See [COMPACT_TOUCH_ORDER.md](COMPACT_TOUCH_ORDER
 **Ajouter une touche ici** offers before/after the chosen occurrence, followed
 by a full-message review. See [COMPACT_TOUCH_INSERTION.md](COMPACT_TOUCH_INSERTION.md).
 
+**Changer** reviews the original pictograms, proposal and personal correction
+before explicit saving, retaining the draft through errors. See
+[COMPACT_PHRASE_CORRECTION.md](COMPACT_PHRASE_CORRECTION.md).
+
 ```text
 Choose pictograms -> original drawings/words update immediately
            |

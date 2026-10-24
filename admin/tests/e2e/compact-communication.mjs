@@ -241,6 +241,9 @@ try {
     exact: true,
   });
   await edit.getByRole("textbox").fill("J’aime boire de l’eau.");
+  await edit
+    .getByRole("button", { name: "Vérifier ma correction", exact: true })
+    .click();
   const feedbackURL = `**/api/pictoflow/${base}/interpretations/*/feedback`;
   await page.route(feedbackURL, (route) =>
     route.fulfill({
@@ -249,14 +252,14 @@ try {
     }),
   );
   await edit
-    .getByRole("button", { name: "Valider ma correction", exact: true })
+    .getByRole("button", { name: "Enregistrer mon sens", exact: true })
     .click();
   await expect(edit.getByRole("alert")).toBeVisible();
   await expect(edit.getByRole("textbox")).toHaveValue("J’aime boire de l’eau.");
   assert.equal((await call(base + "/memory")).interpretations.length, 1);
   await page.unroute(feedbackURL);
   await edit
-    .getByRole("button", { name: "Valider ma correction", exact: true })
+    .getByRole("button", { name: "Enregistrer mon sens", exact: true })
     .click();
   await expect(phrase).toHaveText("J’aime boire de l’eau.");
   assert.equal((await call(base + "/memory")).interpretations.length, 2);

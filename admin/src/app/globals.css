@@ -2366,6 +2366,33 @@ pre {
   max-height: calc(100dvh - 24px);
   overflow: auto;
 }
+.compact-communication .compact-phrase-correction {
+  width: min(640px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  overflow-wrap: anywhere;
+  padding: 16px;
+  font-size: 16px;
+}
+.compact-phrase-correction h2 {
+  font-size: 22px;
+}
+.compact-phrase-correction h3 {
+  font-size: 18px;
+  margin-block: 12px 8px;
+}
+.compact-phrase-correction textarea {
+  font-size: 18px;
+}
+.correction-actions {
+  position: sticky;
+  bottom: -16px;
+  display: flex;
+  flex-wrap: wrap;
+  padding-block: 12px;
+  background: white;
+}
 .message-replace-dialog {
   width: min(960px, calc(100vw - 24px));
   max-width: calc(100vw - 24px);
