@@ -44,6 +44,7 @@ export default function CompactCommunication({
   select,
   remove,
   replace,
+  move,
   onTouchEditingChange,
   undo,
   reset,
@@ -84,6 +85,7 @@ export default function CompactCommunication({
   select: (tile: Tile) => Promise<void>;
   remove: (choice: TouchRemoval) => Promise<void>;
   replace: (choice: TouchRemoval & { blockId: string }) => Promise<void>;
+  move: (choice: TouchRemoval & { targetIndex: number }) => Promise<void>;
   onTouchEditingChange: (editing: boolean) => void;
   undo: () => void;
   reset: (button: HTMLButtonElement) => void;
@@ -172,6 +174,7 @@ export default function CompactCommunication({
             stop={speech.stop}
             remove={remove}
             replace={replace}
+            move={move}
             onEditingChange={onTouchEditingChange}
           />
         </div>
