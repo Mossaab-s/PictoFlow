@@ -936,6 +936,7 @@ export default function CommunicationScreen({
             perform(() => editTouch(choice, "replace"), false)
           }
           onTouchEditingChange={setTouchEditing}
+          move={(choice) => perform(() => editTouch(choice, "move"), false)}
           undo={() => void perform(() => selection("undo"), false)}
           reset={(button) => requestReset("new", button)}
           review={async (candidate, action, text) => {

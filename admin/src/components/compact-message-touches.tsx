@@ -6,6 +6,7 @@ import type { TouchRemoval, Word } from "./message-touch-editor";
 import MessageReplaceDialog, {
   type TouchReplacement,
 } from "./message-replace-dialog";
+import MessageMoveDialog from "./message-move-dialog";
 import { TouchContent } from "./pictogram";
 
 export default function CompactMessageTouches({
@@ -21,6 +22,7 @@ export default function CompactMessageTouches({
   stop,
   remove,
   replace,
+  move,
   onEditingChange,
 }: {
   profileId: string;
@@ -35,14 +37,18 @@ export default function CompactMessageTouches({
   stop: () => void;
   remove: (choice: TouchRemoval) => Promise<void>;
   replace: (choice: TouchRemoval & { blockId: string }) => Promise<void>;
+  move: (choice: TouchRemoval & { targetIndex: number }) => Promise<void>;
   onEditingChange: (editing: boolean) => void;
 }) {
   const id = useId();
-  const [choice, setChoice] = useState<TouchReplacement | null>(null);
-  const [replacing, setReplacing] = useState(false);
+  const [choice, setChoice] = useState<
+    (TouchReplacement & { words: Word[] }) | null
+  >(null);
+  const [operation, setOperation] = useState<"replace" | "move" | null>(null);
   const strip = useRef<HTMLDivElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const replacementDialog = useRef<HTMLDialogElement>(null);
+  const moveDialog = useRef<HTMLDialogElement>(null);
   const keep = useRef<HTMLButtonElement>(null);
   const sending = useRef(false);
   const returnFocus = useRef<{ index: number; origin: Element | null } | null>(
@@ -50,11 +56,11 @@ export default function CompactMessageTouches({
   );
   useEffect(() => () => onEditingChange(false), [onEditingChange]);
   useEffect(() => {
-    if (choice && !replacing) {
+    if (choice && !operation) {
       dialog.current?.showModal();
       keep.current?.focus();
     }
-  }, [choice, replacing]);
+  }, [choice, operation]);
   useEffect(() => {
     if (busy || choice || !returnFocus.current) return;
     const requested = returnFocus.current;
@@ -74,28 +80,40 @@ export default function CompactMessageTouches({
     });
     return () => cancelAnimationFrame(frame);
   }, [busy, choice, heading]);
-  function close() {
-    if (sending.current || busy) return;
+  function finish(index: number) {
     dialog.current?.close();
     replacementDialog.current?.close();
+    moveDialog.current?.close();
     returnFocus.current = {
-      index: choice?.index ?? 0,
+      index,
       origin: document.activeElement,
     };
     setChoice(null);
-    setReplacing(false);
+    setOperation(null);
     onEditingChange(false);
   }
-  async function submit(tile?: Tile) {
+  function close() {
+    if (sending.current || busy) return;
+    finish(choice?.index ?? 0);
+  }
+  async function submit(
+    action:
+      | { kind: "remove" }
+      | { kind: "replace"; tile: Tile }
+      | { kind: "move"; targetIndex: number },
+  ) {
     if (!choice || disabled || sending.current) return;
     sending.current = true;
     try {
-      if (tile) await replace({ ...choice, blockId: tile.block_id });
+      if (action.kind === "move")
+        await move({ ...choice, targetIndex: action.targetIndex });
+      else if (action.kind === "replace")
+        await replace({ ...choice, blockId: action.tile.block_id });
       else await remove(choice);
     } finally {
       sending.current = false;
       // Parent reconciliation settles first; never retry an uncertain edit here.
-      close();
+      finish(action.kind === "move" ? action.targetIndex : choice.index);
     }
   }
   return (
@@ -118,12 +136,13 @@ export default function CompactMessageTouches({
                 if (!sequence) return;
                 stop();
                 onEditingChange(true);
-                setReplacing(false);
+                setOperation(null);
                 setChoice({
                   sequenceId: sequence.id,
                   blockIds: [...sequence.block_ids],
                   index,
                   word,
+                  words: [...words],
                 });
               }}
             >
@@ -137,7 +156,7 @@ export default function CompactMessageTouches({
           <p>Choisissez vos pictos.</p>
         )}
       </div>
-      {choice && !replacing && (
+      {choice && !operation && (
         <dialog
           ref={dialog}
           className="message-reset-dialog compact-touch-choice"
@@ -165,22 +184,32 @@ export default function CompactMessageTouches({
               disabled={disabled}
               onClick={() => {
                 dialog.current?.close();
-                setReplacing(true);
+                setOperation("replace");
               }}
             >
               Remplacer cette touche
             </button>
             <button
               className="secondary"
+              disabled={disabled || choice.blockIds.length < 2}
+              onClick={() => {
+                dialog.current?.close();
+                setOperation("move");
+              }}
+            >
+              Déplacer cette touche
+            </button>
+            <button
+              className="secondary"
               disabled={disabled}
-              onClick={() => void submit()}
+              onClick={() => void submit({ kind: "remove" })}
             >
               Retirer cette touche
             </button>
           </div>
         </dialog>
       )}
-      {choice && replacing && (
+      {choice && operation === "replace" && (
         <MessageReplaceDialog
           choice={choice}
           profileId={profileId}
@@ -191,7 +220,17 @@ export default function CompactMessageTouches({
           busy={busy}
           dialogRef={replacementDialog}
           cancel={close}
-          confirm={(tile) => void submit(tile)}
+          confirm={(tile) => void submit({ kind: "replace", tile })}
+        />
+      )}
+      {choice && operation === "move" && (
+        <MessageMoveDialog
+          choice={choice}
+          disabled={disabled}
+          busy={busy}
+          dialogRef={moveDialog}
+          cancel={close}
+          confirm={(targetIndex) => void submit({ kind: "move", targetIndex })}
         />
       )}
     </>

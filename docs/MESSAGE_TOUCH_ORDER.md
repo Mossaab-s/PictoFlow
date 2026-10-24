@@ -5,6 +5,10 @@
 default; **Déplacer une touche** becomes available with at least two selections.
 The selected occurrence is identified by its picture/photo, word and ordinal.
 
+Compact communication also exposes this order review by tapping a message
+pictogram and choosing **Déplacer cette touche**. Its completed-snapshot copy and
+automatic-preview pause are described in [COMPACT_TOUCH_ORDER.md](COMPACT_TOUCH_ORDER.md).
+
 ```text
 Current: [Water] [Mother] [Book] [Water]
                   |

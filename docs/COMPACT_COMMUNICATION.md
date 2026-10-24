@@ -14,6 +14,9 @@ before/after review and explicit confirmation. Completed snapshots are preserved
 through the existing editable-copy path. See
 [COMPACT_TOUCH_REPLACEMENT.md](COMPACT_TOUCH_REPLACEMENT.md).
 
+With two or more pictograms, **Déplacer cette touche** also provides a numbered
+order preview without dragging. See [COMPACT_TOUCH_ORDER.md](COMPACT_TOUCH_ORDER.md).
+
 ```text
 Choose pictograms -> original drawings/words update immediately
            |
