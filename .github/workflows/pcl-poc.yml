@@ -276,6 +276,8 @@ jobs:
             admin/.local/compact-touch-order/report.json
             admin/.local/compact-touch-insertion/*.png
             admin/.local/compact-touch-insertion/report.json
+            admin/.local/compact-phrase-correction/*.png
+            admin/.local/compact-phrase-correction/report.json
             admin/.local/message-correction/*.png
             admin/.local/message-order/*.png
             admin/.local/message-replacement/*.png
