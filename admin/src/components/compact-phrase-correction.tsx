@@ -36,8 +36,15 @@ export default function CompactPhraseCorrection({
     dialog.current?.showModal();
   }, []);
   useEffect(() => {
-    if (reviewing) keep.current?.focus();
-    else input.current?.focus();
+    if (reviewing) {
+      // Review starts with the first words, not the edit cursor's scroll position.
+      input.current?.setSelectionRange(0, 0);
+      keep.current?.focus();
+      if (input.current) {
+        input.current.scrollTop = 0;
+        input.current.scrollLeft = 0;
+      }
+    } else input.current?.focus();
   }, [reviewing]);
   function close() {
     if (busy || sending.current) return;

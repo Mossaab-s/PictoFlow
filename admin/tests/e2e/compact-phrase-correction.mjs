@@ -260,6 +260,10 @@ try {
   for (const width of [1280, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
     await expect(keep).toBeVisible();
+    assert(
+      await input.evaluate((n) => n.scrollTop <= 1 && n.selectionStart === 0),
+      "Review must start at the first words after editing and reflow",
+    );
     assert(await dialog.evaluate((n) => n.scrollWidth <= n.clientWidth + 1));
     assert(
       await page.evaluate(

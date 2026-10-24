@@ -19,7 +19,8 @@ Current proposal -> Change -> edit personal wording -> Review correction
 The modal captures the selected proposal and original pictogram words/drawings,
 including repeated occurrences. Its first stage focuses the editable text. The
 review stage displays the trimmed text exactly as the feedback API will receive
-it, focuses the safe Keep action and allows returning to the unchanged input.
+it, starts the text at its first words, focuses the safe Keep action and allows
+returning to the unchanged input.
 Only **Enregistrer mon sens** submits. Opening, editing, reviewing, going back
 and cancellation do not create a sequence, copy, interpretation or feedback.
 Opening stops current speech; this path never starts speech or asks a model.
