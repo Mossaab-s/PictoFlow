@@ -214,6 +214,19 @@ try {
     exact: true,
   });
   const custom = "Maman, je voudrais lire mon livre et boire de l’eau.";
+  // Communication alone never grants the right to alter accepted personal meaning.
+  await expect(change).toBeDisabled();
+  assert.equal(writes.length, 0);
+  await call(
+    `auth/users/${account.id}/profiles/${profile}/capabilities`,
+    "PUT",
+    {
+      capabilities: ["communicate", "review_meanings"],
+      expected_capabilities: ["communicate"],
+    },
+  );
+  await page.reload();
+  await expect(change).toBeEnabled();
   await change.press("Enter");
   await expect(input).toBeFocused();
   await expect(input).toHaveValue(decision.candidates[0].text);

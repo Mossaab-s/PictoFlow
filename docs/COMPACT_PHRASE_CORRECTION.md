@@ -49,7 +49,9 @@ modal neither retries it nor starts another request.
 ## Evidence and limits
 
 `admin/tests/e2e/compact-phrase-correction.mjs` uses an isolated authenticated API,
-synthetic profiles and a communicate-only account. It verifies preview without
+synthetic profiles and an account with only communication/review rights. It first
+checks that communication alone disables correction, then grants review explicitly.
+It verifies preview without
 writes, exact original pictograms and trimmed text, back/cancel/focus behavior,
 an unsuccessful response, pending Escape and repeated submission, a committed
 response lost in transit and a proposal rejected in another session. It also
