@@ -1,12 +1,5 @@
 "use client";
-import {
-  useId,
-  useRef,
-  useState,
-  useEffect,
-  type RefObject,
-  type ReactNode,
-} from "react";
+import { useRef, useState, type RefObject, type ReactNode } from "react";
 import type {
   Decision,
   Interpretation,
@@ -20,6 +13,7 @@ import CommunicationTouchSearch from "./communication-touch-search";
 import CompactPhraseComparison from "./compact-phrase-comparison";
 import ProfileIdentity from "./profile-identity";
 import CompactMessageTouches from "./compact-message-touches";
+import CompactPhraseCorrection from "./compact-phrase-correction";
 import type { Word, TouchRemoval } from "./message-touch-editor";
 
 export default function CompactCommunication({
@@ -102,7 +96,6 @@ export default function CompactCommunication({
 }) {
   const candidates = decision?.candidates ?? [];
   const [inspectedId, setInspectedId] = useState("");
-  const [reviewError, setReviewError] = useState("");
   const accepted = candidates.find((item) =>
     ["confirmed", "corrected"].includes(item.status),
   );
@@ -116,21 +109,15 @@ export default function CompactCommunication({
       : (candidate?.corrected_text ?? candidate?.text);
   const literal = words.map((word) => word.label).join(" ");
   const [correction, setCorrection] = useState<{
-    id: string;
-    text: string;
+    candidate: Interpretation;
+    words: Word[];
   } | null>(null);
-  const editor = useRef<HTMLDialogElement>(null);
   const opener = useRef<HTMLElement | null>(null);
-  const id = useId();
-  useEffect(() => {
-    if (correction) editor.current?.showModal();
-    else editor.current?.close();
-  }, [correction?.id]);
   function close() {
-    editor.current?.close();
     setCorrection(null);
     requestAnimationFrame(() =>
-      opener.current?.isConnected
+      opener.current?.isConnected &&
+      !(opener.current instanceof HTMLButtonElement && opener.current.disabled)
         ? opener.current.focus({ preventScroll: true })
         : heading.current?.focus({ preventScroll: true }),
     );
@@ -247,8 +234,8 @@ export default function CompactCommunication({
             onClick={(event) => {
               if (candidate) {
                 opener.current = event.currentTarget;
-                setReviewError("");
-                setCorrection({ id: candidate.id, text: text ?? "" });
+                speech.stop();
+                setCorrection({ candidate, words: [...words] });
               }
             }}
           >
@@ -372,63 +359,17 @@ export default function CompactCommunication({
         </p>
       )}
       {correction && (
-        <dialog
-          ref={editor}
-          className="message-reset-dialog"
-          aria-labelledby={`${id}-edit`}
-          onCancel={(event) => {
-            event.preventDefault();
-            close();
-          }}
-        >
-          <h2 id={`${id}-edit`}>Changer la phrase</h2>
-          <form
-            onSubmit={async (event) => {
-              event.preventDefault();
-              const item = candidates.find((item) => item.id === correction.id);
-              if (item) {
-                if (await review(item, "correct", correction.text)) close();
-                else
-                  setReviewError(
-                    "La correction n’a pas été enregistrée. Votre texte reste ici. Vérifiez la connexion ou rechargez le message.",
-                  );
-              }
-            }}
-          >
-            <label>
-              Je corrige la phrase
-              <textarea
-                autoFocus
-                required
-                maxLength={4000}
-                rows={4}
-                value={correction.text}
-                disabled={disabled}
-                onChange={(event) =>
-                  setCorrection({ ...correction, text: event.target.value })
-                }
-              />
-            </label>
-            {reviewError && (
-              <p role="alert" className="error">
-                {reviewError}
-              </p>
-            )}
-            <div className="actions">
-              <button disabled={disabled || !correction.text.trim()}>
-                Valider ma correction
-              </button>
-              <button
-                type="button"
-                className="secondary"
-                disabled={busy}
-                onClick={close}
-              >
-                Annuler la correction
-              </button>
-            </div>
-          </form>
-        </dialog>
+        <CompactPhraseCorrection
+          candidate={correction.candidate}
+          words={correction.words}
+          current={candidates.find(
+            (item) => item.id === correction.candidate.id,
+          )}
+          disabled={disabled || !canReview}
+          busy={busy}
+          cancel={close}
+          save={(text) => review(correction.candidate, "correct", text)}
+        />
       )}
     </section>
   );

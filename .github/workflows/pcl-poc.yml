@@ -211,6 +211,10 @@ jobs:
         if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
         working-directory: admin
         run: node tests/e2e/compact-touch-insertion.mjs
+      - name: Review and safely save a personal phrase correction
+        if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/compact-phrase-correction.mjs
       - name: Correct one chosen message touch
         if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
         working-directory: admin
