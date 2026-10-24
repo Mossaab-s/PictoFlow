@@ -7,6 +7,7 @@ import MessageReplaceDialog, {
   type TouchReplacement,
 } from "./message-replace-dialog";
 import MessageMoveDialog from "./message-move-dialog";
+import MessageInsertDialog from "./message-insert-dialog";
 import { TouchContent } from "./pictogram";
 
 export default function CompactMessageTouches({
@@ -23,6 +24,7 @@ export default function CompactMessageTouches({
   remove,
   replace,
   move,
+  insert,
   onEditingChange,
 }: {
   profileId: string;
@@ -38,17 +40,21 @@ export default function CompactMessageTouches({
   remove: (choice: TouchRemoval) => Promise<void>;
   replace: (choice: TouchRemoval & { blockId: string }) => Promise<void>;
   move: (choice: TouchRemoval & { targetIndex: number }) => Promise<void>;
+  insert: (choice: TouchRemoval & { blockId: string }) => Promise<void>;
   onEditingChange: (editing: boolean) => void;
 }) {
   const id = useId();
   const [choice, setChoice] = useState<
     (TouchReplacement & { words: Word[] }) | null
   >(null);
-  const [operation, setOperation] = useState<"replace" | "move" | null>(null);
+  const [operation, setOperation] = useState<
+    "replace" | "move" | "insert" | null
+  >(null);
   const strip = useRef<HTMLDivElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const replacementDialog = useRef<HTMLDialogElement>(null);
   const moveDialog = useRef<HTMLDialogElement>(null);
+  const insertDialog = useRef<HTMLDialogElement>(null);
   const keep = useRef<HTMLButtonElement>(null);
   const sending = useRef(false);
   const returnFocus = useRef<{ index: number; origin: Element | null } | null>(
@@ -84,6 +90,7 @@ export default function CompactMessageTouches({
     dialog.current?.close();
     replacementDialog.current?.close();
     moveDialog.current?.close();
+    insertDialog.current?.close();
     returnFocus.current = {
       index,
       origin: document.activeElement,
@@ -100,6 +107,7 @@ export default function CompactMessageTouches({
     action:
       | { kind: "remove" }
       | { kind: "replace"; tile: Tile }
+      | { kind: "insert"; tile: Tile; index: number }
       | { kind: "move"; targetIndex: number },
   ) {
     if (!choice || disabled || sending.current) return;
@@ -107,13 +115,25 @@ export default function CompactMessageTouches({
     try {
       if (action.kind === "move")
         await move({ ...choice, targetIndex: action.targetIndex });
+      else if (action.kind === "insert")
+        await insert({
+          ...choice,
+          index: action.index,
+          blockId: action.tile.block_id,
+        });
       else if (action.kind === "replace")
         await replace({ ...choice, blockId: action.tile.block_id });
       else await remove(choice);
     } finally {
       sending.current = false;
       // Parent reconciliation settles first; never retry an uncertain edit here.
-      finish(action.kind === "move" ? action.targetIndex : choice.index);
+      finish(
+        action.kind === "move"
+          ? action.targetIndex
+          : action.kind === "insert"
+            ? action.index
+            : choice.index,
+      );
     }
   }
   return (
@@ -201,12 +221,28 @@ export default function CompactMessageTouches({
             </button>
             <button
               className="secondary"
+              disabled={disabled || choice.blockIds.length >= 32}
+              onClick={() => {
+                dialog.current?.close();
+                setOperation("insert");
+              }}
+            >
+              Ajouter une touche ici
+            </button>
+            <button
+              className="secondary"
               disabled={disabled}
               onClick={() => void submit({ kind: "remove" })}
             >
               Retirer cette touche
             </button>
           </div>
+          {choice.blockIds.length >= 32 && (
+            <p className="helper">
+              Le message contient déjà 32 pictos. Retirez une touche pour en
+              ajouter une.
+            </p>
+          )}
         </dialog>
       )}
       {choice && operation === "replace" && (
@@ -231,6 +267,22 @@ export default function CompactMessageTouches({
           dialogRef={moveDialog}
           cancel={close}
           confirm={(targetIndex) => void submit({ kind: "move", targetIndex })}
+        />
+      )}
+      {choice && operation === "insert" && (
+        <MessageInsertDialog
+          choice={choice}
+          profileId={profileId}
+          tiles={tiles}
+          groups={groups}
+          displaySize={displaySize}
+          disabled={disabled}
+          busy={busy}
+          dialogRef={insertDialog}
+          cancel={close}
+          confirm={(tile, index) =>
+            void submit({ kind: "insert", tile, index })
+          }
         />
       )}
     </>

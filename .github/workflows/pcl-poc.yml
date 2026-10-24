@@ -207,6 +207,10 @@ jobs:
         if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
         working-directory: admin
         run: node tests/e2e/compact-touch-order.mjs
+      - name: Insert a forgotten pictogram directly in compact communication
+        if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
+        working-directory: admin
+        run: node tests/e2e/compact-touch-insertion.mjs
       - name: Correct one chosen message touch
         if: ${{ !cancelled() && steps.capability-api.outcome == 'success' }}
         working-directory: admin
@@ -266,6 +270,8 @@ jobs:
             admin/.local/compact-touch-replacement/report.json
             admin/.local/compact-touch-order/*.png
             admin/.local/compact-touch-order/report.json
+            admin/.local/compact-touch-insertion/*.png
+            admin/.local/compact-touch-insertion/report.json
             admin/.local/message-correction/*.png
             admin/.local/message-order/*.png
             admin/.local/message-replacement/*.png

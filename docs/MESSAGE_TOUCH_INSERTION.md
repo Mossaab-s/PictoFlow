@@ -4,6 +4,11 @@
 word near a chosen occurrence. Existing words stay in their relative order.
 Removal remains the default correction; an empty draft uses the ordinary keyboard.
 
+Compact communication also exposes this picker/review by tapping a message
+pictogram and choosing **Ajouter une touche ici**. See
+[COMPACT_TOUCH_INSERTION.md](COMPACT_TOUCH_INSERTION.md) for its snapshot/copy and
+automatic-preview safeguards.
+
 ```text
 Current: [Mother] [Water] [Book] [Water]
                                   |

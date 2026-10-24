@@ -17,6 +17,9 @@ through the existing editable-copy path. See
 With two or more pictograms, **Déplacer cette touche** also provides a numbered
 order preview without dragging. See [COMPACT_TOUCH_ORDER.md](COMPACT_TOUCH_ORDER.md).
 
+**Ajouter une touche ici** offers before/after the chosen occurrence, followed
+by a full-message review. See [COMPACT_TOUCH_INSERTION.md](COMPACT_TOUCH_INSERTION.md).
+
 ```text
 Choose pictograms -> original drawings/words update immediately
            |
