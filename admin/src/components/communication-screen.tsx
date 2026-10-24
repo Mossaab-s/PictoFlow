@@ -112,6 +112,7 @@ export default function CommunicationScreen({
   const phraseLibrary = useRef<HTMLDivElement>(null);
   const phrasesButton = useRef<HTMLButtonElement>(null);
   const [phrasesOpen, setPhrasesOpen] = useState(false);
+  const [touchEditing, setTouchEditing] = useState(false);
   const suggestionTools = useRef<HTMLDetailsElement>(null);
   const suggestionsButton = useRef<HTMLAnchorElement>(null);
   const suggestionsReturn = useRef<HTMLElement | null>(null);
@@ -856,6 +857,7 @@ export default function CommunicationScreen({
       !restoreFailed &&
       !data.loading &&
       !phrasesOpen &&
+      !touchEditing &&
       suggestions.ready &&
       display.ready,
     gate,
@@ -930,6 +932,10 @@ export default function CommunicationScreen({
           }
           select={(tile) => perform(() => select(tile), false)}
           remove={(choice) => perform(() => editTouch(choice, "remove"), false)}
+          replace={(choice) =>
+            perform(() => editTouch(choice, "replace"), false)
+          }
+          onTouchEditingChange={setTouchEditing}
           undo={() => void perform(() => selection("undo"), false)}
           reset={(button) => requestReset("new", button)}
           review={async (candidate, action, text) => {

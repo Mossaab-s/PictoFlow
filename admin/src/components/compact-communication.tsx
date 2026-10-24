@@ -19,7 +19,7 @@ import KeyboardGrid from "./keyboard-grid";
 import CommunicationTouchSearch from "./communication-touch-search";
 import CompactPhraseComparison from "./compact-phrase-comparison";
 import ProfileIdentity from "./profile-identity";
-import { TouchContent } from "./pictogram";
+import CompactMessageTouches from "./compact-message-touches";
 import type { Word, TouchRemoval } from "./message-touch-editor";
 
 export default function CompactCommunication({
@@ -43,6 +43,8 @@ export default function CompactCommunication({
   heading,
   select,
   remove,
+  replace,
+  onTouchEditingChange,
   undo,
   reset,
   review,
@@ -81,6 +83,8 @@ export default function CompactCommunication({
   heading: RefObject<HTMLHeadingElement | null>;
   select: (tile: Tile) => Promise<void>;
   remove: (choice: TouchRemoval) => Promise<void>;
+  replace: (choice: TouchRemoval & { blockId: string }) => Promise<void>;
+  onTouchEditingChange: (editing: boolean) => void;
   undo: () => void;
   reset: (button: HTMLButtonElement) => void;
   review: (
@@ -111,26 +115,16 @@ export default function CompactCommunication({
     id: string;
     text: string;
   } | null>(null);
-  const [removal, setRemoval] = useState<
-    (TouchRemoval & { word: Word }) | null
-  >(null);
-  const editor = useRef<HTMLDialogElement>(null),
-    remover = useRef<HTMLDialogElement>(null);
+  const editor = useRef<HTMLDialogElement>(null);
   const opener = useRef<HTMLElement | null>(null);
   const id = useId();
   useEffect(() => {
     if (correction) editor.current?.showModal();
     else editor.current?.close();
   }, [correction?.id]);
-  useEffect(() => {
-    if (removal) remover.current?.showModal();
-    else remover.current?.close();
-  }, [removal]);
   function close() {
     editor.current?.close();
-    remover.current?.close();
     setCorrection(null);
-    setRemoval(null);
     requestAnimationFrame(() =>
       opener.current?.isConnected
         ? opener.current.focus({ preventScroll: true })
@@ -165,39 +159,21 @@ export default function CompactCommunication({
           <h2 ref={heading} tabIndex={-1}>
             Mon message
           </h2>
-          <div
-            className="compact-word-strip"
-            tabIndex={words.length ? 0 : undefined}
-            aria-label="Pictos de mon message"
-          >
-            {words.length ? (
-              words.map((word, index) => (
-                <button
-                  key={index}
-                  className="compact-word secondary"
-                  disabled={disabled}
-                  aria-label={`Retirer « ${word.label} », touche ${index + 1} sur ${words.length}`}
-                  onClick={(event) => {
-                    if (!sequence) return;
-                    opener.current = event.currentTarget;
-                    setRemoval({
-                      sequenceId: sequence.id,
-                      blockIds: [...sequence.block_ids],
-                      index,
-                      word,
-                    });
-                  }}
-                >
-                  <TouchContent
-                    label={word.label}
-                    representation={word.representation}
-                  />
-                </button>
-              ))
-            ) : (
-              <p>Choisissez vos pictos.</p>
-            )}
-          </div>
+          <CompactMessageTouches
+            profileId={profileId}
+            sequence={sequence}
+            words={words}
+            tiles={tiles}
+            groups={groups}
+            displaySize={displaySize}
+            disabled={disabled}
+            busy={busy}
+            heading={heading}
+            stop={speech.stop}
+            remove={remove}
+            replace={replace}
+            onEditingChange={onTouchEditingChange}
+          />
         </div>
         <div className="compact-formulation">
           <div className="compact-phrase-heading">
@@ -446,41 +422,6 @@ export default function CompactCommunication({
               </button>
             </div>
           </form>
-        </dialog>
-      )}
-      {removal && (
-        <dialog
-          ref={remover}
-          className="message-reset-dialog"
-          aria-labelledby={`${id}-remove`}
-          onCancel={(event) => {
-            event.preventDefault();
-            close();
-          }}
-        >
-          <h2 id={`${id}-remove`}>Retirer cette touche ?</h2>
-          <TouchContent
-            label={removal.word.label}
-            representation={removal.word.representation}
-          />
-          <p>
-            Touche {removal.index + 1} sur {removal.blockIds.length}. Les autres
-            pictos seront conservés.
-          </p>
-          <div className="actions">
-            <button
-              disabled={disabled}
-              onClick={async () => {
-                await remove(removal);
-                close();
-              }}
-            >
-              Retirer cette touche
-            </button>
-            <button className="secondary" disabled={busy} onClick={close}>
-              Garder cette touche
-            </button>
-          </div>
         </dialog>
       )}
     </section>
